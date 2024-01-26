@@ -3,10 +3,8 @@ from py4j.java_gateway import JavaGateway
 
 def main():
     gateway = JavaGateway()
-    random = gateway.jvm.java.util.Random()
-    number1 = random.nextInt(10)
-    number2 = random.nextInt(10)
-    print(number1, number2)
+    epos_server = gateway.entry_point
+    print(epos_server.Message())
 
 
 if __name__ == "__main__":
