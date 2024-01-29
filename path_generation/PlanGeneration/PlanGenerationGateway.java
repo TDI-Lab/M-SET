@@ -3,7 +3,7 @@ package PlanGeneration;
 import py4j.GatewayServer;
 
 
-class PlanGenerationServer
+class PlanGenerationGateway
 {
     public String start() {return "Plan Generation Starting...";}
 
@@ -11,7 +11,7 @@ class PlanGenerationServer
 
     public static void main(String[] args)
     {
-        GatewayServer g = new GatewayServer(new PlanGenerationServer(), 8080);
+        GatewayServer g = new GatewayServer(new PlanGenerationGateway(), 8080);
         g.start();
     }
 }

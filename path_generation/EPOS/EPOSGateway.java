@@ -7,7 +7,7 @@ import py4j.GatewayServer;
 //  TODO: Add Gateway server to EPOS
 
 
-class EPOSServer
+class EPOSGateway
 {
     public String start() {return "EPOS Starting...";}
 
@@ -15,7 +15,7 @@ class EPOSServer
 
     public static void main(String[] args)
     {
-        GatewayServer g = new GatewayServer(new EPOSServer(), 8081);
+        GatewayServer g = new GatewayServer(new EPOSGateway(), 8081);
         g.start();
     }
 }
