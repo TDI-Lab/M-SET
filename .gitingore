@@ -1,8 +1,4 @@
 .idea
-*.jar
 ./out
 *.class
 path_generation/EPOS/
-
-!IEPOS.jar
-!py4j.jar
