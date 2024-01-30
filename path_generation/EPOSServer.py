@@ -16,7 +16,7 @@ class EPOSServer(JavaServer):
 
     def execute(self) -> str:
         """ Execute the desired workflow from the JVM."""
-        return self.epos_server.start()
+        return self.epos_server.run()
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
