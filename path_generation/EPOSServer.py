@@ -21,10 +21,3 @@ class EPOSServer(JavaServer):
     def stop(self) -> int:
         """ Stop the Gateway Server."""
         return self.epos_server.stop()
-
-
-if __name__ == "__main__":
-    epos_server = EPOSServer()
-    epos_server.start()
-    print(epos_server.execute())
-    print(epos_server.stop())

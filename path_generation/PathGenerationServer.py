@@ -16,15 +16,8 @@ class PathGenerationServer(JavaServer):
 
     def execute(self) -> str:
         """ Execute the desired workflow from the JVM."""
-        return self.pg_server.start()
+        return ""
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
-        return self.pg_server.stop()
-
-
-if __name__ == "__main__":
-    pg = PathGenerationServer()
-    pg.start()
-    print(pg.execute())
-    print(pg.stop())
+        return 0

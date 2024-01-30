@@ -5,9 +5,7 @@ import py4j.GatewayServer;
 
 class PlanGenerationGateway
 {
-    public String start() {return "Plan Generation Starting...";}
-
-    public String stop() {return "Plan Generation Stopping...";}
+    public int assertAvailable() {return 0;}
 
     public static void main(String[] args)
     {
