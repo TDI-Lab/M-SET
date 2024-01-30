@@ -1,18 +1,18 @@
-from py4j.java_gateway import GatewayParameters, JavaGateway
+from py4j.java_gateway import JavaGateway, GatewayParameters
 
 
 class JavaGatewayClient:
 
     def __init__(self, addr: str, port: int):
-        self.__gateway = None
-        self.__parameters = GatewayParameters(address=addr, port=port)
+        self._gateway = None
+        self._parameters = GatewayParameters(address=addr, port=port)
 
     def get_gateway(self) -> JavaGateway:
-        return self.__gateway
+        return self._gateway
 
     def start(self) -> int:
         """ Start the Gateway Server and load all necessary classes."""
-        self.__gateway = JavaGateway(gateway_parameters=self.__parameters).entry_point
+        self._gateway = JavaGateway(gateway_parameters=self._parameters).entry_point
         return 0
 
     def execute(self) -> str:

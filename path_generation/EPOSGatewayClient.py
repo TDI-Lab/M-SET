@@ -1,14 +1,12 @@
 from JavaGatewayClient import JavaGatewayClient
 
-from py4j.java_gateway import JavaGateway, GatewayParameters
 
-
-class PathGenerationGateway(JavaGatewayClient):
+class EPOSGatewayClient(JavaGatewayClient):
 
     def execute(self) -> str:
         """ Execute the desired workflow from the JVM."""
-        return ""
+        return self._gateway.run()
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
-        return 0
+        return self._gateway.stop()
