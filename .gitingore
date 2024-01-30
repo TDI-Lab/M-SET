@@ -2,3 +2,4 @@
 ./out
 *.class
 path_generation/EPOS/
+*.iml
