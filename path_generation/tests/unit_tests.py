@@ -1,7 +1,7 @@
 import unittest
 
-from PathGenerationServer import PathGenerationGateway
-from EPOSServer import EPOSGateway
+from PathGenerationGateway import PathGenerationGateway
+from EPOSGateway import EPOSGateway
 
 
 class TestPGGateway(unittest.TestCase):
