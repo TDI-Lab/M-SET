@@ -1,18 +1,9 @@
-from JavaServer import JavaServer
+from JavaGatewayClient import JavaGatewayClient
 
 from py4j.java_gateway import JavaGateway, GatewayParameters
 
 
-class PathGenerationServer(JavaServer):
-
-    def __init__(self):
-        self.pg_server = None
-
-    def start(self) -> int:
-        """ Start the Gateway Server and load all necessary classes."""
-        parameters = GatewayParameters(address="127.0.0.1", port=8080)
-        self.pg_server = JavaGateway(gateway_parameters=parameters).entry_point
-        return 0
+class PathGenerationGateway(JavaGatewayClient):
 
     def execute(self) -> str:
         """ Execute the desired workflow from the JVM."""

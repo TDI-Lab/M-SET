@@ -1,23 +1,14 @@
-from JavaServer import JavaServer
+from JavaGatewayClient import JavaGatewayClient
 
 from py4j.java_gateway import JavaGateway, GatewayParameters
 
 
-class EPOSServer(JavaServer):
-
-    def __init__(self):
-        self.epos_server = None
-
-    def start(self) -> int:
-        """ Start the Gateway Server and load all necessary classes."""
-        parameters = GatewayParameters(address="127.0.0.1", port=8081)
-        self.epos_server = JavaGateway(gateway_parameters=parameters).entry_point
-        return 0
+class EPOSGateway(JavaGatewayClient):
 
     def execute(self) -> str:
         """ Execute the desired workflow from the JVM."""
-        return self.epos_server.run()
+        return self.__gateway.run()
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
-        return self.epos_server.stop()
+        return self.__gateway.stop()

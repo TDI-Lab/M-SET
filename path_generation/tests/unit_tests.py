@@ -1,20 +1,20 @@
 import unittest
 
-from PathGenerationServer import PathGenerationServer
-from EPOSServer import EPOSServer
+from PathGenerationServer import PathGenerationGateway
+from EPOSServer import EPOSGateway
 
 
-class TestPGServer(unittest.TestCase):
+class TestPGGateway(unittest.TestCase):
 
     def test_basic_access(self):
-        pg_gateway = PathGenerationServer()
+        pg_gateway = PathGenerationGateway("127.0.0.1", 8080)
         pg_gateway.start()
-        self.assertEquals(0, pg_gateway.pg_server.assertAvailable())
+        self.assertEquals(0, pg_gateway.get_gateway().assertAvailable())
 
 
-class TestEPOSServer(unittest.TestCase):
+class TestEPOSGateway(unittest.TestCase):
 
     def test_basic_access(self):
-        epos_gateway = EPOSServer()
+        epos_gateway = EPOSGateway("127.0.0.1", 8081)
         epos_gateway.start()
-        self.assertEquals(0, epos_gateway.epos_server.assertAvailable())
+        self.assertEquals(0, epos_gateway.get_gateway().assertAvailable())
