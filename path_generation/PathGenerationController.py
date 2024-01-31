@@ -1,26 +1,29 @@
-from JavaGatewayClient import JavaGatewayClient   # import JavaServer_stub.py
+from JavaGatewayClient import JavaGatewayClient
+from PathGenerationGatewayClient import PathGenerationGatewayClient
+from EPOSGatewayClient import EPOSGatewayClient
+
+from decouple import config
+
 
 class PathGenerationController:
-    # defining variable types
-    pgController: 'JavaGatewayClient'
-    eposController: 'JavaGatewayClient'
 
-    def __init__(self) -> None:
-        self.pgController = JavaGatewayClient()
-        self.eposController = JavaGatewayClient()
+    def __init__(self):
+        self._pg_controller = PathGenerationGatewayClient(config("PG_IP"), config("PG_PORT"))
+        self._epos_controller = EPOSGatewayClient(config("EPOS_IP"), config("EPOS_PORT"))
 
-    def startServer(self) -> int:
+    def start_server(self) -> int:
         # Start the Java servers
-        return 0
+        pass
 
-    def generatePaths(self, num: int) -> int:
-        # Generate num paths and store them
-        return 0
+    def generate_paths(self, num: int) -> int:
+        # Generate plans for each agent, where num is the number of agents
+        result_code = self._pg_controller.execute()
+        return result_code
 
-    def selectPlan(self) -> int:
-        # Select a plan from the database
-        return 0
+    def select_plan(self) -> int:
+        # Execute the EPOS Algorithm for plan selection
+        pass
 
-    def stopServer(self) -> int:
+    def stop_server(self) -> int:
         # Stop the Java servers
-        return 0
+        pass

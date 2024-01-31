@@ -3,9 +3,9 @@ from JavaGatewayClient import JavaGatewayClient
 
 class PathGenerationGatewayClient(JavaGatewayClient):
 
-    def execute(self) -> str:
+    def execute(self) -> int:
         """ Execute the desired workflow from the JVM."""
-        return ""
+        return 0
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
