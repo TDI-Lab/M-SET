@@ -1,9 +1,9 @@
 import unittest
-from src.Flight import Flight
-from src.Drone import Drone
-from src.Swarm_Control import Swarm_Control
-from src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
-from src.Swarm_Constants import TIME_DELAY
+from cdca.src.Flight import Flight
+from cdca.src.Drone import Drone
+from cdca.src.Swarm_Control import Swarm_Control
+from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
+from cdca.src import TIME_DELAY
 
 class TestFlight(unittest.TestCase):
 
