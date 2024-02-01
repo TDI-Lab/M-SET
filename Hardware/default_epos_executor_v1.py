@@ -72,7 +72,7 @@ def set_initial_positions(positions, sim):
 
     timeHelper.sleep(5)
 
-def follow_epos(positions, hover_height, x_step, y_step):
+def follow_epos(positions, hover_height, x_step, y_step, sequential):
     # follow EPOS
     for t in range(1,len(positions)): # Starts at 1 since the drones should already be at the first position
         print("Moving to position: ", t)
@@ -95,7 +95,12 @@ def follow_epos(positions, hover_height, x_step, y_step):
 
         # set the speeds of the drones (relative to the step distances)
         # could be used to implement pausing or slowing of chosen drones to support collision avoidance
-        speed = np.full((len(allcfs.crazyflies),2),1)
+        i=0
+        speed = np.zeros((len(allcfs.crazyflies),2))
+        if sequential == True:
+            speed[i] = 1
+        else:
+            speed = np.full((len(allcfs.crazyflies),2),1)
 
         while (np.any(in_position == 0)): # while there exists at least one drone that is out of position
             for agentID in range(0,len(allcfs.crazyflies)): # will only run the paths for as many drones as are available (if there are paths for more drones than are active, then these paths won't be used)
@@ -119,6 +124,13 @@ def follow_epos(positions, hover_height, x_step, y_step):
                     current_position[agentID] = pos
                 else:
                     in_position[agentID][1] = 1
+
+            # check if any single drone is in position
+            if in_position[i][0] == 1 and in_position[i][1] == 1:
+                speed[i] = 0
+                if i < len(allcfs.crazyflies) - 1:
+                    speed[i+1] = 1
+                i += 1
 
             timeHelper.sleep(0.1) # refresh rate of giving setpoint commands. Documentation suggests this shouldn't be any lower that 10Hz    
 
@@ -164,6 +176,7 @@ def main():
     x_step = 0.05 # how far the drone moves at each increment in the x direction
     y_step = 0.05 # how far the drone moves at each increment in the y direction
     z_step = 0.05 # how far the drone moves at each increment in the z direction
+    sequential = True
 
     print ("Correct number of command line arguments recieved")
     print("starting")
@@ -173,7 +186,7 @@ def main():
         set_initial_positions(positions, sim)
         takeoff(allcfs.crazyflies[0].initialPosition[2], z_step)
         timeHelper.sleep(3)
-        follow_epos(positions, hover_height, x_step, y_step)
+        follow_epos(positions, hover_height, x_step, y_step, sequential)
         land(hover_height, z_step)
     
     print("end")
