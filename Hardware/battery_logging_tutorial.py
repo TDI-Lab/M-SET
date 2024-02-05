@@ -16,7 +16,7 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncLogger import SyncLogger
 
 # URI to the Crazyflie to connect to
-uri = uri_helper.uri_from_env(default='radio://0/90/2M/E7E7E7E704')
+uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702')
 # MAKE SURE THE CHANNEL IS CORRECT HERE e.g. 80 or 90 usually
 # MAKE SURE THE NUMBER IS CORRECT HERE e.g. E7E7E7E701 for drone 1, 02 at the end instead for drone 2 etc.
 
@@ -39,7 +39,8 @@ def simple_log(scf, logconf):
             logconf_name = log_entry[2]
 
             # modified to loop this command
-            for i in range(1,10):
+            #for i in range(1,10):
+            while True:
                 print('[%d][%s]: %s' % (timestamp, logconf_name, data))
                 time.sleep(1)
 
@@ -60,7 +61,10 @@ if __name__ == '__main__':
         # Variable for logging battery level
         # vbat referenced as being for battery here https://github.com/USC-ACTLab/crazyswarm/issues/148
         # vbat data type found here (ctrl-f for vbat) https://github.com/USC-ACTLab/crazyswarm/discussions/433
+    #print(LogTocElement.types)
     lg_stab.add_variable('pm.vbat','float')
+    lg_stab.add_variable('pm.batteryLevel','uint8_t')
+    lg_stab.add_variable('pm.state','int8_t')
 
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         #doesn't like running this line if you have ros running - resource busy
