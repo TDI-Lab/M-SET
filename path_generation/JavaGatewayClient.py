@@ -12,7 +12,7 @@ class JavaGatewayClient:
 
     def start(self) -> int:
         """ Start the Gateway Server and load all necessary classes."""
-        self._gateway = JavaGateway(gateway_parameters=self._parameters).entry_point
+        self._gateway = JavaGateway(gateway_parameters=self._parameters)
         return 0
 
     def execute(self) -> str:
@@ -21,4 +21,5 @@ class JavaGatewayClient:
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""
-        pass
+        self._gateway.shutdown()
+        return 0

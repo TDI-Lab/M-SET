@@ -9,7 +9,8 @@ class PlanGenerationGateway
 
     public static void main(String[] args)
     {
-        GatewayServer g = new GatewayServer(new PlanGenerationGateway(), 8080);
+        GatewayServer g = new GatewayServer(new PlanGenerationGateway(), 12345);
         g.start();
+        System.out.println("Path Generation server started...");
     }
 }

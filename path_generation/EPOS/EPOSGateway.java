@@ -50,12 +50,12 @@ class EPOSGateway
         {
             return -1;
         }
-
     }
 
     public static void main(String[] args)
     {
-        GatewayServer g = new GatewayServer(new EPOSGateway(), 8081);
+        GatewayServer g = new GatewayServer(new EPOSGateway(), 12346);
         g.start();
+        System.out.println("EPOS server started...");
     }
 }
