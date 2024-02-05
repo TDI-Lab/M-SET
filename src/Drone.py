@@ -21,9 +21,9 @@ class Drone:
         start_time += new_flight.duration
     
 
-  def augment_plan(self, index):
+  def augment_plan(self, index, delay=TIME_DELAY):
     # Add TIME_DELAY to the origin in the collision flight.
-    self.plan[index][1] += TIME_DELAY
+    self.plan[index][1] += delay
     self.create_flights()
     
 

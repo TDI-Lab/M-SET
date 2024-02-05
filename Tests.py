@@ -3,6 +3,8 @@ from src.Flight import Flight
 from src.Drone import Drone
 from src.Swarm_Control import Swarm_Control
 from src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
+from src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
+
 from src.Swarm_Constants import TIME_DELAY
 
 class TestFlight(unittest.TestCase):
@@ -45,7 +47,7 @@ class TestSwarmControl(unittest.TestCase):
     def test_swarm_control_object(self):
         plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]]]
         swarm_controller = Swarm_Control(plans, Basic_Collision_Avoidance())
-
+        swarm_controller.print_itinerary()
         self.assertEqual(len(swarm_controller.drones), 2, '')
 
         self.assertEqual(swarm_controller.drones[0].plan, plans[0], '')
@@ -59,7 +61,18 @@ class TestSwarmControl(unittest.TestCase):
 
         self.assertEqual(swarm_controller.drones[1].plan[0][1], second_drone_source_duration + TIME_DELAY, '')
 
-
+    def test_dependency_collision_avoidance(self):
+        plans = [[[[1,2], 5], [[3,1], 3], [[1,2], 3]],
+                    [[[2,2], 5], [[2,1], 3], [[8,8], 3]],
+                    [[[3,2], 5], [[2,2], 3], [[4,4], 3]],
+                    [[[1,1], 5], [[1,6], 3], [[1,1], 3]],
+                    [[[7,7], 5], [[8,8], 3], [[1,5], 3]]]
+       
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance())
+        swarm_controller.detect_potential_collisions()
+        self.assertEqual(swarm_controller.drones[0].plan[0][1], 5, '')
 
 if __name__ == '__main__':
     unittest.main()
+    #Execution hierarchy:  [[0, 8], [1, 2, 6, 9], [3, 4, 7], [5]]
+    # Execution hierarchy:  [[0], [1, 3], [2]]
