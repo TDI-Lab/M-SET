@@ -4,8 +4,8 @@ import csv
 import numpy as np
 from pathlib import Path
 
-from UAV_plans.MapSetting import MapSetting
-from UAV_plans.RouteGeneration import RouteGeneration
+from MapSetting import MapSetting
+from RouteGeneration import RouteGeneration
 
 
 # The target without information of time, value is second
