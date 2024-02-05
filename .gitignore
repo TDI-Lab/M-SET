@@ -2,6 +2,7 @@
 ./out
 *.class
 path_generation/EPOS/
+path_generation/PlanGeneration/conf/
 *.iml
 *.ini
 *.env
