@@ -36,3 +36,10 @@ def simple_log_async(scf, logconf):
 
 with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
     simple_log_async(scf, lg_stab)
+
+class logAsFunction:
+    def __init__(self, drones):
+        self.drones = drones
+    
+    def log(self, elapsed):
+        print("Logged")
