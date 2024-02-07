@@ -33,7 +33,7 @@ class PathGenerationController:
 
     def move_plans(self):
         plan_gen_dir = f'{self.parent_path}/PlanGeneration/datasets/{self.config.get("plan", "dataset")}'
-        epos_dir = f'{self.parent_path}/path_generation/EPOS/datasets/{self.config.get("plan", "dataset")}'
+        epos_dir = f'{self.parent_path}/EPOS/datasets/{self.config.get("plan", "dataset")}'
         copy_tree(plan_gen_dir, epos_dir)
 
     def select_plan(self) -> int:
