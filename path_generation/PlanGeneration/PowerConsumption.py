@@ -1,5 +1,7 @@
 import configparser
 import math
+from pathlib import Path
+
 from scipy.optimize import bisect
 
 
@@ -33,8 +35,10 @@ class PowerConsumption:
         self.flight_power = 0
 
     def set_params(self):
+        parent_path = Path(__file__).parent.resolve()
         config = configparser.ConfigParser()
-        config.read('../conf/generation.properties')
+        config.read(f'{parent_path}/conf/generation.properties')
+
         self.body_mass = float(config.get('power', 'bodyMass'))
         self.battery_mass = float(config.get('power', 'batteryMass'))
         self.rotor_num = int(config.get('power', 'rotorNum'))

@@ -83,6 +83,7 @@ class MapSetting:
         self.cells = []
         self.stations = []
         self.total_hover_time = 0
+        min_x, max_x, min_y, max_y = 0, 0, 0, 0
         for i in range(data_map.shape[0]):
             item = data_map.iloc[i]
             item_id = int(item['id'])
@@ -91,20 +92,29 @@ class MapSetting:
             z = item['z']
             value = item['value']
 
+            min_x = min(x, min_x)
+            min_y = min(y, min_y)
+
+            max_x = max(x, max_x)
+            max_y = max(y, max_y)
+
             if item['type'] == 'SENSE':
-                cell_dict = {'id': item_id, 'x': x, 'y': y, 'z': z}
+                cell_dict = {'id': item_id, 'x': x, 'y': y, 'z': z, 'value': value}
                 self.cells.append(cell_dict)
                 self.total_hover_time += value
+
             elif item['type'] == 'BASE':
                 station_dict = {'id': item_id, 'x': x, 'y': y, 'z': z}
                 self.stations.append(station_dict)
             else:
                 self.map_length = (x + y) / 2
 
+        self.cells_num_edge = int(max_y - min_y)
+        self.map_length = ((max_x - min_x) + (max_y - min_y))/2
         cells_num_edge = int(math.sqrt(len(self.cells)))
         stations_num_edge = int(math.sqrt(len(self.stations)))
         self.cells_length = float(self.map_length / cells_num_edge)
-        self.radius_coverage = cells_num_edge / stations_num_edge / 2 * self.cells_length * math.sqrt(2)
+        self.radius_coverage = self.cells_num_edge / stations_num_edge * self.cells_length * math.sqrt(2)
 
         self.search_cells_in_coverage()
 

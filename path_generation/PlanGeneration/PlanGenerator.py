@@ -4,23 +4,23 @@ import csv
 import numpy as np
 from pathlib import Path
 
-from MapSetting import MapSetting
-from RouteGeneration import RouteGeneration
-
-from PlanGenerationProperties import PlanGenerationProperties
-
+from PlanGeneration.MapSetting import MapSetting
+from PlanGeneration.RouteGeneration import RouteGeneration
+from PlanGeneration.PlanGenerationProperties import PlanGenerationProperties
 
 # The target without information of time, value is second
 TARGET = [[0, 100, 100],
           [100, 100, 0],
-          [100, 100, 0]]
+          [0, 0, 0]]
 
 
-class PlanGeneration:
+class PlanGenerator:
 
     def __init__(self):
+        self.parent_path = Path(__file__).parent.resolve()
+
         config = configparser.ConfigParser()
-        config.read('../conf/generation.properties')
+        config.read(f'{self.parent_path}/conf/generation.properties')
 
         self.properties = PlanGenerationProperties(
             dataset_name=config.get('plan', 'dataset'),
@@ -36,32 +36,29 @@ class PlanGeneration:
 
     def generate_plans(self, is_timeslots=False):
         # 1. Initialize the output directory
-        dataset_path = '../datasets/' + self.properties.dataset_name
+        dataset_path = f'{self.parent_path}/datasets/'
+        if not Path(dataset_path).exists():
+            Path(dataset_path).mkdir()
+        dataset_path += f"{self.properties.dataset_name}/"
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
 
-        # 2. Set the target for drones, i,e., the required sensing value of each cell
-        target_arr = []
-        for i in range(len(TARGET)):
-            for j in range(len(TARGET[0])):
-                target_arr.append(TARGET[i][j])
+        # 2. Set the map of the sensing environment
+        map_setting = MapSetting()
+        map_setting.setting_read(
+            f"{self.parent_path}/datasets/{self.properties.dataset_name}/{self.properties.dataset_name}.csv"
+        )
+
+        # 3. Set the target for drones, i,e., the required sensing value of each cell
+        cells = map_setting.cells
+        target_arr = [cell["value"] for cell in cells]
         cells_num = len(target_arr)
         # output the target to .target file
-        target_path = dataset_path + '/monitoring.target'
+        target_path = f"{self.parent_path}/datasets/{self.properties.dataset_name}/{self.properties.dataset_name}.target"
         with open(target_path, 'w', newline='', encoding='utf-8-sig') as targetFile:
             writer = csv.writer(targetFile)
             writer.writerow(target_arr)
         targetFile.close()
-
-        # 3. Set the map of the sensing environment
-        map_setting = MapSetting()
-        map_setting.setting_default(
-            cells_num,
-            self.properties.stations_num,
-            self.properties.height,
-            self.properties.total_hover_time,
-            self.properties.map_length
-        )
 
         # 4. Generate a number of plans for each drone/agent
         for agent_id in range(self.properties.agents_num):
@@ -124,3 +121,4 @@ class PlanGeneration:
                     else:
                         planFile.write(line + '\n')
             planFile.close()
+        return 0

@@ -1,8 +1,9 @@
 .idea
 ./out
 *.class
-path_generation/EPOS/
-path_generation/PlanGeneration/conf/
 *.iml
 *.ini
 *.env
+path_generation/EPOS/
+path_generation/PlanGeneration/conf/
+path_generation/PlanGeneration/datasets

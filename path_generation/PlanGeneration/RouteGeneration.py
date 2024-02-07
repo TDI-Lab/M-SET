@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 import itertools
 
-from PowerConsumption import PowerConsumption
+from PlanGeneration.PowerConsumption import PowerConsumption
 
 
 class RouteGeneration:
@@ -54,8 +54,8 @@ class RouteGeneration:
         if len(search_range_cells) >= visited_cells_num:
             self.visited_cells = random.sample(search_range_cells, visited_cells_num)
         else:
-            print(f"The searching range is too small! We need f{visited_cells_num} "
-                  f"but only have f{len(search_range_cells)}")
+            print(f"The searching range is too small! We need {visited_cells_num} "
+                  f"but only have {len(search_range_cells)}")
             return
 
         # 3. find the shortest path via visited cells using Dijkstra's algorithm based on TSP problem
@@ -64,10 +64,15 @@ class RouteGeneration:
         self.distance_total = distance_total
 
         # 4. calculate the hovering time over visited cells (AVERAGE allocated)
-        hover_time_single = self.map.total_hover_time / visited_cells_num
+        visited_cells_dict = {}
+        for cell in self.visited_cells:
+            cell_dict = list(filter(lambda x: x["id"] == cell, self.map.cells))[0]
+            visited_cells_dict[cell] = cell_dict
+        total_path_requirement = sum(list(cell[1]["value"] for cell in visited_cells_dict.items()))
         self.hover_time_arr = np.zeros(len(self.cells))
-        self.hover_time_arr[self.visited_cells] = hover_time_single
-
+        for cell_id, cell_dict in visited_cells_dict.items():
+            s_un = int((cell_dict["value"]/total_path_requirement)*cell_dict["value"])
+            self.hover_time_arr[cell_id] = s_un
         # 5. calculate the total energy consumption
         self.power_in_constant_params()
         # calculate the flight energy consumption
