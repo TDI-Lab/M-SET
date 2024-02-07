@@ -17,7 +17,8 @@ class EPOSGatewayClient:
 
     def execute(self) -> int:
         """ Execute the desired workflow from the JVM."""
-        return self._gateway.entry_point.run()
+        self._gateway.entry_point.run()
+        return 0
 
     def stop(self) -> int:
         """ Stop the Gateway Server."""

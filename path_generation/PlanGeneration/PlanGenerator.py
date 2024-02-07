@@ -8,11 +8,6 @@ from PlanGeneration.MapSetting import MapSetting
 from PlanGeneration.RouteGeneration import RouteGeneration
 from PlanGeneration.PlanGenerationProperties import PlanGenerationProperties
 
-# The target without information of time, value is second
-TARGET = [[0, 100, 100],
-          [100, 100, 0],
-          [0, 0, 0]]
-
 
 class PlanGenerator:
 
@@ -54,7 +49,8 @@ class PlanGenerator:
         target_arr = [cell["value"] for cell in cells]
         cells_num = len(target_arr)
         # output the target to .target file
-        target_path = f"{self.parent_path}/datasets/{self.properties.dataset_name}/{self.properties.dataset_name}.target"
+        target_path = (f"{self.parent_path}/datasets/{self.properties.dataset_name}/"
+                       f"{self.properties.dataset_name}.target")
         with open(target_path, 'w', newline='', encoding='utf-8-sig') as targetFile:
             writer = csv.writer(targetFile)
             writer.writerow(target_arr)
@@ -111,7 +107,7 @@ class PlanGenerator:
 
             # 4b. Output the plans of the drone into the datasets dir
             agent_plans_path = dataset_path + '/agent_' + str(agent_id) + '.plans'
-            with open(agent_plans_path, 'w', newline='', encoding='utf-8-sig') as planFile:
+            with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile:
                 for index, agent_plan in enumerate(agent_plans):
                     # write the cost of plan and write each dimension of the plan
                     line = str(agent_plan['cost']) + ':' + ','.join(map(str, agent_plan['plan']))
