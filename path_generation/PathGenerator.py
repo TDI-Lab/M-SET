@@ -12,8 +12,6 @@ class PathGenerator:
         return self._state
 
     def generate_paths(self) -> [List[Tuple[float, List[float]]], None]:
-        # start the gateways
-        self._generation_manager.start_server()
         # Generate num paths and return them
         result_code = self._generation_manager.generate_paths()
         if result_code != 0:

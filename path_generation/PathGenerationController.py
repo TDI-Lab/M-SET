@@ -6,7 +6,7 @@ from typing import List, Tuple
 from distutils.dir_util import copy_tree
 
 from PlanGeneration.PlanGenerator import PlanGenerator
-from EPOSGatewayClient import EPOSGatewayClient
+from EPOS.EPOSWrapper import EPOSWrapper
 
 import decouple
 
@@ -19,12 +19,7 @@ class PathGenerationController:
         self.config.read(f'{self.parent_path}/PlanGeneration/conf/generation.properties')
 
         self._pg_controller = PlanGenerator()
-        self._epos_controller = EPOSGatewayClient(decouple.config("EPOS_IP"), decouple.config("EPOS_PORT", cast=int))
-
-    def start_server(self) -> int:
-        # Start the Java servers
-        self._epos_controller.start()
-        return 0
+        self._epos_controller = EPOSWrapper()
 
     def generate_paths(self) -> int:
         # Generate plans for each agent, where num is the number of agents
@@ -38,7 +33,7 @@ class PathGenerationController:
 
     def select_plan(self) -> int:
         # Execute the EPOS Algorithm for plan selection
-        result_code = self._epos_controller.execute()
+        result_code = self._epos_controller.run()
         self.move_plans()
         return result_code
 
