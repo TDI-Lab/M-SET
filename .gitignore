@@ -1,0 +1,10 @@
+.idea
+./out
+*.class
+*.iml
+*.ini
+*.env
+*.zip
+path_generation/EPOS/
+path_generation/PlanGeneration/conf/
+path_generation/PlanGeneration/datasets
