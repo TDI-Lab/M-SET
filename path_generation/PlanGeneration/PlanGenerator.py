@@ -4,9 +4,9 @@ import csv
 import numpy as np
 from pathlib import Path
 
-from PlanGeneration.MapSetting import MapSetting
-from PlanGeneration.RouteGeneration import RouteGeneration
-from PlanGeneration.PlanGenerationProperties import PlanGenerationProperties
+from path_generation.PlanGeneration.MapSetting import MapSetting
+from path_generation.PlanGeneration.RouteGeneration import RouteGeneration
+from path_generation.PlanGeneration.PlanGenerationProperties import PlanGenerationProperties
 
 
 class PlanGenerator:
@@ -106,7 +106,7 @@ class PlanGenerator:
                 agent_plans.append(plan_dict)
 
             # 4b. Output the plans of the drone into the datasets dir
-            agent_plans_path = dataset_path + '/agent_' + str(agent_id) + '.plans'
+            agent_plans_path = dataset_path + 'agent_' + str(agent_id) + '.plans'
             with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile:
                 for index, agent_plan in enumerate(agent_plans):
                     # write the cost of plan and write each dimension of the plan

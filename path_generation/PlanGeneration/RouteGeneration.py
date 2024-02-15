@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 import itertools
 
-from PlanGeneration.PowerConsumption import PowerConsumption
+from path_generation.PlanGeneration.PowerConsumption import PowerConsumption
 
 
 class RouteGeneration:

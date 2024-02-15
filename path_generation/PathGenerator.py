@@ -1,5 +1,7 @@
 from typing import List, Tuple
-from PathGenerationController import PathGenerationController  # import PathGenerationController_stub.py
+
+# import PathGenerationController_stub.py
+from path_generation.PathGenerationController import PathGenerationController
 
 
 class PathGenerator:
@@ -19,6 +21,7 @@ class PathGenerator:
         result_code = self._generation_manager.select_plan()
         if result_code != 0:
             return None
+        
         #  Get results from file
         result = self._generation_manager.extract_results()
         return result

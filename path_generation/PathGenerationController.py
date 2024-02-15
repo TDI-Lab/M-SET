@@ -5,8 +5,8 @@ from pprint import pprint
 from typing import List, Tuple
 from distutils.dir_util import copy_tree
 
-from PlanGeneration.PlanGenerator import PlanGenerator
-from EPOS.EPOSWrapper import EPOSWrapper
+from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
+from path_generation.EPOS.EPOSWrapper import EPOSWrapper
 
 import decouple
 
@@ -26,25 +26,32 @@ class PathGenerationController:
         result_code = self._pg_controller.generate_plans(False)
         return result_code
 
+    # Move the generated plans to the EPOS directory
     def move_plans(self):
         plan_gen_dir = f'{self.parent_path}/PlanGeneration/datasets/{self.config.get("plan", "dataset")}'
         epos_dir = f'{self.parent_path}/EPOS/datasets/{self.config.get("plan", "dataset")}'
         copy_tree(plan_gen_dir, epos_dir)
 
+    # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
-        # Execute the EPOS Algorithm for plan selection
         result_code = self._epos_controller.run()
         self.move_plans()
         return result_code
 
+    # Extract the results from the selected plans
     def extract_results(self) -> List[Tuple[float, List[float]]]:
+        # read selected-plan.csv from the first directory within the output directory
         results_dir = listdir(f"{self.parent_path}/EPOS/output")[0]
         selected_plans_file = f"{self.parent_path}/EPOS/output/{results_dir}/selected-plans.csv"
         with open(selected_plans_file) as file:
             lines = file.readlines()
+        # extract plan indexes from the last line of the file, converting them from strings to integers
         plan_indexes = [int(index) for index in lines[-1].strip("\n").split(",")[2:]]
+        print(f"Selected plan indexes: {plan_indexes}")
+
         selected_plans = []
         for i, index in enumerate(plan_indexes):
+            # read the plans from the dataset directory, extract the cost and plan as a tuple and append to selected plan
             with open(f"{self.parent_path}/EPOS/datasets/{self.config.get('plan', 'dataset')}/agent_{i}.plans") as file:
                 plans = file.readlines()
                 selected_plan = plans[index-1].strip("\n")

@@ -7,4 +7,5 @@
 *.zip
 path_generation/EPOS/
 path_generation/PlanGeneration/conf/
-path_generation/PlanGeneration/datasets
+path_generation/PlanGeneration/datasets/
+__pycache__/
