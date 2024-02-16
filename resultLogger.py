@@ -1,7 +1,6 @@
 import csv
 #from Hardware.loggingAsFunction import *
 from Hardware.logTester import *
-from Hardware.loggingAsFunction import *
 from logTestB import *
 import time
 
@@ -17,8 +16,6 @@ class RecordingFactory:
                 self.tests.append(logTest(drones))
             if i == "testB":
                 self.tests.append(logTestB(drones))
-            if i == "logAsFunction":
-                self.tests.append(logAsFunction(drones))
                 
 
 
@@ -30,7 +27,7 @@ def testLogging(drones, tests):
 
     start = time.time()
     trueStart = time.time()
-    while counter < 2:
+    while counter < 5:
         time.sleep(.5)
         current = time.time()
         if ((current - start) > interval):
@@ -41,4 +38,4 @@ def testLogging(drones, tests):
             start = time.time()
             counter+=1
 
-testLogging(["01"], ["test", "testB","logAsFunction"])
+testLogging(["01", "02", "03"], ["test", "testB"])
