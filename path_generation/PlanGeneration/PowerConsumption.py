@@ -2,7 +2,7 @@ import configparser
 import math
 from pathlib import Path
 
-from scipy.optimize import bisect
+from scipy.optimize import newton
 
 
 class PowerConsumption:
@@ -13,6 +13,7 @@ class PowerConsumption:
         self.drag_coefficient = 1.49
 
         # input fixed param
+        self.battery_capacity = 0
         self.body_mass = 0
         self.battery_mass = 0
         self.rotor_num = 0
@@ -38,6 +39,8 @@ class PowerConsumption:
         parent_path = Path(__file__).parent.resolve()
         config = configparser.ConfigParser()
         config.read(f'{parent_path}/conf/generation.properties')
+
+        self.battery_capacity = float(config.get("power", "batteryCapacity"))
 
         self.body_mass = float(config.get('power', 'bodyMass'))
         self.battery_mass = float(config.get('power', 'batteryMass'))
@@ -78,7 +81,7 @@ class PowerConsumption:
         def polynomial_function(x):
             return vector[0] + vector[1] * x + vector[2] * x ** 2 + vector[3] * x ** 3 + vector[4] * x ** 4
 
-        root = bisect(polynomial_function, 0, 20, maxiter=100)
+        root = newton(polynomial_function, 20, maxiter=100)
         return root
 
 
