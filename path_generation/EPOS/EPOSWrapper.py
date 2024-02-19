@@ -38,7 +38,6 @@ class EPOSWrapper:
         proc.wait()
         out, err = proc.communicate()
         print(err.decode("utf-8"))
-        print(out.decode("utf-8"))
         return proc.returncode
 
     # Clean the output directory
