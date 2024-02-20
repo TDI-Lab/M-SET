@@ -62,7 +62,6 @@ class PlanGenerator:
             # 4a. Generate the plans for one drone/agent
             agent_plans = []
             for plan_id in range(self.properties.plans_num):
-
                 # (1) initialize and calculate the shortest route for the drone
                 # initialization
                 drone_route = RouteGeneration()
@@ -77,44 +76,29 @@ class PlanGenerator:
                 visited_cells_list = drone_route.visited_cells
                 plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)
 
-                # (3) transform into a plan format.
-                if not is_timeslots:
-                    # plans do not have time information
-                    plan = np.array(drone_route.hover_time_arr)
-                else:
-                    # plans have time information, prevent over-sensing and under-sensing
-                    plan_dim_len = cells_num * self.properties.total_hover_time
-                    plan = np.zeros(plan_dim_len)
-                    visited_cells_num = len(visited_cells_list)
-                    # the average time that a drone spends on each visited cell
-                    length_of_timeslot = int(self.properties.total_hover_time / visited_cells_num)
-                    # the order that a drone visits a cell
-                    visited_order = 0
-                    for v_cell in visited_cells_list:
-                        # the starting index in a dimension of a plan
-                        plan_dim_id_start = int(v_cell) * self.properties.total_hover_time
-                        """
-                        For each visited cell, find the starting index of the plan (every # of timeslots), then find the
-                        order of the visited cell (average time spent on each cell, as the visited cell with former order
-                        will occupy the former time), and the average time spent on the current visited cell.
-                        """
-                        for slot in range(length_of_timeslot):
-                            plan[plan_dim_id_start + visited_order * length_of_timeslot + slot] += 1
-                        visited_order += 1
+                path_taken = drone_route.path_taken
 
-                plan_dict = {'plan': plan, 'cost': plan_cost}
+                # (3) transform into a plan format.
+                plan = np.array(drone_route.hover_time_arr)
+
+                plan_dict = {'plan': plan, 'cost': plan_cost, "path": path_taken}
                 agent_plans.append(plan_dict)
 
             # 4b. Output the plans of the drone into the datasets dir
-            agent_plans_path = dataset_path + 'agent_' + str(agent_id) + '.plans'
-            with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile:
+            agent_plans_path = f"{dataset_path}agent_{agent_id}.plans"
+            agent_paths = f"{dataset_path}agent_{agent_id}.paths"
+            with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile, \
+                    open(agent_paths, 'w', newline='', encoding='utf-8') as pathFile:
                 for index, agent_plan in enumerate(agent_plans):
                     # write the cost of plan and write each dimension of the plan
-                    line = str(agent_plan['cost']) + ':' + ','.join(map(str, agent_plan['plan']))
+                    plan_line = str(agent_plan['cost']) + ':' + ','.join(map(str, agent_plan['plan']))
+                    path_line = ",".join(agent_plan["path"])
                     # write a line to the file
                     if index == len(agent_plans) - 1:
-                        planFile.write(line)
+                        planFile.write(plan_line)
+                        pathFile.write(path_line)
                     else:
-                        planFile.write(line + '\n')
+                        planFile.write(plan_line + '\n')
+                        pathFile.write(path_line + "\n")
             planFile.close()
         return 0

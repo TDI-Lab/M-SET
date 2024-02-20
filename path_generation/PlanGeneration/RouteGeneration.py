@@ -27,6 +27,7 @@ class RouteGeneration:
         self.agent_id = None
         self.plan_id = None
         self.total_plans = int(config.get("plan", "planNum"))
+        self.path_taken = None
 
         # power information
         self.battery_capacity = None
@@ -45,6 +46,7 @@ class RouteGeneration:
         To find a route or trajectory of a drone, including the departure/destination, indexes and the order of visited
         cells, the hovering time over each visited cell, the traveling distance, and the total energy consumption on
         traveling these visited cell.
+        :param plan_id: the plan index
         :param station_idx: index of the charging (base) station
         :param visited_cells_num: the number of visited cells by a drone (agent)
         :param map_setting: the information of a sensing map
@@ -106,12 +108,11 @@ class RouteGeneration:
             s_un = int((cell_dict["value"]/total_path_requirement)*actual_sensing_total)
             self.hover_time_arr[cell_id] = s_un
 
-        self.greedy_tsp(station)
-
         # find the first cell randomly within the range, and remove the cell from the range
         first_cell_idx = random.choice(search_range_cells)
         search_range_cells.remove(first_cell_idx)
         self.visited_cells.append(first_cell_idx)
+        self.path_taken = tsp_solution
 
     def power_in_constant_params(self):
         """
@@ -149,7 +150,9 @@ class RouteGeneration:
 
     def greedy_tsp(self, station):
         g = nx.Graph()
-        points = {"station": (station['x'], station['y'])}
+        station_id = station["id"]
+        station_name = f"station{station_id}"
+        points = {station_name: (station['x'], station['y'])}
         for v_cell_id in self.visited_cells:
             cell = self.cells[v_cell_id]
             points[str(v_cell_id)] = (cell['x'], cell['y'])
@@ -158,7 +161,7 @@ class RouteGeneration:
             distance = ((points[p1][0] - points[p2][0]) ** 2 + (points[p1][1] - points[p2][1]) ** 2) ** 0.5
             g.add_edge(p1, p2, weight=distance)
 
-        tsp_solution = nx.approximation.greedy_tsp(g, source="station")
+        tsp_solution = nx.approximation.greedy_tsp(g, source=station_name)
         # Calculate the total distance of the TSP route
         total_distance = sum(g[point1][point2]['weight'] for point1, point2 in zip(tsp_solution[:-1], tsp_solution[1:]))
 
