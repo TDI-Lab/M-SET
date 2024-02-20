@@ -1,6 +1,7 @@
 import configparser
 import random
 from pathlib import Path
+from pprint import pprint
 
 import numpy as np
 import networkx as nx
@@ -69,45 +70,43 @@ class RouteGeneration:
                   f"but only have {len(search_range_cells)}")
             return
 
-
-
         # 3. find the shortest path via visited cells using Dijkstra's algorithm based on TSP problem
-        tsp_solution, distance_total = self.Dijkstra_shortest_path(station)
+        tsp_solution, distance_total = self.greedy_tsp(station)
         shortest_route_indexes = [int(x) for x in tsp_solution[1: -1]]
         self.distance_total = distance_total
 
-        # 4. calculate the hovering time over visited cells (AVERAGE allocated)
+        #  Compute parameters for energy calculations
+        self.power_in_constant_params()
+        #  Calculate the flight energy consumption (when the drone is moving)
+        flight_energy = self.flight_power * distance_total / self.ground_speed
+
+        #  Compute battery usage for path
+        energy_utilisation = 1 - (plan_id / ((1./self.energy_efficiency) * self.total_plans))
+        max_usage = self.battery_capacity * energy_utilisation
+        while max_usage - flight_energy <= 0:
+            max_usage = self.battery_capacity * random.random()
+
+        # calculate the hover energy consumption
+        hover_energy = max_usage - flight_energy
+        # calculate the total energy consumption
+        self.energy_consumption = max_usage
+        # calculate the total sensing value of the path
+        actual_sensing_total = hover_energy/self.hover_power
+
+        #  Compute total hovering time of generated path
         visited_cells_dict = {}
         for cell in self.visited_cells:
             cell_dict = list(filter(lambda x: x["id"] == cell, self.map.cells))[0]
             visited_cells_dict[cell] = cell_dict
         total_path_requirement = sum(list(cell[1]["value"] for cell in visited_cells_dict.items()))
 
+        #  Scale sensing values based on power consumption
         self.hover_time_arr = np.zeros(len(self.cells))
         for cell_id, cell_dict in visited_cells_dict.items():
-            # s_un = int((cell_dict["value"]/total_path_requirement)*cell_dict["value"])
-            s_un = int(cell_dict["value"])
+            s_un = int((cell_dict["value"]/total_path_requirement)*actual_sensing_total)
             self.hover_time_arr[cell_id] = s_un
 
-        # 5. calculate the total energy consumption
-        self.power_in_constant_params()
-        # calculate the flight energy consumption
-        flight_energy = self.flight_power * distance_total / self.ground_speed
-
-        # 4.1 Compute max battery usage
-        energy_utilisation = 1 - (plan_id/(self.energy_efficiency*self.total_plans))
-        max_usage = self.battery_capacity*energy_utilisation
-        # max_usage = self.battery_capacity*random.random() # Need to change
-        while max_usage - flight_energy <= 0:
-            max_usage = self.battery_capacity*random.random()
-
-        # calculate the hover energy consumption
-        hover_energy = max_usage - flight_energy
-        # calculate the total energy consumption
-        self.energy_consumption = max_usage
-
-        #  Scale sensing values based on power consumption
-        self.hover_time_arr = [int(value*(max_usage/self.battery_capacity)) for value in self.hover_time_arr]
+        self.greedy_tsp(station)
 
         # find the first cell randomly within the range, and remove the cell from the range
         first_cell_idx = random.choice(search_range_cells)
@@ -145,5 +144,22 @@ class RouteGeneration:
         tsp_solution = nx.approximation.traveling_salesman_problem(G, cycle=True)
         # Calculate the total distance of the TSP route
         total_distance = sum(G[point1][point2]['weight'] for point1, point2 in zip(tsp_solution[:-1], tsp_solution[1:]))
+
+        return tsp_solution, total_distance
+
+    def greedy_tsp(self, station):
+        g = nx.Graph()
+        points = {"station": (station['x'], station['y'])}
+        for v_cell_id in self.visited_cells:
+            cell = self.cells[v_cell_id]
+            points[str(v_cell_id)] = (cell['x'], cell['y'])
+
+        for p1, p2 in itertools.combinations(points.keys(), 2):
+            distance = ((points[p1][0] - points[p2][0]) ** 2 + (points[p1][1] - points[p2][1]) ** 2) ** 0.5
+            g.add_edge(p1, p2, weight=distance)
+
+        tsp_solution = nx.approximation.greedy_tsp(g, source="station")
+        # Calculate the total distance of the TSP route
+        total_distance = sum(g[point1][point2]['weight'] for point1, point2 in zip(tsp_solution[:-1], tsp_solution[1:]))
 
         return tsp_solution, total_distance

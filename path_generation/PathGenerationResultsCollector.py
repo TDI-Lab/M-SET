@@ -87,19 +87,25 @@ class PathGenerationResultsCollector:
     def experiment_average_mismatch(self):
         results = []
         mismatches = []
-        for _ in range(0, 20):
+        for _ in range(0, 10):
             results.append(self.pg.generate_paths())
         #  Pre-defined sensing target, change to dynamic
         target = np.array([5., 9., 4., 5., 4., 8.])
+        avg_sensing = np.zeros((1, 6))
         for result in results:
             total_sensing = np.zeros((1, 6))
             for plan in result:
                 total_sensing += np.array(plan[1])
+            avg_sensing += total_sensing
             mismatches.append(total_sensing - target)
+        avg_sensing /= len(results)
+        avg_sensing = avg_sensing[0]
         avg_mismatch = np.zeros((1, 6))
         for mismatch in mismatches:
             avg_mismatch += abs(mismatch)
         avg_mismatch /= len(mismatches)
+        avg_mismatch = avg_mismatch[0]
+        print(avg_sensing)
         print(avg_mismatch)
 
 
