@@ -1,7 +1,7 @@
 import csv
 #from Hardware.loggingAsFunction import *
-from Hardware.logTester import *
-from Hardware.loggingAsFunction import *
+from logTester import *
+from loggingAsFunction import *
 from logTestB import *
 import time
 
