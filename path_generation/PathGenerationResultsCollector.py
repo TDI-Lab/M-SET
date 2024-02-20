@@ -61,7 +61,7 @@ class PathGenerationResultsCollector:
         ax.set_title("Total Reorganisations during Execution")
         fig.savefig(f"{self.parent_path}/results/reorganization_iteration.png")
 
-    def result_iteration_cost(self):
+    def result_iteration_global_cost(self):
         results_data = self.__retrieve_file_data("global-cost")
         headers = results_data[0]
         results = results_data[1:]
@@ -77,9 +77,79 @@ class PathGenerationResultsCollector:
         ax.plot(iterations, avg_costs)
         ax.grid()
         ax.set_xlabel("Iterations")
-        ax.set_ylabel("Average Global Cost")
+        ax.set_ylabel("Global Cost")
         ax.set_title("Global Cost Reduction")
-        fig.savefig(f"{self.parent_path}/results/iteration_cost.png")
+        fig.savefig(f"{self.parent_path}/results/iteration_global_cost.png")
+
+    def result_iteration_local_cost(self):
+        results_data = self.__retrieve_file_data("local-cost")
+        headers = results_data[0]
+        results = results_data[1:]
+        iterations = np.array([int(float(i.split(",")[0])) for i in results])
+        avg_costs = []
+        for line in results:
+            formatted = [float(i) for i in line.strip("\n").split(",")[3:]]
+            formatted = list(filter(lambda x: x != float("inf") and x != float("-inf"), formatted))
+            mean = sum(formatted[1:]) / (len(formatted[1:]))
+            avg_costs.append(mean)
+
+        fig, ax = plt.subplots()
+        ax.plot(iterations, avg_costs)
+        ax.grid()
+        ax.set_xlabel("Iterations")
+        ax.set_ylabel("Average Local Cost")
+        ax.set_title("Local Cost Reduction")
+        fig.savefig(f"{self.parent_path}/results/iteration_local_cost.png")
+
+    def result_changes_in_plans(self):
+        result_data = self.__retrieve_file_data("selected-plans")
+        headers = result_data[0]
+        results = result_data[1:]
+        #  Sort results into their runs i.e. the simulation they come from
+        runs = {}
+        for result in results:
+            result = result.strip("\n").split(",")
+            result = [int(float(i)) for i in result]
+            if result[0] not in runs:
+                runs[result[0]] = [result[1:]]
+            else:
+                runs[result[0]].append(result[1:])
+        #  Ensure that the iterations are correctly sorted
+        for run, iterations in runs.items():
+            iterations.sort(key=lambda x: x[0])
+        #  Compute the average changes between each iteration
+        changes_on_each_iteration = [[] for _ in range(len(runs))]
+        for run, iterations in runs.items():
+            run_changes = []
+            for i in range(1, len(iterations)-1):
+                changes = 0.
+                prev_iter = iterations[i-1][1:]
+                cur_iter = iterations[i][1:]
+                for p, c in zip(prev_iter, cur_iter):
+                    if p != c:
+                        changes += 1
+                changes /= len(prev_iter)
+                run_changes.append(changes)
+            changes_on_each_iteration[run] = run_changes
+        #  Compute the average change for each iteration
+        final_changes = []
+        for i in range(len(changes_on_each_iteration[0])):
+            avg = 100.*(sum([arr[i] for arr in changes_on_each_iteration])/len(changes_on_each_iteration))
+            final_changes.append(avg)
+        #  Compute the maximum number of iterations
+        iterations = np.array([i for i in range(1, len(final_changes)+1)])
+        #  Plot!
+        x = np.linspace(iterations.min(), iterations.max(), 1000)
+        x_y_spline = make_interp_spline(iterations, final_changes)
+        y = x_y_spline(x)
+
+        fig, ax = plt.subplots()
+        ax.plot(x, y)
+        ax.grid()
+        ax.set_xlabel("Iterations")
+        ax.set_ylabel("% Change in Plans")
+        ax.set_title("% Change in Plans Overtime")
+        fig.savefig(f"{self.parent_path}/results/change_in_plans.png")
 
     def experiment_reorganisation_mismatch(self):
         pass
@@ -87,7 +157,7 @@ class PathGenerationResultsCollector:
     def experiment_average_mismatch(self):
         results = []
         mismatches = []
-        for _ in range(0, 10):
+        for _ in range(0, 20):
             results.append(self.pg.generate_paths())
         #  Pre-defined sensing target, change to dynamic
         target = np.array([5., 9., 4., 5., 4., 8.])
@@ -111,4 +181,4 @@ class PathGenerationResultsCollector:
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.perform_experiments()
+    pgr.collect_results()

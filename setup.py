@@ -13,6 +13,10 @@ path_generation_parameters = OrderedDict({
     "NumberOfPlans": 8,
     "MaximumNumberOfVisitedCells": 6,
 
+    #  EPOS
+    "EPOSstdout": False,
+    "EPOSerrout": False,
+
     #  Drone Specification
     "BatteryCapacity": 2700,
     "BodyMass": 0.027,
@@ -29,6 +33,10 @@ path_generation_parameters = OrderedDict({
     "AirDensity": 1.225
 })
 
+parameters = [global_parameters, path_generation_parameters]
+
 with open("drone_sense.properties", "w") as file:
-    for key, item in path_generation_parameters.items():
-        file.write(f"{key}={item}\n\n")
+    for parameter in parameters:
+        for key, item in parameter.items():
+            file.write(f"{key}={item}\n")
+        file.write("\n")
