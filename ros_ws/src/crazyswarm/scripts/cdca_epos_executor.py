@@ -10,16 +10,23 @@ allcfs = swarm.allcfs
 
 input = [[[[0,0],3],[[1,1],6]],[[[2,1],9],[[1,0],12]]]
 
+# Parameters
+all_drones = []
+next_moves = np.array([]) # Number of timeslots to next action, for each drone
+travel_time = 3
+sensing_time = 1
+Z = 1
+
 # Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
 position_to_coords = {
-    "[1,1.5]": [0,0], # centre of screen
-    "[0,0]": [-0.5533,-0.235],
-    "[1,0]": [0, -0.235],
-    "[2,0]": [0.5533,-0.235],
-    "[0,1]": [-0.5533, 0.235],
-    "[1,1]": [0,0.235],
-    "[2,1]": [0.5533,0.235],
-    "[2.5,1.5]": [0.8299, 0.47] # top right corner of testbed
+    "[1,1.5]": [0,0,Z], # centre of screen
+    "[0,0]": [-0.5533,-0.235,Z],
+    "[1,0]": [0, -0.235,Z],
+    "[2,0]": [0.5533,-0.235,Z],
+    "[0,1]": [-0.5533, 0.235,Z],
+    "[1,1]": [0,0.235,Z],
+    "[2,1]": [0.5533,0.235,Z],
+    "[2.5,1.5]": [0.8299, 0.47,Z] # top right corner of testbed
 }
 
 class Drone():
@@ -29,16 +36,10 @@ class Drone():
         self.status = "idle" # idle -> (sensing, waiting, moving)
         self.drone = drone
 
-# Parameters
-all_drones = []
-next_moves = np.array([]) # Number of timeslots to next action, for each drone
-travel_time = 3
-sensing_time = 1
-
 #parse the input
 c = 0
 for drone in input:
-    d = Drone(allcfs.crazyflies[0])
+    d = Drone(allcfs.crazyflies[c])
     all_drones.append(d)
     for position in drone:
         d.positions.append(str(position[0]).replace(' ',''))
@@ -53,9 +54,9 @@ for i in range(0,len(input)):
     max_time = max(max_time, sum(all_drones[i].times) + (len(input)+1)*(travel_time + sensing_time)) 
     # This is wrong, it needs to add sensing and travel time too
 
-cf = swarm.allcfs.crazyflies[0]
-cf.takeoff(targetHeight=1.0, duration=2.5)
-timeHelper.sleep(7.5)
+for cf in swarm.allcfs.crazyflies:
+    cf.takeoff(targetHeight=1.0, duration=2.5)
+    timeHelper.sleep(2.5)
 
 # Cycle through the time slots
 # If a drone moves at that time slot, move it
@@ -75,15 +76,18 @@ while np.any(next_moves > -1):
             if cf.status == "idle":
                 cf.status = "sensing"
                 next_moves[i] = sensing_time +1
+                timeHelper.sleep(next_moves[i])
 
             elif cf.status == "moving":
                 cf.status = "sensing"
                 next_moves[i] = sensing_time +1
+                timeHelper.sleep(next_moves[i])
 
             elif cf.status == "sensing":
                 cf.status = "waiting"
                 next_moves[i] = cf.times[0] +1
                 cf.times.pop(0)
+                timeHelper.sleep(next_moves[i])
 
                 """
                 # if wait time was 0 then need to move straight to moving in this iteration too
@@ -97,9 +101,11 @@ while np.any(next_moves > -1):
 
             else: # cf.status == "waiting"
                 cf.status = "moving"
-                cf.drone.goTo(position_to_coords[cf.positions[0]], 0, travel_time)
+                pos = position_to_coords[cf.positions[0]]
+                cf.drone.goTo(pos, 0, travel_time)
                 cf.positions.pop(0)
                 next_moves[i] = travel_time +1
+                timeHelper.sleep(next_moves[i])
                 
 
                 # update times
