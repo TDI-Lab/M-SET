@@ -154,10 +154,9 @@ class PathGenerationResultsCollector:
     def experiment_reorganisation_mismatch(self):
         pass
 
-    def experiment_average_mismatch(self):
+    def experiment_average_sensing(self):
         results = []
-        mismatches = []
-        for _ in range(0, 20):
+        for _ in range(0, 1):
             results.append(self.pg.generate_paths())
         #  Pre-defined sensing target, change to dynamic
         target = np.array([5., 9., 4., 5., 4., 8.])
@@ -167,18 +166,22 @@ class PathGenerationResultsCollector:
             for plan in result:
                 total_sensing += np.array(plan[1])
             avg_sensing += total_sensing
-            mismatches.append(total_sensing - target)
         avg_sensing /= len(results)
         avg_sensing = avg_sensing[0]
-        avg_mismatch = np.zeros((1, 6))
-        for mismatch in mismatches:
-            avg_mismatch += abs(mismatch)
-        avg_mismatch /= len(mismatches)
-        avg_mismatch = avg_mismatch[0]
-        print(avg_sensing)
-        print(avg_mismatch)
+        error = abs(target - avg_sensing)
+        #  Generate x-axis
+        x = [i for i in range(1, len(avg_sensing)+1)]
+        #  Plot!
+        fig, ax = plt.subplots()
+        ax.bar(x, target)
+        ax.errorbar(x, target, yerr=error, fmt="o", color="r")
+        ax.set_xlabel("Dimension")
+        ax.set_ylabel("Average Sensing")
+        ax.set_title("Average Sensing Error")
+        fig.savefig(f"{self.parent_path}/results/average_sensing_error.png")
 
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.collect_results()
+    # pgr.collect_results()
+    pgr.perform_experiments()
