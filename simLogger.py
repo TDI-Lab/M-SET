@@ -9,6 +9,8 @@ class LogSim:
         print("Log Sim Enabled")
         self.swarm = swarm
         self.trueStart = time.time()
+        self.lastTime = self.trueStart
+        self.lastPos = self.swarm.position()
         self.printer = printer
         self.WLock = threading.RLock() #Lock for file write process
 
@@ -35,13 +37,22 @@ class LogSim:
     #Logging, takes time elapsed as variable
     def log(self):
         #print("Logged test Sim")
-        msg = str(round(time.time() - self.trueStart, 2))+","+str(self.swarm.position())
+        current = time.time()
+        position = self.swarm.position()
+        velocity = (self.lastPos - position) / (current - self.lastTime)
+        elapsed = round(current - self.trueStart, 2)
+        self.lastPos = position
+        self.lastTime = current
+
+
+        msg = str(elapsed)+","+str(position)+","+str(velocity)
         if self.printer:
             print(msg)
         self.WLock.acquire()
         self.file.write("\n")
         self.file.write(msg)
         self.WLock.release()
+        return [elapsed, position, velocity]
 
     def autoLog(self, interval, killSwitch):
         #print("Logged test Sim")
@@ -52,7 +63,13 @@ class LogSim:
             current = time.time()
             if ((current - prior) > interval):
                 elapsed = round(current - self.trueStart, 2)
-                msg = str(elapsed)+","+str(self.swarm.position())
+                position = self.swarm.position()
+                velocity = (self.lastPos - position) / (current - self.lastTime)
+                msg = str(elapsed)+","+str(position)+","+str(velocity)
+
+                self.lastPos = position
+                self.lastTime = current
+
                 if self.printer:
                     print(msg)
                 self.WLock.acquire()

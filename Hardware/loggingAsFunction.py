@@ -106,26 +106,25 @@ class logAsFunction:
         self.my_dict = {}
         self.uri = {}
         for drone in self.drones:
-            dronePath = self.path+"/"+drone
+            dronePath = self.path+"/"+drone[len(drone) - 2:]
             self.my_dict[drone] = open(dronePath, 'w')
             self.my_dict[drone].write("time,battery%,state")
-            self.uri[drone] = 'radio://0/80/2M/E7E7E7E7'+drone
+            #self.uri[drone] = 'radio://0/90/2M/E7E7E7E7'+drone
+            self.uri[drone] = drone
 
-        #Can initialise anything else needed here
-        cflib.crtp.init_drivers()
-        self.lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
-        #self.lg_stab.add_variable('stabilizer.roll', 'float')
-        #self.lg_stab.add_variable('stabilizer.pitch', 'float')
-        #self.lg_stab.add_variable('stabilizer.yaw', 'float')
-        self.lg_stab.add_variable('pm.batteryLevel','uint8_t')
-        self.lg_stab.add_variable('pm.state','int8_t')
     
     #Logging, takes time elapsed as variable
     def log(self, elapsed):
+        #Can initialise anything else needed here
         print("Logging hard")
         for drone in self.drones:
+            cflib.crtp.init_drivers()
+            self.lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
+            self.lg_stab.add_variable('pm.batteryLevel','uint8_t')
+            self.lg_stab.add_variable('pm.state','int8_t')
             with SyncCrazyflie(self.uri[drone], cf=Crazyflie(rw_cache='./cache')) as scf:
                 self.my_dict[drone].write("\n")
+                print("SHED")
                 with SyncLogger(scf, self.lg_stab) as logger:
                     for log_entry in logger:
  

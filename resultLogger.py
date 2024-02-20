@@ -26,19 +26,21 @@ class RecordingFactory:
 def testLogging(drones, tests):
     loggers = RecordingFactory(tests, drones)
     counter  = 0
-    interval = 5
+    interval = 2
 
     start = time.time()
     trueStart = time.time()
-    while counter < 2:
+    while counter < 5:
         time.sleep(.5)
         current = time.time()
         if ((current - start) > interval):
-            elapsed = round(current - trueStart, 0)
+            elapsed = round(current - trueStart, 2)
             print("Logging Results:")
             for i in loggers.tests:
                 i.log(elapsed)
             start = time.time()
             counter+=1
 
-testLogging(["01"], ["test", "testB","logAsFunction"])
+#testLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["test", "testB","logAsFunction"])
+#testLogging(["radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
+testLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
