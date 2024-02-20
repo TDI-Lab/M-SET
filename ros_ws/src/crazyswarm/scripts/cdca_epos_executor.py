@@ -42,8 +42,6 @@ for drone in input:
     all_drones.append(d)
     for position in drone:
         d.positions.append(str(position[0]).replace(' ',''))
-        #               set-off time (from previous cell) + travel time + sensing time + wait time
-        #d.times.append(d.times[max(0,len(d.times)-1)]    + travel_time + sensing_time + position[1])
         d.times.append(int(position[1]))
     
     next_moves = np.append(next_moves, 0) # Queue the time that the drone waits at the first position
@@ -55,11 +53,9 @@ for i in range(0,len(input)):
     max_time = max(max_time, sum(all_drones[i].times) + (len(input)+1)*(travel_time + sensing_time)) 
     # This is wrong, it needs to add sensing and travel time too
 
-print("here")
 cf = swarm.allcfs.crazyflies[0]
 cf.takeoff(targetHeight=1.0, duration=2.5)
 timeHelper.sleep(7.5)
-print("here")
 
 # Cycle through the time slots
 # If a drone moves at that time slot, move it
