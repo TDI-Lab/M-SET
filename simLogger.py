@@ -31,7 +31,7 @@ class LogSim:
         dronePath = self.path+"/"+'simulated.txt'
         self.file = open(dronePath, 'w')
         self.file.write("time,positions")
-
+logAsFunction(drones)
         #Can initialise anything else needed here
     
     #Logging, takes time elapsed as variable
