@@ -76,28 +76,24 @@ while np.any(next_moves > -1):
             if cf.status == "idle":
                 cf.status = "sensing"
                 next_moves[i] = sensing_time +1
-                timeHelper.sleep(next_moves[i])
 
             elif cf.status == "moving":
                 cf.status = "sensing"
                 next_moves[i] = sensing_time +1
-                timeHelper.sleep(next_moves[i])
 
             elif cf.status == "sensing":
                 cf.status = "waiting"
                 next_moves[i] = cf.times[0] +1
                 cf.times.pop(0)
-                timeHelper.sleep(next_moves[i])
 
-                """
                 # if wait time was 0 then need to move straight to moving in this iteration too
                 if next_moves[i] == 0:
                     # Literally just copy-pasted from below
                     cf.status = "moving"
-                    cf.drone.goTo(position_to_coords[cf.positions[0]], 0, travel_time)
+                    pos = position_to_coords[cf.positions[0]]
+                    cf.drone.goTo(pos, 0, travel_time)
                     cf.positions.pop(0)
                     next_moves[i] = travel_time +1
-                """
 
             else: # cf.status == "waiting"
                 cf.status = "moving"
@@ -105,10 +101,9 @@ while np.any(next_moves > -1):
                 cf.drone.goTo(pos, 0, travel_time)
                 cf.positions.pop(0)
                 next_moves[i] = travel_time +1
-                timeHelper.sleep(next_moves[i])
-                
 
                 # update times
+                # This is indented in the status=="waiting" since it should only check for the end of the simulation once it has completed the sensing task at that node
                 if len(cf.times) < 1:  
                     # if all times are used up, then mark drone as done
                     next_moves[i] = -1
@@ -117,4 +112,7 @@ while np.any(next_moves > -1):
     next_moves = next_moves - np.full((1,len(all_drones)),1)[0]
 
     # increment timeslot
+    timeHelper.sleep(2)
     t+=1
+
+timeHelper.sleep(3)
