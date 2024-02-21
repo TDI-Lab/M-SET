@@ -45,22 +45,34 @@ for drone in input:
         d.positions.append(str(position[0]).replace(' ',''))
         d.times.append(int(position[1]))
     
-    next_moves = np.append(next_moves, 0) # Queue the time that the drone waits at the first position
+    next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
 
     c+=1
 
+# Don't think this is actually used now?
+# Calculate the maximum time for the simulation
 max_time = 0 
 for i in range(0,len(input)):
     max_time = max(max_time, sum(all_drones[i].times) + (len(input)+1)*(travel_time + sensing_time)) 
     # This is wrong, it needs to add sensing and travel time too
 
+# Tell the drones to take off
 for cf in swarm.allcfs.crazyflies:
     cf.takeoff(targetHeight=1.0, duration=2.5)
     timeHelper.sleep(2.5)
 
+# Set the initial positions of the drones in the simulation
+# For some reason this only works if it's after the takeoff
+for cf in all_drones:
+    pos = position_to_coords[cf.positions[0]]
+    cf.drone.goTo(pos,0,0)
+    cf.positions.pop(0)
+    #cf.drone.cmdPosition(pos)
+    #cf.drone.notifySetpointsStop(0)
+
 # Cycle through the time slots
 # If a drone moves at that time slot, move it
-t=0
+t=0 # timeslot counter
 while np.any(next_moves > -1):
 
     print("t=",t)
@@ -73,21 +85,26 @@ while np.any(next_moves > -1):
             # Could implement a move counter in Drone class e.g. drone.nmoves to track how many cells it had visited, then do drone.positions[nmoves] and times[nmoves] instead of costly(?) pop() operations
             # Sensing and waiting could technically be combined into one state of length (sensing_time + wait time) since they both currently just involve staying in the same spot, but have split them here to allow extension for different functionality in each state (e.g. to perform sensing actions) 
 
-            if cf.status == "idle":
+            if cf.status == "moving" or cf.status == "idle":
                 cf.status = "sensing"
-                next_moves[i] = sensing_time +1
-
-            elif cf.status == "moving":
-                cf.status = "sensing"
+                print(i, "sensing")
                 next_moves[i] = sensing_time +1
 
             elif cf.status == "sensing":
                 cf.status = "waiting"
+                print(i,"waiting for",cf.times[0])
                 next_moves[i] = cf.times[0] +1
                 cf.times.pop(0)
 
+                # if that was the last position, mark the drone as finished
+                # NB: This assumes there is no wait time at the last cell in the drones path
+                if len(cf.times) < 1:  
+                    # if all times are used up, then mark drone as done
+                    next_moves[i] = -1
+
+                # otherwise, we can consider...
                 # if wait time was 0 then need to move straight to moving in this iteration too
-                if next_moves[i] == 0:
+                elif next_moves[i] == 0:
                     # Literally just copy-pasted from below
                     cf.status = "moving"
                     pos = position_to_coords[cf.positions[0]]
@@ -97,16 +114,11 @@ while np.any(next_moves > -1):
 
             else: # cf.status == "waiting"
                 cf.status = "moving"
+                print(i,"moving to",cf.positions[0])
                 pos = position_to_coords[cf.positions[0]]
                 cf.drone.goTo(pos, 0, travel_time)
                 cf.positions.pop(0)
                 next_moves[i] = travel_time +1
-
-                # update times
-                # This is indented in the status=="waiting" since it should only check for the end of the simulation once it has completed the sensing task at that node
-                if len(cf.times) < 1:  
-                    # if all times are used up, then mark drone as done
-                    next_moves[i] = -1
 
     # minus 1 second from all next_moves (represents 1 second passing)
     next_moves = next_moves - np.full((1,len(all_drones)),1)[0]
@@ -115,4 +127,9 @@ while np.any(next_moves > -1):
     timeHelper.sleep(2)
     t+=1
 
+# Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
 timeHelper.sleep(3)
+
+# Time does not seem to naturally pass in this script
+# This can be verified by calling TimeHelper.time(), which returns the current time, and seeing that this only increases when a call to timeHelper.sleep() is made
+# Otherwise the time stays at its current value, so if no calls to timeHelper.sleep are made then it stays at 0 the whole simulation
