@@ -9,7 +9,7 @@ allcfs = swarm.allcfs
 #input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
 
 # Parameters
-filename="cdca_output.txt"
+filename="example_cdca_output.txt"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
 travel_time = 3
