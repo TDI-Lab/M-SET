@@ -36,6 +36,16 @@ class Drone():
         self.status = "idle" # idle -> (sensing, waiting, moving)
         self.drone = drone
 
+    def move_next_cell(self):
+        cf.status = "moving"
+        print(i,"moving to",cf.positions[0])
+        pos = position_to_coords[cf.positions[0]]
+        cf.drone.goTo(pos, 0, travel_time)
+        cf.positions.pop(0)
+
+        # Returns value to be used as next_move[i] since, unlike all other things that need updating, it is not a property of this class
+        return (travel_time +1)
+
 #parse the input
 c = 0
 for drone in input:
@@ -105,20 +115,10 @@ while np.any(next_moves > -1):
                 # otherwise, we can consider...
                 # if wait time was 0 then need to move straight to moving in this iteration too
                 elif next_moves[i] == 0:
-                    # Literally just copy-pasted from below
-                    cf.status = "moving"
-                    pos = position_to_coords[cf.positions[0]]
-                    cf.drone.goTo(pos, 0, travel_time)
-                    cf.positions.pop(0)
-                    next_moves[i] = travel_time +1
+                    next_moves[i] = cf.move_next_cell()
 
             else: # cf.status == "waiting"
-                cf.status = "moving"
-                print(i,"moving to",cf.positions[0])
-                pos = position_to_coords[cf.positions[0]]
-                cf.drone.goTo(pos, 0, travel_time)
-                cf.positions.pop(0)
-                next_moves[i] = travel_time +1
+                next_moves[i] = cf.move_next_cell()
 
     # minus 1 second from all next_moves (represents 1 second passing)
     next_moves = next_moves - np.full((1,len(all_drones)),1)[0]
