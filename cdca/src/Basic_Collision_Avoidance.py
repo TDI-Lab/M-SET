@@ -6,6 +6,10 @@ from .Swarm_Constants import COMPARED_DRONE
 
 class Basic_Collision_Avoidance(Collision_Strategy):
 # A basic collision avoidance strategy class.
+  def __init__(self, only_collision_detection = False):
+    # Initialise the Basic Collection Detction/Avoidance strategy.
+    self.only_collision_detection = only_collision_detection
+    self.number_of_collisions = 0
 
   def detect_potential_collisions(self, drones):
     # Detect potential collisions by iterating through the drones and their flights.
@@ -15,10 +19,11 @@ class Basic_Collision_Avoidance(Collision_Strategy):
         flight_index = 0
         for flight in drone.flights:
             collision_flag, drone_to_augment = self.check_collision(flight, drones[index:])
-            if drone_to_augment == SUBJECT_DRONE:
-                drone.augment_plan(flight_index)
-            if collision_flag:
-                return True
+            if not self.only_collision_detection:
+                if drone_to_augment == SUBJECT_DRONE:
+                    drone.augment_plan(flight_index)
+                if collision_flag:
+                    return True
             flight_index += 1
         
     return False
@@ -31,10 +36,11 @@ class Basic_Collision_Avoidance(Collision_Strategy):
         for flight in drone.flights:
             if (self.same_air_time(subject_flight, flight)):
                 collision_flag, drone_to_augment = self.compare_coordintes(subject_flight, flight)
-                if drone_to_augment == COMPARED_DRONE:
-                    drone.augment_plan(flight_index)
-                if collision_flag:
-                    return True, drone_to_augment
+                if not self.only_collision_detection:
+                    if drone_to_augment == COMPARED_DRONE:
+                        drone.augment_plan(flight_index)
+                    if collision_flag:
+                        return True, drone_to_augment
                 flight_index += 1
     return False, None
                     
@@ -58,6 +64,7 @@ class Basic_Collision_Avoidance(Collision_Strategy):
         flight_index = i - flight.start_time
         distance_between_drones = math.dist(subject_flight.flight_path[subjet_flight_index], flight.flight_path[flight_index])
         if (distance_between_drones <= MINIMUM_DISTANCE):
+            self.number_of_collisions += 1
             if (subject_flight.start_time <= flight.start_time):
                 return True, COMPARED_DRONE
             else: 

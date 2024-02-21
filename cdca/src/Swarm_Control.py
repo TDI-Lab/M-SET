@@ -1,6 +1,7 @@
 from .Drone import Drone
 from .Collision_Strategy import Collision_Strategy
 from .Basic_Collision_Avoidance import Basic_Collision_Avoidance
+from .Offline_Collision_Stats import Offline_Collision_Stats
 from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT
 
 class Swarm_Control:
@@ -24,6 +25,12 @@ class Swarm_Control:
     for i in range(COLLISION_AVOIDANCE_LIMIT):
       if (not self.collision_strategy.detect_potential_collisions(self.drones)):
         return
+  
+  def print_offline_collision_stats(self):
+    # Print collision stats.
+    # TODO: Add more stats.
+    offline_collision_stats = Offline_Collision_Stats(self.drones)
+    print(offline_collision_stats.get_number_of_collisions())
 
  
   def print_itinerary(self):
