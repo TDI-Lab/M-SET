@@ -1,16 +1,15 @@
 import numpy as np
 
-# Add chdir here to change to directory containing crazyswarm installation
-
 from pycrazyswarm import Crazyswarm
 
 swarm = Crazyswarm()
 timeHelper = swarm.timeHelper
 allcfs = swarm.allcfs
 
-input = [[[[0,0],3],[[1,1],6]],[[[2,1],9],[[1,0],12]]]
+#input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
 
 # Parameters
+filename="cdca_output.txt"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
 travel_time = 3
@@ -29,6 +28,20 @@ position_to_coords = {
     "[2.5,1.5]": [0.8299, 0.47,Z] # top right corner of testbed
 }
 
+def read_cdca_output(filename):
+    try:
+        f = open(filename,"r")
+    except FileNotFoundError:
+        print("Error: FileNotFoundError")
+        return []
+    except:
+        print("Error: Something unknown went wrong when attempting to access the file (not FileNotFoundError)")
+        return []
+    
+    input_path = eval(f.readline())
+
+    return input_path
+
 class Drone():
     def __init__(self, drone):
         self.positions = []
@@ -46,9 +59,13 @@ class Drone():
         # Returns value to be used as next_move[i] since, unlike all other things that need updating, it is not a property of this class
         return (travel_time +1)
 
+input_path = read_cdca_output(filename)
+
+# Add chdir here to change to directory containing crazyswarm installation
+
 #parse the input
 c = 0
-for drone in input:
+for drone in input_path:
     d = Drone(allcfs.crazyflies[c])
     all_drones.append(d)
     for position in drone:
@@ -62,8 +79,8 @@ for drone in input:
 # Don't think this is actually used now?
 # Calculate the maximum time for the simulation
 max_time = 0 
-for i in range(0,len(input)):
-    max_time = max(max_time, sum(all_drones[i].times) + (len(input)+1)*(travel_time + sensing_time)) 
+for i in range(0,len(input_path)):
+    max_time = max(max_time, sum(all_drones[i].times) + (len(input_path)+1)*(travel_time + sensing_time)) 
     # This is wrong, it needs to add sensing and travel time too
 
 # Tell the drones to take off
@@ -77,6 +94,8 @@ for cf in all_drones:
     pos = position_to_coords[cf.positions[0]]
     cf.drone.goTo(pos,0,0)
     cf.positions.pop(0)
+
+    # Originally tried to implement this with cmdPosition(), but had issues switching between low and high level command modes
     #cf.drone.cmdPosition(pos)
     #cf.drone.notifySetpointsStop(0)
 
