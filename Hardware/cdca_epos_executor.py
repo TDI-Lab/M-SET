@@ -69,13 +69,14 @@ allcfs = swarm.allcfs
 #parse the input
 c = 0
 for drone in input_path:
-    d = Drone(allcfs.crazyflies[c])
-    all_drones.append(d)
-    for position in drone:
-        d.positions.append(str(position[0]).replace(' ',''))
-        d.times.append(int(position[1]))
-    
-    next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
+    if c < len(allcfs.crazyflies):
+        d = Drone(allcfs.crazyflies[c])
+        all_drones.append(d)
+        for position in drone:
+            d.positions.append(str(position[0]).replace(' ',''))
+            d.times.append(int(position[1]))
+        
+        next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
 
     c+=1
 
@@ -87,8 +88,8 @@ for i in range(0,len(input_path)):
     # This is wrong, it needs to add sensing and travel time too
 
 # Tell the drones to take off
-for cf in swarm.allcfs.crazyflies:
-    cf.takeoff(targetHeight=1.0, duration=2.5)
+for cf in all_drones:
+    cf.drone.takeoff(targetHeight=1.0, duration=2.5)
     timeHelper.sleep(2.5)
 
 # Set the initial positions of the drones in the simulation
