@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from pycrazyswarm import Crazyswarm
+import math
 
 #input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
 
@@ -9,9 +10,10 @@ input_file_path="example_cdca_output.txt"
 crazyswarm_scripts_file_path="/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
-travel_time = 3
+#travel_time = 3
 sensing_time = 1
 Z = 1
+speed = 0.05 #speed of drone, m/s
 
 # Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
 position_to_coords = {
@@ -47,14 +49,24 @@ class Drone():
         self.drone = drone
 
     def move_next_cell(self):
-        cf.status = "moving"
-        print(i,"moving to",cf.positions[0])
-        pos = position_to_coords[cf.positions[0]]
-        cf.drone.goTo(pos, 0, travel_time)
-        cf.positions.pop(0)
+        self.status = "moving"
+        print(i,"moving to",self.positions[0])
+        pos = position_to_coords[self.positions[0]]
+        travel_time = self.calc_travel_time()
+        self.drone.goTo(pos, 0, travel_time)
+        self.positions.pop(0)
 
         # Returns value to be used as next_move[i] since, unlike all other things that need updating, it is not a property of this class
-        return (travel_time +1)
+        return (math.ceil(travel_time) +1)
+    
+    def calc_travel_time(self):
+        x_dist = (position_to_coords[self.positions[0]][0]**2) - (self.drone.position()[0]**2)
+        y_dist = (position_to_coords[self.positions[0]][1]**2) - (self.drone.position()[1]**2)
+        dist = math.sqrt(x_dist**2 + y_dist**2)
+
+        time = dist / speed
+
+        return time
 
 input_path = read_cdca_output(input_file_path)
 
@@ -80,13 +92,15 @@ for drone in input_path:
 
     c+=1
 
+"""
 # Don't think this is actually used now?
 # Calculate the maximum time for the simulation
 max_time = 0 
 for i in range(0,len(input_path)):
     max_time = max(max_time, sum(all_drones[i].times) + (len(input_path)+1)*(travel_time + sensing_time)) 
     # This is wrong, it needs to add sensing and travel time too
-
+"""
+    
 # Tell the drones to take off
 for cf in all_drones:
     cf.drone.takeoff(targetHeight=1.0, duration=2.5)
