@@ -1,15 +1,12 @@
 import numpy as np
-
+import os
 from pycrazyswarm import Crazyswarm
-
-swarm = Crazyswarm()
-timeHelper = swarm.timeHelper
-allcfs = swarm.allcfs
 
 #input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
 
 # Parameters
-filename="example_cdca_output.txt"
+input_file_path="example_cdca_output.txt"
+crazyswarm_scripts_file_path="/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
 travel_time = 3
@@ -59,9 +56,15 @@ class Drone():
         # Returns value to be used as next_move[i] since, unlike all other things that need updating, it is not a property of this class
         return (travel_time +1)
 
-input_path = read_cdca_output(filename)
+input_path = read_cdca_output(input_file_path)
 
-# Add chdir here to change to directory containing crazyswarm installation
+# Change directory to the crazyswarm/scripts folder
+# Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the scripts folder
+os.chdir(crazyswarm_scripts_file_path)
+
+swarm = Crazyswarm()
+timeHelper = swarm.timeHelper
+allcfs = swarm.allcfs
 
 #parse the input
 c = 0
