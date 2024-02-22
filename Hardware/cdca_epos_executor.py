@@ -42,10 +42,11 @@ def read_cdca_output(filename):
     return input_path
 
 class Drone():
-    def __init__(self, drone):
+    def __init__(self, drone, speed):
         self.positions = []
         self.times = [] 
         self.status = "idle" # idle -> (sensing, waiting, moving)
+        self.speed = speed
         self.drone = drone
 
     def move_next_cell(self):
@@ -64,7 +65,7 @@ class Drone():
         y_dist = (position_to_coords[self.positions[0]][1]**2) - (self.drone.position()[1]**2)
         dist = math.sqrt(x_dist**2 + y_dist**2)
 
-        time = dist / speed
+        time = dist / self.speed
 
         return time
 
@@ -82,7 +83,7 @@ allcfs = swarm.allcfs
 c = 0
 for drone in input_path:
     if c < len(allcfs.crazyflies):
-        d = Drone(allcfs.crazyflies[c])
+        d = Drone(allcfs.crazyflies[c], speed)
         all_drones.append(d)
         for position in drone:
             d.positions.append(str(position[0]).replace(' ',''))
