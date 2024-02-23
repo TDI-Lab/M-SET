@@ -10,7 +10,8 @@ input_file_path="example_cdca_output.txt"
 crazyswarm_scripts_file_path="/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
-#travel_time = 3
+global_travel_time = 3 # Only used if travel_time_mode=0
+travel_time_mode = 2 # 0=constant duration. 1=constant speed, round up. 2=constant speed, buffer
 sensing_time = 1
 Z = 1
 speed = 0.05 #speed of drone, m/s
@@ -53,12 +54,24 @@ class Drone():
         self.status = "moving"
         print(i,"moving to",self.positions[0])
         pos = position_to_coords[self.positions[0]]
-        travel_time = self.calc_travel_time()
+        if travel_time_mode == 0:
+            travel_time = global_travel_time # use the constant travel duration mode
+        elif travel_time_mode > 0:
+            travel_time = self.calc_travel_time()
+        else:
+            print("ERROR: Invalid value for travel_time_mode.")
+            return -1
+
         self.drone.goTo(pos, 0, travel_time)
         self.positions.pop(0)
 
-        # Returns value to be used as next_move[i] since, unlike all other things that need updating, it is not a property of this class
-        return (math.ceil(travel_time) +1)
+        # Alter the return value if needed
+        if travel_time_mode == 1:
+            travel_time = math.ceil(travel_time)
+        elif travel_time_mode == 2:
+            pass
+
+        return (travel_time + 1)
     
     def calc_travel_time(self):
         x_dist = (position_to_coords[self.positions[0]][0]**2) - (self.drone.position()[0]**2)
@@ -83,7 +96,7 @@ allcfs = swarm.allcfs
 c = 0
 for drone in input_path:
     if c < len(allcfs.crazyflies):
-        d = Drone(allcfs.crazyflies[c], speed)
+        d = Drone(allcfs.crazyflies[c],speed)
         all_drones.append(d)
         for position in drone:
             d.positions.append(str(position[0]).replace(' ',''))
@@ -121,9 +134,19 @@ for cf in all_drones:
 # Cycle through the time slots
 # If a drone moves at that time slot, move it
 t=0 # timeslot counter
-while np.any(next_moves > -1):
+while np.any(next_moves > -1): # need to change this to >= 0 if allow timeslots of size <1 sec
 
     print("t=",t)
+
+    if travel_time_mode == 2:
+        if np.any((next_moves < 1) & (next_moves > 0)):
+            for j in range(0,len(next_moves)):
+                if (next_moves[j] < 1 and next_moves[j] > 0):
+                    # round up the travel_time of the subject drone
+                    next_moves[j] = math.ceil(next_moves[j])
+                else:
+                    # add one to the action time of the other drones
+                    next_moves[j] = next_moves[j] + 1
 
     for i in range(0,len(all_drones)):
 
