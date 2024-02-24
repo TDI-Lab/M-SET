@@ -1,5 +1,8 @@
 import configparser
 import csv
+from os import listdir
+from os.path import isdir
+from shutil import rmtree
 
 import numpy as np
 from pathlib import Path
@@ -28,6 +31,13 @@ class PlanGenerator:
             map_length=int(config.get('map', 'mapLength')),
             battery_capacity=float(config.get('power', 'batteryCapacity'))
         )
+
+    def clean_datasets(self):
+        target = f"{self.parent_path}/datasets"
+        datasets = listdir(target)
+        for dataset in datasets:
+            if isdir(dataset):
+                rmtree(dataset)
 
     def generate_plans(self, is_timeslots=False):
         # 1. Initialize the output directory

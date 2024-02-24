@@ -2,6 +2,7 @@ from typing import List, Tuple
 from path_generation.PathGenerationController import PathGenerationController
 from pathlib import Path
 
+
 class PathGenerator:
 
     def __init__(self):
@@ -19,7 +20,7 @@ class PathGenerator:
         result_code = self._generation_manager.select_plan()
         if result_code != 0:
             return None
-        
+
         #  Get results from file
         result = self._generation_manager.extract_results()
         return result
@@ -43,7 +44,7 @@ class PathGenerator:
                 object_type = parts[0].lower()
                 if object_type in mapping:
                     mapping[object_type].append((int(parts[2]), int(parts[3])))
-        
+
         # debug
         for object_type in mapping:
             for location in mapping[object_type]:
