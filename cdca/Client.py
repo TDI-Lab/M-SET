@@ -11,14 +11,16 @@ from src.Swarm_Constants import EPOS_TIMESTEP
 # plans = Input_Parser(example_input).parsed_input
 
 
-plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]],[[[9,9], 20], [[1,1], 3]], [[[1,9], 20], [[9,1], 3]]]
+# plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]],[[[9,9], 20], [[1,1], 3]], [[[1,9], 20], [[9,1], 3]]]
+# plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]]]
+plans = [[[[1,1], 5], [[9,9], 3]], [[[9,9], 5], [[1,1], 3]]]
 
 swarm_controller = Swarm_Control(plans, Basic_Collision_Avoidance())
 
-# swarm_controller.print_itinerary()
+swarm_controller.print_itinerary()
 
 swarm_controller.print_offline_collision_stats()
 swarm_controller.detect_potential_collisions()
 swarm_controller.print_offline_collision_stats()
 
-# swarm_controller.print_itinerary()
+swarm_controller.print_itinerary()
