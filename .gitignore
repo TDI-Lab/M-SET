@@ -5,6 +5,7 @@
 *.ini
 *.env
 *.zip
+results
 path_generation/EPOS/
 path_generation/PlanGeneration/conf/
 path_generation/PlanGeneration/datasets/
