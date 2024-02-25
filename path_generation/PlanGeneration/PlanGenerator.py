@@ -80,7 +80,7 @@ class PlanGenerator:
                 # the number of cells that the drone visits
                 visited_cells_num = plan_id % self.properties.max_visited_cells_num + 1
                 # to find a route
-                drone_route.find_route(station_idx, visited_cells_num, map_setting, plan_id)
+                drone_route.find_route(station_idx, self.properties.max_visited_cells_num, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
                 visited_cells_list = drone_route.visited_cells

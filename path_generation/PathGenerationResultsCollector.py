@@ -11,6 +11,7 @@ from shutil import copyfile, copy2
 
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import std
 from scipy.interpolate import make_interp_spline
 
 from path_generation.PathGenerator import PathGenerator
@@ -98,24 +99,53 @@ class PathGenerationResultsCollector:
             result_func = getattr(PathGenerationResultsCollector, func)
             result_func(self)
 
+    def __compute_mean_several_runs(self, data):
+        avg_costs = []
+        for line in data:
+            formatted = [abs(float(i)) for i in line.strip("\n").split(",")[3:]]
+            formatted = list(filter(lambda x: x != float("inf") and x != float("-inf"), formatted))
+            if len(formatted) == 0:
+                mean = 0.
+            else:
+                mean = sum(formatted) / len(formatted)
+            avg_costs.append(mean)
+        return avg_costs
+
+    def __compute_std_several_runs(self, data):
+        avg_std = []
+        for line in data:
+            formatted = [abs(float(i)) for i in line.strip("\n").split(",")[3:]]
+            formatted = list(filter(lambda x: x != float("inf") and x != float("-inf"), formatted))
+            avg_std.append(std(formatted))
+        return avg_std
+
+    def __load_target(self, target):
+        # 3. Load target
+        goal = None
+        with open(target, mode="r", encoding="utf-8-sig") as file:
+            goal = file.readlines()
+        goal = np.array([float(i) for i in goal[0].strip("\n").split(",")])
+        return goal
+
     def perform_experiments(self):
         funcs = list(filter(lambda x: x[0:10] == "experiment", dir(PathGenerationResultsCollector)))
         for func in funcs:
             result_func = getattr(PathGenerationResultsCollector, func)
             result_func(self)
 
-    def __retrieve_file_data(self, filename):
+    def __retrieve_file_data(self, filename, headers=False):
         output_dir = f"{self.parent_path}/EPOS/output"
         result_dir = listdir(output_dir)[0]
         results_file = f"{output_dir}/{result_dir}/{filename}.csv"
         with open(results_file) as file:
             lines = file.readlines()
-        return lines
+        if headers:
+            return lines
+        return lines[1:]
 
     def result_reorganisation_iteration(self):
         results_data = self.__retrieve_file_data("num-reorganizations")
-        headers = results_data[0]
-        results_data = results_data[1:]
+        results_data = results_data
         iterations = np.array([int(float(i.split(",")[0])) for i in results_data])
         reorganisations = []
         for line in results_data:
@@ -123,9 +153,6 @@ class PathGenerationResultsCollector:
             mean = sum(formatted[1:]) / (len(formatted[1:]))
             reorganisations.append(mean)
         reorganisations = np.array(reorganisations)
-        # x = np.linspace(iterations.min(), iterations.max(), 1000)
-        # x_y_spline = make_interp_spline(iterations, reorganisations)
-        # y = x_y_spline(x)
 
         fig, ax = plt.subplots()
         ax.plot(iterations, reorganisations)
@@ -137,8 +164,7 @@ class PathGenerationResultsCollector:
 
     def result_iteration_global_cost(self):
         results_data = self.__retrieve_file_data("global-cost")
-        headers = results_data[0]
-        results = results_data[1:]
+        results = results_data
         iterations = np.array([int(float(i.split(",")[0])) for i in results])
         avg_costs = []
         for line in results:
@@ -185,8 +211,7 @@ class PathGenerationResultsCollector:
 
     def result_changes_in_plans(self):
         result_data = self.__retrieve_file_data("selected-plans")
-        headers = result_data[0]
-        results = result_data[1:]
+        results = result_data
         #  Sort results into their runs i.e. the simulation they come from
         runs = {}
         for result in results:
@@ -241,22 +266,22 @@ class PathGenerationResultsCollector:
         epos_config_target = f"/{parent_path}/EPOS/conf/epos.properties"
         config = ConfigManager()
         #  Create testbed.csv
-        testbed = [
-            "type,id,x,y,z,value",
-            "SENSE,0,1,1,1,5",
-            "SENSE,1,2,1,1,9",
-            "SENSE,2,3,1,1,4",
-            "SENSE,3,1,2,1,5",
-            "SENSE,4,2,2,1,4",
-            "SENSE,5,3,2,1,8",
-            "BASE,0,0,0,0,0",
-            "BASE,1,4,0,0,0",
-            "BASE,2,4,3,0,0",
-            "BASE,3,0,3,0,0"
-        ]
-        with open(f"{testbed_dir}/testbed.csv", "w") as file:
-            for line in testbed:
-                file.write(f"{line}\n")
+        # testbed = [
+        #     "type,id,x,y,z,value",
+        #     "SENSE,0,1,1,1,5",
+        #     "SENSE,1,2,1,1,9",
+        #     "SENSE,2,3,1,1,4",
+        #     "SENSE,3,1,2,1,5",
+        #     "SENSE,4,2,2,1,4",
+        #     "SENSE,5,3,2,1,8",
+        #     "BASE,0,0,0,0,0",
+        #     "BASE,1,4,0,0,0",
+        #     "BASE,2,4,3,0,0",
+        #     "BASE,3,0,3,0,0"
+        # ]
+        # with open(f"{testbed_dir}/testbed.csv", "w") as file:
+        #     for line in testbed:
+        #         file.write(f"{line}\n")
         #  Ensure EPOS configuration is correct
         config.set_target_path(epos_config_target)
         epos_conf = deepcopy(self.EPOS_STANDARD_PROPERTIES)
@@ -287,10 +312,7 @@ class PathGenerationResultsCollector:
                 results = pg.generate_paths()
                 # 3. Load target
                 target_file = f"{testbed_dir}/testbed.target"
-                goal = None
-                with open(target_file, mode="r", encoding="utf-8-sig") as file:
-                    goal = file.readlines()
-                goal = np.array([float(i) for i in goal[0].strip("\n").split(",")])
+                goal = self.__load_target(target_file)
                 #  4. Calculate Mismatch
                 total = np.zeros(goal.shape)
                 for result in results:
@@ -321,19 +343,34 @@ class PathGenerationResultsCollector:
         pass
 
     def experiment_average_sensing(self):
+        #  Set target directories
+        parent_path = Path(__file__).parent.resolve()
+        testbed_dir = f"{parent_path}/PlanGeneration/datasets/testbed/"
+        plan_gen_config_target = f"/{parent_path}/PlanGeneration/conf/generation.properties"
+        epos_config_target = f"/{parent_path}/EPOS/conf/epos.properties"
+        config = ConfigManager()
+        #  Set up configurations
+        config.set_target_path(plan_gen_config_target)
+        config.write_config_file(self.PLAN_GENERATION_STANDARD_PROPERTIES)
+        config.set_target_path(epos_config_target)
+        epos_conf = deepcopy(self.EPOS_STANDARD_PROPERTIES)
+        epos_conf["strategy"] = "convergence"
+        epos_conf["globalSignalPath"] = "datasets/testbed/testbed.target"
+        epos_conf["globalCostFunction"] = "MIS"
+        #  Run experiment
         results = []
-        for _ in range(0, 1):
+        for _ in range(0, 10):
             results.append(self.pg.generate_paths())
         #  Pre-defined sensing target, change to dynamic
-        target = np.array([5., 9., 4., 5., 4., 8.])
-        avg_sensing = np.zeros((1, 6))
+        target = f"{testbed_dir}/testbed.target"
+        target = self.__load_target(target)
+        avg_sensing = np.zeros(target.shape)
         for result in results:
-            total_sensing = np.zeros((1, 6))
+            total_sensing = np.zeros(target.shape)
             for plan in result:
                 total_sensing += np.array(plan[1])
             avg_sensing += total_sensing
         avg_sensing /= len(results)
-        avg_sensing = avg_sensing[0]
         error = abs(target - avg_sensing)
         #  Generate x-axis
         x = [i for i in range(1, len(avg_sensing) + 1)]
@@ -346,8 +383,88 @@ class PathGenerationResultsCollector:
         ax.set_title("Average Sensing Error")
         fig.savefig(f"{self.parent_path}/results/average_sensing_error.png")
 
+    def experiment_plans_global_cost(self):
+        #  Set target directories
+        parent_path = Path(__file__).parent.resolve()
+        testbed_dir = f"{parent_path}/PlanGeneration/datasets/testbed/"
+        plan_gen_config_target = f"/{parent_path}/PlanGeneration/conf/generation.properties"
+        epos_config_target = f"/{parent_path}/EPOS/conf/epos.properties"
+        config = ConfigManager()
+        #  Vary the number of cells visited by each agent per plan
+        visited_num_start = 1
+        visited_num_end = 6
+        visited_cell_num = [i for i in range(visited_num_start, visited_num_end + 1)]
+        fig, ax = plt.subplots(len(visited_cell_num), 1, figsize=(8, 7))
+        for visited_num in visited_cell_num:
+            #  Number of plans changing each experiment -> need to modify both plan gen and epos
+            experiments = []
+            base_plan_gen_conf = deepcopy(self.PLAN_GENERATION_STANDARD_PROPERTIES)
+            base_plan_gen_conf["plan"]["maxVisitedCells"] = visited_num
+            base_epos_conf = deepcopy(self.EPOS_STANDARD_PROPERTIES)
+            base_epos_conf["numSimulations"] = 50
+            base_epos_conf["strategy"] = "convergence"
+            base_epos_conf["globalSignalPath"] = "datasets/testbed/testbed.target"
+            base_epos_conf["globalCostFunction"] = "MIS"
+            #  Generate experiments with different plan sizes
+            plan_sizes = [2**i for i in range(1, 8)]
+            for i in plan_sizes:
+                new_pg_conf = deepcopy(base_plan_gen_conf)
+                new_pg_conf["plan"]["planNum"] = i
+                new_epos_conf = deepcopy(base_epos_conf)
+                new_epos_conf["numPlans"] = i
+                experiments.append((new_pg_conf, new_epos_conf))
+            #  Perform experiment
+            avg_final_costs = []
+            avg_final_variance = []
+            for pg_e, epos_e in experiments:
+                config.set_target_path(plan_gen_config_target)
+                config.write_config_file(pg_e)
+                config.set_target_path(epos_config_target)
+                config.write_config_file(epos_e)
+                repeats = 1
+                final_cost = []
+                final_cost_variance = []
+                for i in range(0, repeats):
+                    pg = PathGenerator()
+                    pg.generate_paths()
+                    results_data = self.__retrieve_file_data("global-cost")
+                    results = results_data
+                    avg_costs = self.__compute_mean_several_runs(results)
+                    avg_stds = self.__compute_std_several_runs(results)
+                    final_cost.append(avg_costs[-1])
+                    final_cost_variance.append(avg_stds[-1])
+                final_cost = sum(final_cost) / len(final_cost)
+                final_variance = sum(final_cost_variance) / len(final_cost_variance)
+                avg_final_costs.append(final_cost)
+                avg_final_variance.append(final_variance)
+            #  Plot! (for this experiment)
+            plan_sizes = np.array(plan_sizes)
+            avg_final_costs = np.array(avg_final_costs)
+            avg_final_variance = np.array(avg_final_variance)
+
+            #  Interpolate mean
+            x = np.linspace(plan_sizes.min(), plan_sizes.max(), len(plan_sizes) * 10)
+            x_y_spline = make_interp_spline(plan_sizes, avg_final_costs)
+            y = x_y_spline(x)
+            #  Interpolate max variance
+            x_y_spline = make_interp_spline(plan_sizes, avg_final_costs - avg_final_variance)
+            y_min = x_y_spline(x)
+            #  Interpolate min variance
+            x_y_spline = make_interp_spline(plan_sizes, avg_final_costs + avg_final_variance)
+            y_max = x_y_spline(x)
+
+            ax_index = visited_num - visited_num_start
+            ax[ax_index].plot(x, y)
+            ax[ax_index].fill_between(x, y_min, y_max, color="b", alpha=.15)
+            ax[ax_index].grid()
+            ax[ax_index].set_ylabel(f"{visited_num}")
+        fig.supxlabel("# Plans per Agent")
+        fig.supylabel("Final Global Cost")
+        fig.suptitle("Final Global Cost vs # Plans per Agent")
+        fig.tight_layout()
+        fig.savefig(f"{self.parent_path}/results/plans_global_cost.png")
+
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.experiment_plan_generation_fault()
-    # pgr.perform_experiments()
+    pgr.experiment_average_sensing()
