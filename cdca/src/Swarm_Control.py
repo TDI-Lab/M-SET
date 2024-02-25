@@ -26,11 +26,20 @@ class Swarm_Control:
       if (not self.collision_strategy.detect_potential_collisions(self.drones)):
         return
   
-  def print_offline_collision_stats(self):
-    # Print collision stats.
+  def get_offline_collision_stats(self):
+    # Get collision data.
     # TODO: Add more stats.
     offline_collision_stats = Offline_Collision_Stats(self.drones)
-    print(offline_collision_stats.get_number_of_collisions())
+
+    collision_data = {
+      'number_of_collisions': offline_collision_stats.get_number_of_collisions(),
+      'number_of_cross_collisions': offline_collision_stats.get_number_of_cross_collisions(),
+      'number_of_parallel_collisions': offline_collision_stats.get_number_of_parallel_collisions()
+    }
+
+    print(collision_data)
+    
+    return collision_data
 
  
   def print_itinerary(self):

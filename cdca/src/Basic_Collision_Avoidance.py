@@ -19,13 +19,23 @@ class Collision:
     self.drones['drone_B']['drone'] = drone
     self.drones['drone_B']['flight_index'] = flight_index
 
+  def get_drone_to_augment(self):
+    if (self.drones['drone_A']['flight_start_time'] < self.drones['drone_B']['flight_start_time']):
+        return self.drones['drone_A']
+    else:
+        return self.drones['drone_B']
+
+  def print_collision(self):
+    print(self.drones)
+    print(self.collision_type)
+    print(self.collision_time)
+
 
 class Basic_Collision_Avoidance(Collision_Strategy):
 # A basic collision avoidance strategy class.
   def __init__(self, only_collision_detection = False):
     # Initialise the Basic Collection Detction/Avoidance strategy.
     self.only_collision_detection = only_collision_detection
-    self.number_of_collisions = 0
     self.collisions = []
 
   def detect_potential_collisions(self, drones):
@@ -35,11 +45,11 @@ class Basic_Collision_Avoidance(Collision_Strategy):
         index += 1
         flight_index = 0
         for flight in drone.flights:
-            collision_flag, drone_to_augment, collision_type = self.check_collision(flight, drones[index:])
-            if not self.only_collision_detection:
-                if drone_to_augment == SUBJECT_DRONE:
-                    self.augment_plan(drone, flight_index, collision_type)
-                if collision_flag:
+            collision_flag = self.check_collision(flight, drones[index:])
+            if collision_flag:
+                self.collisions[-1].set_drone_A(drone, flight_index)
+                if not self.only_collision_detection:
+                    self.augment_plan()
                     return True
             flight_index += 1
         
@@ -52,14 +62,13 @@ class Basic_Collision_Avoidance(Collision_Strategy):
         flight_index = 0
         for flight in drone.flights:
             if (self.same_air_time(subject_flight, flight)):
-                collision_flag, drone_to_augment, collision_type = self.compare_coordintes(subject_flight, flight)
-                if not self.only_collision_detection:
-                    if drone_to_augment == COMPARED_DRONE:
-                        self.augment_plan(drone, flight_index, collision_type)
-                    if collision_flag:
-                        return True, drone_to_augment, collision_type
+                collision_flag = self.compare_coordintes(subject_flight, flight)
+                if collision_flag:
+                    self.collisions[-1].set_drone_B(drone, flight_index)
+                    if not self.only_collision_detection:
+                        return True
                 flight_index += 1
-    return False, None, None
+    return False
                     
 
   def same_air_time(self, subject_flight, flight):
@@ -90,40 +99,66 @@ class Basic_Collision_Avoidance(Collision_Strategy):
                 print("****************************CROSS")
             else:
                 print("****************************PARALLEL")
-            new_collision = Collision(point_A, point_B, subject_flight, flight, collision_type, i)
+            new_collision = Collision(point_A, point_B, subject_flight.start_time, flight.start_time, collision_type, i)
             self.collisions.append(new_collision)
-            self.number_of_collisions += 1
-            if (subject_flight.start_time <= flight.start_time):
-                return True, COMPARED_DRONE, collision_type
-            else: 
-                return True, SUBJECT_DRONE, collision_type
-    
-    return False, None, None 
+            new_collision.print_collision()
+            return True
+
+    return False
+
 
   def identify_collision_type(self, subject_flight, flight):
+    # Identify what kind of a collision will occur.
     number_of_close_points = 0
     for i in range(len(subject_flight.flight_path)):
         for j in range(len(flight.flight_path)):
             distance_between_points = math.dist(subject_flight.flight_path[i], flight.flight_path[j])
-            # print("distance_between_points: ", distance_between_points)
             if (distance_between_points <= MINIMUM_DISTANCE):
                 number_of_close_points += 1
     if (number_of_close_points <  MIN_POINTS_PARALLEL_COLLISION):
         return CROSS_COLLISION
     else:
         return PARALLEL_COLLISION
+
         
-  def augment_plan(self, drone, flight_index, collision_type):
+  def augment_plan(self):
+    # Augment drone plans based on collision type.
+    collision = self.collisions[-1]
+    drone_to_augment = collision.get_drone_to_augment()
     delay = 0
-    if (collision_type == CROSS_COLLISION):
+
+    if (collision.collision_type == CROSS_COLLISION):
         delay = TIME_DELAY
-    elif (collision_type == PARALLEL_COLLISION):
-        drone.plan.insert(flight_index + 1, [[2, 8], 0])
+
+    elif (collision.collision_type == PARALLEL_COLLISION):
+        print("********************************************************", drone_to_augment['collision_point'])
+        print("*********************************************************", drone_to_augment['drone'].plan[drone_to_augment['flight_index']][0])
+        new_point = self.get_orthogonal_point(drone_to_augment['collision_point'], drone_to_augment['drone'].plan[drone_to_augment['flight_index']][0])
+        drone_to_augment['drone'].plan.insert(drone_to_augment['flight_index'] + 1, [new_point, 0])
         delay = 0
+
     else:
-        print("augmentation for this collision is not implemented yet.")
+        print("Augmentation for this type of collision has not bee implemented yet.")
         return 
-    drone.augment_plan(flight_index, delay)
+
+    drone_to_augment['drone'].augment_plan(drone_to_augment['flight_index'], delay)
+
+
+  def get_orthogonal_point(self, collision_point, start_point, orthogonal_dist=PARALLEL_CA_ORTH_DIST):
+    # Get a point on the line perpendicular to the drones original flight. 
+    # The perpendicular line passes through the collision point.
+
+    y_difference = collision_point[1] - start_point[1]
+    x_difference = start_point[0] - collision_point[0] 
+
+    multiplier = orthogonal_dist / math.sqrt((y_difference ** 2) + (x_difference ** 2))
+
+    orthogonal_line = [y_difference * multiplier, x_difference * multiplier]
+
+    orthogonal_point = [collision_point[0] - orthogonal_line[0], collision_point[1] - orthogonal_line[1]]
+
+    return orthogonal_point
+
 
 
 
