@@ -1,27 +1,43 @@
 import unittest
-from os import listdir
 
-from PathGenerationGatewayClient import PathGenerationGatewayClient
-from EPOSGatewayClient import EPOSGatewayClient
+from path_generation.PathGenerator import PathGenerator
 
 
-class TestPGGateway(unittest.TestCase):
+class TestPathConverterSingleAgent(unittest.TestCase):
 
-    def test_basic_access(self):
-        pg_gateway = PathGenerationGatewayClient("127.0.0.1", 8080)
-        pg_gateway.start()
-        self.assertEquals(0, pg_gateway.get_gateway().assertAvailable())
+    def test_0s_plan(self):
+        #  Arrange
+        pg = PathGenerator()
+        plans = [(0.0, [0., 0., 0., 0., 0., 0.], ["station0", "station0"])]
+        #  Action
+        result = pg.convert_data_to_table(plans)
+        #  Assert
+        desired_result = [(0., 0., 0.), (0., 0., 0.)]
+        self.assertEquals(result, desired_result)
 
+    def test_choppy_plan(self):
+        #  Arrange
+        pg = PathGenerator()
+        plans = [(0.0, [10., 0., 5., 0., 0., 1.], ["station0", "0", "2", "5", "station0"])]
+        #  Action
+        result = pg.convert_data_to_table(plans)
+        #  Assert
+        desired_result = [
+            (0., 0., 0.), (1., 1., 1.), (1., 1., 1.), (1., 1., 1.), (1., 1., 1.), (1., 1., 1.), (1., 1., 1.),
+            (1., 1., 1.), (1., 1., 1.), (1., 1., 1.), (1., 1., 1.), (3., 1., 1.), (3., 1., 1.), (3., 1., 1.),
+            (3., 1., 1.), (3., 1., 1.), (3., 2., 1.), (0., 0., 0.)
+        ]
+        self.assertEquals(result, desired_result)
 
-class TestEPOSGateway(unittest.TestCase):
-
-    def test_basic_access(self):
-        epos_gateway = EPOSGatewayClient("127.0.0.1", 8081)
-        epos_gateway.start()
-        self.assertEquals(0, epos_gateway.get_gateway().assertAvailable())
-
-    def test_for_single_output_directory(self):
-        epos_gateway = EPOSGatewayClient("127.0.0.1", 8081)
-        epos_gateway.start()
-        epos_gateway.execute()
-        self.assertEquals(1, len(listdir("../EPOS/output")))
+    def test_moving_plan(self):
+        #  Arrange
+        pg = PathGenerator()
+        plans = [(0.0, [1., 1., 1., 1., 1., 1.], ["station2", "5", "4", "0", "1", "2", "3", "station2"])]
+        #  Action
+        result = pg.convert_data_to_table(plans)
+        #  Assert
+        desired_result = [
+            (4., 3., 0.), (3., 2., 1.), (2., 2., 1.), (1., 1., 1.),
+            (2., 1., 1.), (3., 1., 1.), (1., 2., 1.), (4., 3., 0.)
+        ]
+        self.assertEquals(result, desired_result)
