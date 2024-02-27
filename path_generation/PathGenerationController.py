@@ -68,7 +68,7 @@ class PathGenerationController:
         for i, index in enumerate(indexes):
             with open(f"{self.parent_path}/EPOS/datasets/{self.config.get('plan', 'dataset')}/agent_{i}.paths") as file:
                 paths = file.readlines()
-                selected_path = paths[index - 1].split(",")
+                selected_path = paths[index - 1].strip("\n").split(",")
                 selected_paths.append(selected_path)
         return selected_paths
 

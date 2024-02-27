@@ -23,7 +23,7 @@ class PathGenerator:
 
         #  Get results from file
         result = self._generation_manager.extract_results()
-        # result = self.convert_data_to_table(result)
+        result = self.convert_data_to_table(result)
         return result
 
     # Read the testbed mapping from a csv file
@@ -63,7 +63,16 @@ class PathGenerator:
     def convert_data_to_table(self, plans):
         sensing_map = self.read_testbed_mapping()
         location_time = []
-
-
-
+        for plan in plans:
+            movements = []
+            for i, loc in enumerate(plan[2]):
+                if i == 0 or i == len(plan[2])-1:
+                    location = list(filter(lambda x: x["id"] == loc, sensing_map["base"]))[0]
+                    sense_r = 1
+                else:
+                    location = list(filter(lambda x: x["id"] == loc, sensing_map["sense"]))[0]
+                    sense_r = int(plan[1][int(location["id"])])
+                x, y, z = location["x"], location["y"], location["z"]
+                movements += [(x, y, z) for _ in range(0, sense_r)]
+            location_time.append(movements)
         return location_time
