@@ -14,10 +14,18 @@ global_travel_time = 3 # Only used if travel_time_mode=0
 travel_time_mode = 2 # 0=constant duration. 1=constant speed, round up. 2=constant speed, buffer
 sensing_time = 1
 Z = 1
-speed = 0.05 #speed of drone, m/s
+speed = 0.2 #speed of drone, m/s
+use_cell_coords = False
+
+def get_coords(position):
+    if use_cell_coords == True:
+        return cell_coords[str(position).replace(' ','')]
+    else:
+        print([position[0],position[1],Z]) 
+        return [position[0],position[1],Z]
 
 # Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
-position_to_coords = {
+cell_coords = {
     "[1,1.5]": [0,0,Z], # centre of screen
     "[0,0]": [-0.5533,-0.235,Z],
     "[1,0]": [0, -0.235,Z],
@@ -53,7 +61,7 @@ class Drone():
     def move_next_cell(self):
         self.status = "moving"
         print(i,"moving to",self.positions[0])
-        pos = position_to_coords[self.positions[0]]
+        pos = get_coords(self.positions[0])
         if travel_time_mode == 0:
             travel_time = global_travel_time # use the constant travel duration mode
         elif travel_time_mode > 0:
@@ -74,8 +82,8 @@ class Drone():
         return (travel_time + 1)
     
     def calc_travel_time(self):
-        x_dist = (position_to_coords[self.positions[0]][0]**2) - (self.drone.position()[0]**2)
-        y_dist = (position_to_coords[self.positions[0]][1]**2) - (self.drone.position()[1]**2)
+        x_dist = (get_coords(self.positions[0])[0]**2) - (self.drone.position()[0]**2)
+        y_dist = (get_coords(self.positions[0])[1]**2) - (self.drone.position()[1]**2)
         dist = math.sqrt(x_dist**2 + y_dist**2)
 
         time = dist / self.speed
@@ -83,6 +91,7 @@ class Drone():
         return time
 
 input_path = read_cdca_output(input_file_path)
+print("Path=",input_path)
 
 # Change directory to the crazyswarm/scripts folder
 # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the scripts folder
@@ -99,7 +108,7 @@ for drone in input_path:
         d = Drone(allcfs.crazyflies[c],speed)
         all_drones.append(d)
         for position in drone:
-            d.positions.append(str(position[0]).replace(' ',''))
+            d.positions.append(position[0])
             d.times.append(int(position[1]))
         
         next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
@@ -123,7 +132,7 @@ for cf in all_drones:
 # Set the initial positions of the drones in the simulation
 # For some reason this only works if it's after the takeoff
 for cf in all_drones:
-    pos = position_to_coords[cf.positions[0]]
+    pos = get_coords(cf.positions[0])
     cf.drone.goTo(pos,0,0)
     cf.positions.pop(0)
 
