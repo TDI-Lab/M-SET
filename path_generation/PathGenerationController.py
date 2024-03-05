@@ -1,16 +1,13 @@
 import configparser
-from os import listdir
-from pathlib import Path
-from pprint import pprint
-from typing import List, Tuple
 from distutils.dir_util import copy_tree
 from distutils.util import strtobool
+from os import listdir
+from pathlib import Path
+from typing import List, Tuple
 
 from path_generation.ConfigManager import ConfigManager
-from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
 from path_generation.EPOS.EPOSWrapper import EPOSWrapper
-
-import decouple
+from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
 
 
 class PathGenerationController:

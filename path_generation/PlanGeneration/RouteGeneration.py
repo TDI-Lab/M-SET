@@ -1,11 +1,10 @@
 import configparser
+import itertools
 import random
 from pathlib import Path
-from pprint import pprint
 
-import numpy as np
 import networkx as nx
-import itertools
+import numpy as np
 
 from path_generation.PlanGeneration.PowerConsumption import PowerConsumption
 

@@ -1,6 +1,6 @@
 import subprocess
-from os import getcwd, mkdir
-from os.path import exists, join
+from os import mkdir
+from os.path import exists
 from pathlib import Path
 from shutil import rmtree
 

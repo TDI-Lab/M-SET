@@ -1,7 +1,6 @@
 """
 Workflow executed from here.
 """
-import numpy as np
 
 from path_generation.PathGenerator import PathGenerator
 

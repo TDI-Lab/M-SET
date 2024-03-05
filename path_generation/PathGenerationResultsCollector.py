@@ -2,21 +2,16 @@
 Will eventually move these into a results factory when it's available.
 """
 from copy import deepcopy
-from distutils.dir_util import copy_tree
-from os import listdir, mkdir
-from os.path import isdir
+from os import listdir
 from pathlib import Path
-from pprint import pprint
-from shutil import copyfile, copy2
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from numpy import std
 from scipy.interpolate import make_interp_spline
 
-from path_generation.PathGenerator import PathGenerator
 from path_generation.ConfigManager import ConfigManager
-from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
+from path_generation.PathGenerator import PathGenerator
 
 
 class PathGenerationResultsCollector:
