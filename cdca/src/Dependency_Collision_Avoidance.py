@@ -3,7 +3,7 @@ import math
 import networkx as nx
 import matplotlib.pyplot as plt
 from .Collision_Strategy import Collision_Strategy
-from .Swarm_Constants import MINIMUM_DISTANCE
+from .Swarm_Constants import DISTANCE_STEP, MINIMUM_DISTANCE, PARALLEL_COLLISION, SPEED
 
 
 class FlightNode:
@@ -53,9 +53,18 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
 
                     # Add dependency on earlier flight based on drone_flag
                     if drone_flag == 2:
+                        print("Drone flag 2")
                         dependency_tree[flight2.flight_node_index].append(flight1.flight_node_index) #Make flight2 dependent on flight1
                     elif drone_flag == 1:
+                        print("Drone flag 1")
                         dependency_tree[flight1.flight_node_index].append(flight2.flight_node_index) #Make flight1 dependent on flight2
+                    elif drone_flag == 0:
+                        print("Drone flag 0")
+                        # If both flights are at the same time, make the one with the higher index dependent on the other (drone priority)
+                        if flight1.flight_node_index < flight2.flight_node_index:  
+                            dependency_tree[flight2.flight_node_index].append(flight1.flight_node_index)
+                        else:
+                            dependency_tree[flight1.flight_node_index].append(flight2.flight_node_index)
 
         # Now make sure any non-first flight is dependent in its drones previous flight if not dependent on another flight
         for i, flight in enumerate(self.flight_nodes):
@@ -63,6 +72,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                 if len(dependency_tree[i+1]) == 0:
                     
                     dependency_tree[i+1].append(i)
+        print("Dependency tree: ", dependency_tree)
         return dependency_tree
 
     # Function to get the order of execution of the drones
@@ -75,6 +85,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         while remaining_nodes:
             current_row = [node for node in remaining_nodes if not any(dependency in remaining_nodes for dependency in dependency_tree[node])]
             if not current_row:
+                print("Cycles in dependency tree")
                 # There are cycles in the dependency tree
                 return None
 
@@ -86,29 +97,138 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         print("Execution hierarchy: ", execution_hierarchy)
         return execution_hierarchy
     
+    def parallel_flights(self, flight1, flight2):
+
+        # Calculate gradients and intercepts
+        m1 = (flight1.flight_path[-1][1] - flight1.flight_path[0][1]) / (flight1.flight_path[-1][0] - flight1.flight_path[0][0])
+        c1 = flight1.flight_path[0][1] - m1 * flight1.flight_path[0][0]
+
+        m2 = (flight2.flight_path[-1][1] - flight2.flight_path[0][1]) / (flight2.flight_path[-1][0] - flight2.flight_path[0][0])
+        c2 = flight2.flight_path[0][1] - m2 * flight2.flight_path[0][0]
+
+        # Check for almost parallel paths with similar intercepts
+        if abs(m1 - m2) < 1e-6:
+            # Handle the case of almost parallel paths
+            print("Almost parallel paths")
+            return True
+        else:
+            return False
+
+    def get_safe_collision_duration(self, flight1, flight2):
+        # Check for division by zero
+        if flight1.flight_path[-1][0] == flight1.flight_path[0][0] or flight2.flight_path[-1][0] == flight2.flight_path[0][0]:
+            # Handle the special case (e.g., parallel paths)
+            return None
+
+        # Calculate slopes and intercepts
+        m1 = (flight1.flight_path[-1][1] - flight1.flight_path[0][1]) / (flight1.flight_path[-1][0] - flight1.flight_path[0][0])
+        c1 = flight1.flight_path[0][1] - m1 * flight1.flight_path[0][0]
+
+        m2 = (flight2.flight_path[-1][1] - flight2.flight_path[0][1]) / (flight2.flight_path[-1][0] - flight2.flight_path[0][0])
+        c2 = flight2.flight_path[0][1] - m2 * flight2.flight_path[0][0]
+
+        # Check for almost parallel paths
+        if abs(m1 - m2) < 1e-6:
+            # Handle the case of almost parallel paths
+            print("Almost parallel paths")
+            return PARALLEL_COLLISION
+
+        # Calculate collision point
+        x = (c2 - c1) / (m1 - m2)
+        y = m1 * x + c1
+
+        # Get the time of collision
+        collision_point = [x, y]
+
+        # Calculate distance traveled by flight1 to reach the collision point
+        distance_traveled_flight1 = math.dist(flight1.flight_path[0], collision_point)
+
+        # Calculate time to reach MINIMUM_DISTANCE from collision point at constant SPEED
+        time_to_collision = distance_traveled_flight1 / SPEED
+
+        # Adjust time for MINIMUM_DISTANCE
+        time_to_collision += MINIMUM_DISTANCE / SPEED
+
+        # Check if collision point is within the flight duration
+        if flight1.duration < time_to_collision or flight2.duration < time_to_collision:
+            # Collision point is not within the flight duration
+            return None
+
+        return True
+
+
+        
+
+
     def augment_plans(self, drones, execution_hierarchy):
-        # Augment the plans of drones based on the execution hierarchy.
-        for row in execution_hierarchy:
+        # # Augment the plans of drones based on the execution hierarchy.
+        # for row in execution_hierarchy:
+        #     for flight, i in enumerate(row[:-1]):
+        #         # skip if drones next flight is dependent on previous flight
+        #         prev_drone = self.flight_nodes[flight].drone_index
+        #         curr_drone = self.flight_nodes[row[i+1]].drone_index
+        #         if (prev_drone != curr_drone):
+        #             time_to_collision = self.get_safe_collision_duration(self.flight_nodes[flight].flight, self.flight_nodes[flight+1].flight)
+        #             if time_to_collision is PARALLEL_COLLISION:
+        #                 continue
+        #             wait = math.ceil(abs(time_to_collision - self.flight_nodes[flight+1].flight.start_time))
+                
+        #             drones[self.flight_nodes[flight+1].drone_index].augment_plan(self.flight_nodes[flight+1].flight_index, 
+        #                                                                         wait)
+               # Augment the plans of drones based on the execution hierarchy.
+        row_index = 0
+        for row in execution_hierarchy[:-1]:
             longest = 0
             for node in row: # Find longest duration flight in row
                 if self.flight_nodes[node].flight.duration > longest:
                     longest = self.flight_nodes[node].flight.duration
-            for node in row:    # Make all flights in same schedule to have same duration
-                if (self.flight_nodes[node].flight.duration < longest):
-                    drones[self.flight_nodes[node].drone_index].augment_plan(self.flight_nodes[node].flight_index, longest)
-
+            for node in execution_hierarchy[row_index+1]:    # Make all flights in same schedule to have same duration
+                if (self.flight_nodes[node].flight.duration <= longest):
+                    
+                    drones[self.flight_nodes[node].drone_index].augment_plan(self.flight_nodes[node].flight_index, 2) 
+                    
+                    # for drone in drones:
+                    #     drone.print_itinerary()
+            row_index += 1
         dependency_tree = self.build_dependency_tree(drones)
         if dependency_tree is None:
             return False
         self.build_execution_hierarchy(dependency_tree)
         self.visualize_dependency_tree(dependency_tree)
+
+
+    def does_flight_collide(self, flight, drones):
+        for drone in drones:
+            for other_flight in drone.flights:
+                # Skip if the same flight
+                if flight == other_flight:
+                    continue
+                if self.get_safe_collision_duration(flight, other_flight):
+                    return True
                 
+        return False
+
+
+    def flights_collide(self, flight1, flight2):
+        # Check if two flights collide.
+        for i in range(flight1.duration):
+            for j in range(flight2.duration):
+                if (flight1.start_time + i == flight2.start_time + j) and (math.dist(flight1.flight_path[i], flight2.flight_path[j]) < DISTANCE_STEP):
+                    return True
+        return False  
+              
     def check_collision(self, flight1, flight2):
         # Check for collision between two flights.
         if self.same_air_time(flight1, flight2):
             collision_flag, drone_flag = self.compare_coordinates(flight1, flight2)
             if collision_flag:
+                
+                
+                parallel = self.parallel_flights(flight1, flight2)
+                if parallel:
+                    print("Parallel flights")
                 return True, drone_flag
+            
         return False, None
 
     def same_air_time(self, flight1, flight2):
@@ -131,6 +251,8 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         plt.title("Dependency Tree Visualization")
         plt.show()
 
+   
+        
     def compare_coordinates(self, flight1, flight2):
         # Check if two flights that are airborne at the same time get too close at any point of time.
         comparison_from = max(flight1.start_time, flight2.start_time)
@@ -141,9 +263,12 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
             flight_index = i - flight2.start_time
             distance_between_drones = math.dist(flight1.flight_path[subjet_flight_index], flight2.flight_path[flight_index])
             if (distance_between_drones <= MINIMUM_DISTANCE):
-                if (flight1.start_time <= flight2.start_time):     # Output earlier flight
+                #TODO: replace start_time comparison with time at collision point
+
+                if (flight1.start_time < flight2.start_time):     # Output earlier flight
                     return True, 2
-                else: 
+                elif (flight1.start_time > flight2.start_time): 
                     return True, 1
+                else: return True, 0
         
         return False, None
