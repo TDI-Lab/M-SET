@@ -8,12 +8,11 @@ crazyswarm_scripts_file_path="/path/to/crazyswarm/scripts"
 sys.path.append(crazyswarm_scripts_file_path)
 from pycrazyswarm import Crazyswarm
 
-#input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
+next_moves = np.array([]) # Number of timeslots to next action, for each drone
 
 # Parameters
 input_file_path="example-cdca-output.txt"
 all_drones = []
-next_moves = np.array([]) # Number of timeslots to next action, for each drone
 global_travel_time = 3 # Only used if travel_time_mode=0
 travel_time_mode = 2 # 0=constant duration. 1=constant speed, round up. 2=constant speed, buffer
 sensing_time = 1
@@ -119,14 +118,6 @@ for drone in input_path:
 
     c+=1
 
-"""
-# Don't think this is actually used now?
-# Calculate the maximum time for the simulation
-max_time = 0 
-for i in range(0,len(input_path)):
-    max_time = max(max_time, sum(all_drones[i].times) + (len(input_path)+1)*(travel_time + sensing_time)) 
-    # This is wrong, it needs to add sensing and travel time too
-"""
     
 # Tell the drones to take off
 for cf in all_drones:
@@ -140,9 +131,6 @@ for cf in all_drones:
     cf.drone.goTo(pos,0,0)
     cf.positions.pop(0)
 
-    # Originally tried to implement this with cmdPosition(), but had issues switching between low and high level command modes
-    #cf.drone.cmdPosition(pos)
-    #cf.drone.notifySetpointsStop(0)
 
 # Cycle through the time slots
 # If a drone moves at that time slot, move it
@@ -203,7 +191,3 @@ while np.any(next_moves > -1): # need to change this to >= 0 if allow timeslots 
 
 # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
 timeHelper.sleep(3)
-
-# Time does not seem to naturally pass in this script
-# This can be verified by calling TimeHelper.time(), which returns the current time, and seeing that this only increases when a call to timeHelper.sleep() is made
-# Otherwise the time stays at its current value, so if no calls to timeHelper.sleep are made then it stays at 0 the whole simulation
