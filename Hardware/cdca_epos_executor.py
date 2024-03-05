@@ -2,22 +2,16 @@ import numpy as np
 import os
 import sys
 import math
-# print the original sys.path
-print('Original sys.path:', sys.path)
 
+crazyswarm_scripts_file_path="/path/to/crazyswarm/scripts"
 # append a new directory to sys.path
-sys.path.append('/home/hritik/crazyswarm/ros_ws/src/crazyswarm/scripts')
-
-# print the updated sys.path
-print('Updated sys.path:', sys.path)
-
+sys.path.append(crazyswarm_scripts_file_path)
 from pycrazyswarm import Crazyswarm
 
 #input_path = [[[[0,0],3],[[1,1],6],[[0,1],0]],[[[2,1],3],[[1,0],12],[[2,0],0]]]
 
 # Parameters
 input_file_path="example-cdca-output.txt"
-crazyswarm_scripts_file_path="/home/hritik/crazyswarm/ros_ws/src/crazyswarm/scripts"
 all_drones = []
 next_moves = np.array([]) # Number of timeslots to next action, for each drone
 global_travel_time = 3 # Only used if travel_time_mode=0
