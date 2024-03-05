@@ -5,6 +5,7 @@
 *.ini
 *.env
 *.zip
+drone_sense.properties
 results
 path_generation/EPOS/
 path_generation/PlanGeneration/conf/
