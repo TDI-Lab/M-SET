@@ -22,21 +22,21 @@ class ConfigManager:
     # initialize the class
     def __init__(self, *args):
         self.target_path = None
-        if len(args) > 1:
+        if len(args) > 0:
             config_path = args[0]
             parent_path = Path(__file__).parent.resolve()
             config_file = parent_path / config_path
             self.config_path = config_file
-            self.configs = configparser.ConfigParser()
+            self.config = configparser.ConfigParser()
             self.read_global_config()
         else:
             self.config_path = None
 
     # read the global config file and store the configurations in a dictionary
     def read_global_config(self):
-        if os.path.exists(self.config_file) == False:
-            raise FileNotFoundError(f"The config file {self.config_file} does not exist.")
-        self.config.read(self.config_file)
+        if not os.path.exists(self.config_path):
+            raise FileNotFoundError(f"The config file {self.config_path} does not exist.")
+        self.config.read(self.config_path)
 
     # get the value of a parameter from the global config file
     # section: the section of the parameter, e.g. [plan], [map], [power], [epos]

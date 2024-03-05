@@ -5,6 +5,7 @@ from pprint import pprint
 from typing import List, Tuple
 from distutils.dir_util import copy_tree
 
+from path_generation.ConfigManager import ConfigManager
 from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
 from path_generation.EPOS.EPOSWrapper import EPOSWrapper
 
@@ -16,13 +17,49 @@ class PathGenerationController:
     def __init__(self):
         self.parent_path = Path(__file__).parent.resolve()
         self.config = configparser.ConfigParser()
-        self.config.read(f'{self.parent_path}/PlanGeneration/conf/generation.properties')
+        self.config.read(f"{self.parent_path}/../drone_sense.properties")
+        self.config_generator = ConfigManager()
 
-        self._pg_controller = PlanGenerator()
-        self._epos_controller = EPOSWrapper()
+        self._pg_controller = None
+        self._epos_controller = None
+
+    def __construct_plan_generation_properties(self):
+        properties = {
+            "plan": {
+                "dataset": "testbed",
+                "planNum": self.config.get("path_generation", "NumberOfPlans"),
+                "agentsNum": self.config.get("global", "NumberOfDrones"),
+                "timeSlots": 0,
+                "maxVisitedCells": self.config.get("path_generation", "MaximumNumberOfVisitedCells")
+            },
+            "map": {
+                "stationsNum": 4,
+                "height": 1,
+                "mapLength": 4
+            },
+            "power": {
+                "batteryCapacity": self.config.get("drone", "BatteryCapacity"),
+                "bodyMass": self.config.get("drone", "BodyMass"),
+                "batteryMass": self.config.get("drone", "BatteryMass"),
+                "rotorNum": self.config.get("drone", "NumberOfRotors"),
+                "rotorDia": self.config.get("drone", "RotorDiameter"),
+                "projectedBody": self.config.get("drone", "ProjectedBodyArea"),
+                "projectedBattery": self.config.get("drone", "ProjectedBatteryArea"),
+                "powerEfficiency": self.config.get("drone", "PowerEfficiency"),
+                "groundSpeed": self.config.get("drone", "GroundSpeed"),
+                "airDensity": self.config.get("environment", "AirDensity"),
+                "airSpeed": self.config.get("drone", "AirSpeed")
+            }
+        }
+        return properties
 
     def generate_paths(self) -> int:
+        # Create config files from drone_sense.properties
+        self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
+        plan_gen_properties = self.__construct_plan_generation_properties()
+        self.config_generator.write_config_file(plan_gen_properties)
         # Generate plans for each agent, where num is the number of agents
+        self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
         result_code = self._pg_controller.generate_plans(False)
         return result_code
@@ -35,6 +72,8 @@ class PathGenerationController:
 
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
+        self.config_generator.write_epos_config_file()
+        self._epos_controller = EPOSWrapper()
         result_code = self._epos_controller.run()
         self.move_plans()
         return result_code

@@ -12,7 +12,7 @@ class PathGenerator:
     def get_state(self) -> int:
         return self._state
 
-    def generate_paths(self) -> [List[Tuple[float, List[float]]], None]:
+    def generate_paths(self, raw=False) -> [List[Tuple[float, List[float]]], None]:
         # Generate num paths and return them
         result_code = self._generation_manager.generate_paths()
         if result_code != 0:
@@ -23,8 +23,9 @@ class PathGenerator:
 
         #  Get results from file
         result = self._generation_manager.extract_results()
-        result = self.convert_data_to_table(result)
-        return result
+        if raw:
+            return result
+        return self.convert_data_to_table(result)
 
     # Read the testbed mapping from a csv file
     # Extract the coordinate of the testbed from the file
