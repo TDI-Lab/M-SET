@@ -18,6 +18,8 @@ parameters = OrderedDict({
     "epos": {
         "EPOSstdout": False,
         "EPOSstderr": False,
+        "NumberOfSimulations": 1,
+        "IterationsPerSimulation": 32,
         "NumberOfChildren": 2,
         "PlanDimension": 6,
         "Shuffle": 0,

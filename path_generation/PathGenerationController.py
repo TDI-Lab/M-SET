@@ -58,8 +58,8 @@ class PathGenerationController:
         mission_name = self.config.get('global', 'MissionName')
         properties = {
             "dataset": mission_name,
-            "numSimulations": 1,
-            "numIterations": 32,
+            "numSimulations": self.config.get("epos", "NumberOfSimulations"),
+            "numIterations": self.config.get("epos", "IterationsPerSimulation"),
             "numAgents": self.config.get("global", "NumberOfDrones"),
             "numPlans": self.config.get("path_generation", "NumberOfPlans"),
             "numChildren": self.config.get("epos", "NumberOfChildren"),
