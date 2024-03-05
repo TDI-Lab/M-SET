@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 parameters = OrderedDict({
     "global": {
+        "MissionName": "testbed",
         "MissionFile": "testbed.csv",
         "NumberOfDrones": 4
     },
@@ -16,7 +17,40 @@ parameters = OrderedDict({
 
     "epos": {
         "EPOSstdout": False,
-        "EPOSerrout": False
+        "EPOSstderr": False,
+        "NumberOfChildren": 2,
+        "PlanDimension": 6,
+        "Shuffle": 0,
+        "ShuffleFile": "permuation.csv",
+        "NumberOfWeights": 2,
+        "WeightsString": "0.0,0.0",
+        "behaviours": "same",
+        "agentsBehaviourPath": "default",
+        "constraint": "SOFT",
+        "constraintPlansPath": "default",
+        "constraintCostsPath": "default",
+        "strategy": "never",
+        "periodically.reorganizationPeriod": 3,
+        "convergence.memorizationOffset": 5,
+        "globalCost.reductionThreshold": 0.5,
+        "strategy.reorganizationSeed": 0,
+        "globalSignalPath": "",
+        "globalCostFunction": "VAR",
+        "scaling": "STD",
+        "localCostFunction": "INDEX",
+        "logger.GlobalCostLogger": "true",
+        "logger.LocalCostMultiObjectiveLogger": "true",
+        "logger.TerminationLogger": "true",
+        "logger.SelectedPlanLogger": "true",
+        "logger.GlobalResponseVectorLogger": "true",
+        "logger.PlanFrequencyLogger": "true",
+        "logger.UnfairnessLogger": "true",
+        "logger.GlobalComplexCostLogger": "false",
+        "logger.WeightsLogger": "false",
+        "logger.ReorganizationLogger": "true",
+        "logger.VisualizerLogger": "false",
+        "logger.PositionLogger": "true",
+        "logger.HardConstraintLogger": "false"
     },
 
     "drone": {

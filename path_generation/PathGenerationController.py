@@ -4,6 +4,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import List, Tuple
 from distutils.dir_util import copy_tree
+from distutils.util import strtobool
 
 from path_generation.ConfigManager import ConfigManager
 from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
@@ -26,7 +27,7 @@ class PathGenerationController:
     def __construct_plan_generation_properties(self):
         properties = {
             "plan": {
-                "dataset": "testbed",
+                "dataset": self.config.get("global", "MissionName"),
                 "planNum": self.config.get("path_generation", "NumberOfPlans"),
                 "agentsNum": self.config.get("global", "NumberOfDrones"),
                 "timeSlots": 0,
@@ -53,6 +54,51 @@ class PathGenerationController:
         }
         return properties
 
+    def __construct_epos_properties(self):
+        mission_name = self.config.get('global', 'MissionName')
+        properties = {
+            "dataset": mission_name,
+            "numSimulations": 1,
+            "numIterations": 32,
+            "numAgents": self.config.get("global", "NumberOfDrones"),
+            "numPlans": self.config.get("path_generation", "NumberOfPlans"),
+            "numChildren": self.config.get("epos", "NumberOfChildren"),
+            "planDim": self.config.get("epos", "PlanDimension"),
+            "shuffle": self.config.get("epos", "Shuffle"),
+            "shuffle_file": self.config.get("epos", "ShuffleFile"),
+            "numberOfWeights": self.config.get("epos", "NumberOfWeights"),
+            "weightsString": self.config.get("epos", "WeightsString"),
+            "behaviours": self.config.get("epos", "behaviours"),
+            "agentsBehaviourPath": self.config.get("epos", "agentsBehaviourPath"),
+            "constraint": self.config.get("epos", "constraint"),
+            "constraintPlansPath": self.config.get("epos", "constraintPlansPath"),
+            "constraintCostsPath": self.config.get("epos", "constraintCostsPath"),
+            "strategy": self.config.get("epos", "strategy"),
+            "periodically.reorganizationPeriod": self.config.get("epos", "periodically.reorganizationPeriod"),
+            "convergence.memorizationOffset": self.config.get("epos", "convergence.memorizationOffset"),
+            "globalCost.reductionThreshold": self.config.get("epos", "globalCost.reductionThreshold"),
+            "strategy.reorganizationSeed": self.config.get("epos", "strategy.reorganizationSeed"),
+            "globalSignalPath":
+                f"{self.parent_path}/EPOS/datasets/{mission_name}/{mission_name}.target",
+            "globalCostFunction": self.config.get("epos", "globalCostFunction"),
+            "scaling": self.config.get("epos", "scaling"),
+            "localCostFunction": self.config.get("epos", "localCostFunction"),
+            "logger.GlobalCostLogger": self.config.get("epos", "logger.GlobalCostLogger"),
+            "logger.LocalCostMultiObjectiveLogger": self.config.get("epos", "logger.LocalCostMultiObjectiveLogger"),
+            "logger.TerminationLogger": self.config.get("epos", "logger.TerminationLogger"),
+            "logger.SelectedPlanLogger": self.config.get("epos", "logger.SelectedPlanLogger"),
+            "logger.GlobalResponseVectorLogger": self.config.get("epos", "logger.GlobalResponseVectorLogger"),
+            "logger.PlanFrequencyLogger": self.config.get("epos", "logger.PlanFrequencyLogger"),
+            "logger.UnfairnessLogger": self.config.get("epos", "logger.UnfairnessLogger"),
+            "logger.GlobalComplexCostLogger": self.config.get("epos", "logger.GlobalComplexCostLogger"),
+            "logger.WeightsLogger": self.config.get("epos", "logger.WeightsLogger"),
+            "logger.ReorganizationLogger": self.config.get("epos", "logger.ReorganizationLogger"),
+            "logger.VisualizerLogger": self.config.get("epos", "logger.VisualizerLogger"),
+            "logger.PositionLogger": self.config.get("epos", "logger.PositionLogger"),
+            "logger.HardConstraintLogger": self.config.get("epos", "logger.HardConstraintLogger")
+        }
+        return properties
+
     def generate_paths(self) -> int:
         # Create config files from drone_sense.properties
         self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
@@ -66,15 +112,20 @@ class PathGenerationController:
 
     # Move the generated plans to the EPOS directory
     def move_plans(self):
-        plan_gen_dir = f'{self.parent_path}/PlanGeneration/datasets/{self.config.get("plan", "dataset")}'
-        epos_dir = f'{self.parent_path}/EPOS/datasets/{self.config.get("plan", "dataset")}'
+        dataset_name = self.config.get("global", "MissionName")
+        plan_gen_dir = f'{self.parent_path}/PlanGeneration/datasets/{dataset_name}'
+        epos_dir = f'{self.parent_path}/EPOS/datasets/{dataset_name}'
         copy_tree(plan_gen_dir, epos_dir)
 
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
-        self.config_generator.write_epos_config_file()
         self._epos_controller = EPOSWrapper()
-        result_code = self._epos_controller.run()
+        self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
+        epos_properties = self.__construct_epos_properties()
+        self.config_generator.write_config_file(epos_properties)
+        show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
+        show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
+        result_code = self._epos_controller.run(out=show_out, err=show_err)
         self.move_plans()
         return result_code
 
@@ -91,8 +142,9 @@ class PathGenerationController:
     def __extract_sensing_values_from_indexes(self, indexes):
         #  Extract sensing values at each step of the path
         selected_plans = []
+        data_dir = self.config.get('global', 'MissionName')
         for i, index in enumerate(indexes):
-            with open(f"{self.parent_path}/EPOS/datasets/{self.config.get('plan', 'dataset')}/agent_{i}.plans") as file:
+            with open(f"{self.parent_path}/EPOS/datasets/{data_dir}/agent_{i}.plans") as file:
                 plans = file.readlines()
                 selected_plan = plans[index - 1].strip("\n")
                 cost, plan = selected_plan.split(":")
@@ -104,8 +156,9 @@ class PathGenerationController:
     def __extract_paths_from_indexes(self, indexes):
         #  Extract sensing values at each step of the path
         selected_paths = []
+        data_dir = self.config.get('global', 'MissionName')
         for i, index in enumerate(indexes):
-            with open(f"{self.parent_path}/EPOS/datasets/{self.config.get('plan', 'dataset')}/agent_{i}.paths") as file:
+            with open(f"{self.parent_path}/EPOS/datasets/{data_dir}/agent_{i}.paths") as file:
                 paths = file.readlines()
                 selected_path = paths[index - 1].strip("\n").split(",")
                 selected_paths.append(selected_path)

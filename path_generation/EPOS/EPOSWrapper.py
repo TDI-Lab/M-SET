@@ -11,7 +11,7 @@ class EPOSWrapper:
         pass
 
     # Start the EPOS workflow
-    def run(self):
+    def run(self, out=False, err=False):
 
         # Get the parent path of the current file
         parent_path = Path(__file__).parent.resolve()
@@ -19,14 +19,13 @@ class EPOSWrapper:
         path = parent_path / "output"
 
         self.cleanOutput(path)
-        return self.runEPOS()
+        return self.runEPOS(show_out=out, show_err=err)
 
     # Run the EPOS jar file
     # Make sure the PATH to the java executable is correct
-    def runEPOS(self):
+    def runEPOS(self, show_out=False, show_err=False):
         parent_path = Path(__file__).parent.resolve()
-        #cmd = "/usr/bin/java -jar IEPOS.jar"       # for Ubuntu
-        cmd = "java -jar IEPOS.jar"                 # for Windows
+        cmd = "java -jar IEPOS.jar"
         proc = subprocess.Popen(
             cmd,
             cwd=parent_path,
@@ -34,9 +33,12 @@ class EPOSWrapper:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-
         proc.wait()
         out, err = proc.communicate()
+        if show_err:
+            print(err.decode("utf-8"))
+        if show_out:
+            print(out.decode("utf-8"))
         return proc.returncode
 
     # Clean the output directory
