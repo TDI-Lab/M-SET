@@ -62,8 +62,8 @@ class PathGenerator:
     #       2   0,0   5,0 10,0  <- location of the agent at time t
     def convert_data_to_table(self, plans):
         sensing_map = self.read_testbed_mapping()
-        location_time = []
-        for plan in plans:
+        paths = {}
+        for agent_id, plan in enumerate(plans):
             movements = []
             for i, loc in enumerate(plan[2]):
                 if i == 0 or i == len(plan[2])-1:
@@ -74,5 +74,5 @@ class PathGenerator:
                     sense_r = int(plan[1][int(location["id"])])
                 x, y, z = location["x"], location["y"], location["z"]
                 movements += [(x, y, z) for _ in range(0, sense_r)]
-            location_time.append(movements)
-        return location_time
+            paths[agent_id] = movements
+        return paths
