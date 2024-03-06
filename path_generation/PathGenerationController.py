@@ -1,4 +1,5 @@
 import configparser
+import shutil
 from distutils.dir_util import copy_tree
 from distutils.util import strtobool
 from os import listdir
@@ -111,7 +112,10 @@ class PathGenerationController:
         #  Move mission to datasets folder
         src_path = self.config.get("global", "MissionFile")
         dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
-        copy2(src_path, dest_path)
+        try:
+            copy2(src_path, dest_path)
+        except shutil.SameFileError:
+            pass
         result_code = self._pg_controller.generate_plans(False)
         return result_code
 
