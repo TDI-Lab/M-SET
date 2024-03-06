@@ -17,6 +17,7 @@ def get_coords(position, use_cell_coords):
         print([position[0],position[1],Z]) 
         return [position[0],position[1],Z]
 
+"""
 # Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
 cell_coords = {
     "[1,1.5]": [0,0,Z], # centre of screen
@@ -27,6 +28,18 @@ cell_coords = {
     "[1,1]": [0,0.235,Z],
     "[2,1]": [0.5533,0.235,Z],
     "[2.5,1.5]": [0.8299, 0.47,Z] # top right corner of testbed
+}
+"""
+
+cell_coords = {
+    "0": [0,0,Z], # centre of screen
+    "1": [-0.5533,-0.235,Z],
+    "2": [0, -0.235,Z],
+    "3": [0.5533,-0.235,Z],
+    "4": [-0.5533, 0.235,Z],
+    "5": [0,0.235,Z],
+    "6": [0.5533,0.235,Z],
+    "7": [0.8299, 0.47,Z] # top right corner of testbed
 }
 
 def read_cdca_output(filename):
@@ -40,6 +53,33 @@ def read_cdca_output(filename):
         return []
     
     input_path = eval(f.readline())
+
+    return input_path
+
+def read_default_output(filename):
+    try:
+        f = open(filename,"r")
+    except FileNotFoundError:
+        print("Error: FileNotFoundError")
+        return []
+    except:
+        print("Error: Something unknown went wrong when attempting to access the file (not FileNotFoundError)")
+        return []
+    
+    # set up path array
+    input_path = []
+
+    headings = f.readline().split(',')
+    for header in headings[:-1]:
+        input_path.append([])
+
+    for line in f.readlines()[:]:
+        print(line)
+
+        split_line=line.split(',')[:-1]
+        print(split_line)
+        for i in range(0,len(split_line)):
+            input_path[i].append(split_line[i])
 
     return input_path
 
@@ -189,7 +229,10 @@ input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
 def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=3):
-    input_path = read_cdca_output(input_file_path)
+    if input_mode == "cdca":
+        input_path = read_cdca_output(input_file_path)
+    elif input_mode == "default":
+        input_path = read_default_output(input_file_path)
     print("Path=",input_path)
 
     # Change directory to the crazyswarm/scripts folder
@@ -210,7 +253,8 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
         set_initial_positions(all_drones, use_cell_coords)
 
     follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time)
-
-#main(global_travel_time=3,travel_time_mode=2,sensing_time=1,Z=1,speed=0.2,use_cell_coords=False)
     
-main(True, "cdca", "example_cdca_output.txt", 2, True, 1, 1, 0.05)
+#main(True, "cdca", "example_cdca_output.txt", 2, True, 1, 1, 0.05)
+main(True, "default", "epospaths/epos_basic_test_3.csv", 1, True, 1, 1, 0.05)
+
+#print(read_default_output("epospaths/epos_basic_test_3.csv"))
