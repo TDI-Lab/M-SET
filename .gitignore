@@ -11,3 +11,6 @@ path_generation/EPOS/
 path_generation/PlanGeneration/conf/
 path_generation/PlanGeneration/datasets/
 __pycache__/
+!path_generation/EPOS/conf/log4j.properties
+!path_generation/EPOS/conf/measurement.conf
+!path_generation/EPOS/conf/protopeer.conf
