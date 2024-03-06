@@ -23,6 +23,7 @@ class Input_Parser:
                 duration = EPOS_TIMESTEP
                 drone_stop = [coordinates, duration]
                 drone_plan.append(drone_stop)
+                drone_plan[-1][0].pop()
             else:
                 drone_plan[-1][1] += EPOS_TIMESTEP
         parsed_input.append(drone_plan)
