@@ -10,6 +10,9 @@ from path_generation.ConfigManager import ConfigManager
 from path_generation.EPOS.EPOSWrapper import EPOSWrapper
 from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
 
+#  TODO: Add support for multiple EPOS simulations
+#  TODO: Add support for creating plans for single drone systems
+
 
 class PathGenerationController:
 
