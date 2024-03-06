@@ -1,6 +1,6 @@
 import configparser
 import csv
-from os import listdir
+from os import listdir, mkdir
 from os.path import isdir
 from shutil import rmtree
 
@@ -34,6 +34,8 @@ class PlanGenerator:
 
     def clean_datasets(self):
         target = f"{self.parent_path}/datasets"
+        if not isdir(target):
+            mkdir(target)
         datasets = listdir(target)
         for dataset in datasets:
             if isdir(dataset):
