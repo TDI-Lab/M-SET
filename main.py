@@ -7,9 +7,9 @@ from path_generation.PathGenerator import PathGenerator
 
 def main():
     pg = PathGenerator()
-    plans = pg.generate_paths(raw=False)
-    for plan, path in plans.items():
-        print(plan, path)
+    plans = pg.generate_paths(raw=True)
+    for plan in plans:
+        print(plan)
 
 
 if __name__ == '__main__':

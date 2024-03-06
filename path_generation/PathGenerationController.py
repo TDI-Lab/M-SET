@@ -3,6 +3,7 @@ from distutils.dir_util import copy_tree
 from distutils.util import strtobool
 from os import listdir
 from pathlib import Path
+from shutil import copy2
 from typing import List, Tuple
 
 from path_generation.ConfigManager import ConfigManager
@@ -104,6 +105,10 @@ class PathGenerationController:
         # Generate plans for each agent, where num is the number of agents
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
+        #  Move mission to datasets folder
+        src_path = self.config.get("global", "MissionFile")
+        dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
+        copy2(src_path, dest_path)
         result_code = self._pg_controller.generate_plans(False)
         return result_code
 
