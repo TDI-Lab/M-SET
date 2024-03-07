@@ -2,6 +2,8 @@ import numpy as np
 import os
 import sys
 import math
+from aSync import *
+import time
 
 #crazyswarm_scripts_file_path="/path/to/crazyswarm/scripts"
 crazyswarm_scripts_file_path = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
@@ -268,6 +270,13 @@ input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
 def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
+    #logger = aSync(["radio://0/80/2M/E7E7E7E702"])
+    #interval = 2
+    #status = True
+    #t1 = threading.Thread(target = logger.runCallback)
+    #t1.start()
+
+
     if input_mode == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif input_mode == "default":
@@ -281,6 +290,8 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
+
+    allcfs.crazyflies[0].getParam('stateEstimate/x')
 
     next_moves = np.array([]) # Number of timeslots to next action, for each drone
 
@@ -299,6 +310,9 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
         land_all(Z, 0.05, timeHelper, all_drones)  
 
     land_all(Z, 0.05, timeHelper, all_drones)
+
+    #status = False
+    #t1.join()
     
 #main(True, "cdca", "example_cdca_output.txt", 2, True, 1, 1, 0.05)
 #main(True, "cdca", "example_cdca_output.txt", 2, True, 2, 0.5, 0.05)
