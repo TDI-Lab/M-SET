@@ -13,7 +13,11 @@ Z=0.5
 def get_coords(position, use_cell_coords, input_mode):
     if use_cell_coords == True:
         if input_mode == "default":
-            return default_epos_coords[str(position).replace(' ','')]
+            #return default_epos_coords[str(position).replace(' ','')]
+            x = convert_coords(position[0],"x")
+            y = convert_coords(position[1],"y")
+            z = Z
+            return([x,y,z])
         elif input_mode == "cdca":
             return epos_cdca_coords[str(position).replace(' ','')]
     else:
@@ -57,10 +61,10 @@ default_epos_coords = {
     "(1.0,2.0,1.0)": [-0.5533, 0.235,Z], #3
     "(2.0,2.0,1.0)": [0,0.235,Z], #4
     "(3.0,2.0,1.0)": [0.5533,0.235,Z], #5
-    "(0.0,0.0,0.0)": [-0.8299,-0.47,0], # Base 0, bottom left corner
-    "(4.0,0.0,0.0)": [0.8299,-0.47,0], # Base 1, bottom right corner
-    "(4.0,3.0,0.0)": [0.8299, 0.47,0], # Base 2, top right corner
-    "(0.0,3.0,0.0)": [-0.8299, 0.47,0] # Base 3, top left corner
+    "(0.0,0.0,0.0)": [-0.8299,-0.47,Z], # Base 0, bottom left corner
+    "(4.0,0.0,0.0)": [0.8299,-0.47,Z], # Base 1, bottom right corner
+    "(4.0,3.0,0.0)": [0.8299, 0.47,Z], # Base 2, top right corner
+    "(0.0,3.0,0.0)": [-0.8299, 0.47,Z] # Base 3, top left corner
 
 }
 
@@ -113,7 +117,7 @@ class Drone():
     def move_next_cell(self, use_cell_coords, travel_time_mode, global_travel_time, i,input_mode):
         self.status = "moving"
         print(i,"moving to",self.positions[0])
-        pos = get_coords(self.positions[0], use_cell_coords,input_mode)
+        pos = get_coords(self.positions[0],use_cell_coords,input_mode)
         if travel_time_mode == 0:
             travel_time = global_travel_time # use the constant travel duration mode
         elif travel_time_mode > 0:
@@ -139,15 +143,18 @@ class Drone():
         #y_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[1]**2) - (self.drone.position()[1]**2)
         x_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[0]) - (self.drone.position()[0])
         y_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[1]) - (self.drone.position()[1])
-        dist = math.sqrt(x_dist**2 + y_dist**2)
 
-        print(x_dist, y_dist, self.speed)
+        #self.drone.position() isn't something you can call on physical hardware
+
+        dist = math.sqrt((x_dist**2 + y_dist**2))
+
+        print(x_dist, y_dist, dist, self.speed)
 
         time = dist / self.speed
         #time = round(time,2)
         print("duration: "+str(time))
 
-        return time
+        return 6
 
 def parse_input(input_path, allcfs, input_mode, speed, next_moves):
     all_drones = []
@@ -260,7 +267,7 @@ simulation - Is it being run in simulation - True or False
 input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=3):
+def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
     if input_mode == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif input_mode == "default":
@@ -285,6 +292,7 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
         set_initial_positions(all_drones, use_cell_coords,input_mode)
 
     try:
+        pass
         follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode)
     except Exception as error:
         print(error)
@@ -296,6 +304,6 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 #main(True, "cdca", "example_cdca_output.txt", 2, True, 2, 0.5, 0.05)
 
 #main(True, "cdca", "epospaths/cdca_demo3.txt", 2, True, 2, 0.5, 0.05)
-main(False, "default", "epospaths/default_demo.txt", 2, True, 0, 0.5, 0.05)
+main(False, "default", "epospaths/default_demo.txt", 1, True, 0, 0.5, 0.05)
 
-#print(read_default_output("epospaths/default_demo.txt"))
+#print(read_default_output("epospaths/default_demo.txt")[0][0][0])
