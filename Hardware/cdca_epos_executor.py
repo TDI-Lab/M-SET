@@ -16,7 +16,7 @@ def get_coords(position, use_cell_coords, input_mode):
             #return default_epos_coords[str(position).replace(' ','')]
             x = convert_coords(position[0],"x")
             y = convert_coords(position[1],"y")
-            z = Z
+            z = 0.5 # should be Z, but hardcoding it for now to narrow down possible errors
             return([x,y,z])
         elif input_mode == "cdca":
             return epos_cdca_coords[str(position).replace(' ','')]
@@ -61,7 +61,7 @@ default_epos_coords = {
     "(1.0,2.0,1.0)": [-0.5533, 0.235,Z], #3
     "(2.0,2.0,1.0)": [0,0.235,Z], #4
     "(3.0,2.0,1.0)": [0.5533,0.235,Z], #5
-    "(0.0,0.0,0.0)": [-0.8299,-0.47,Z], # Base 0, bottom left corner
+    "(0.0,0.0,0.0)": [-0.8299,-0.47,0.5], # Base 0, bottom left corner
     "(4.0,0.0,0.0)": [0.8299,-0.47,Z], # Base 1, bottom right corner
     "(4.0,3.0,0.0)": [0.8299, 0.47,Z], # Base 2, top right corner
     "(0.0,3.0,0.0)": [-0.8299, 0.47,Z] # Base 3, top left corner
@@ -113,11 +113,12 @@ class Drone():
         self.status = "idle" # idle -> (sensing, waiting, moving)
         self.speed = speed
         self.drone = drone
+        self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, travel_time_mode, global_travel_time, i,input_mode):
         self.status = "moving"
-        print(i,"moving to",self.positions[0])
-        pos = get_coords(self.positions[0],use_cell_coords,input_mode)
+        print(i,"moving to",self.positions[self.move_count])
+        pos = get_coords(self.positions[self.move_count],use_cell_coords,input_mode)
         if travel_time_mode == 0:
             travel_time = global_travel_time # use the constant travel duration mode
         elif travel_time_mode > 0:
@@ -127,7 +128,8 @@ class Drone():
             return -1
 
         self.drone.goTo(pos, 0, travel_time)
-        self.positions.pop(0)
+        self.move_count += 1
+        #self.positions.pop(0)
 
         # Alter the return value if needed
         if travel_time_mode == 1:
@@ -138,11 +140,10 @@ class Drone():
         return (travel_time + 1)
     
     def calc_travel_time(self, use_cell_coords,input_mode):
-        print("calc time")
         #x_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[0]**2) - (self.drone.position()[0]**2)
         #y_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[1]**2) - (self.drone.position()[1]**2)
-        x_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[0]) - (self.drone.position()[0])
-        y_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[1]) - (self.drone.position()[1])
+        x_dist = (get_coords(self.positions[self.move_count], use_cell_coords,input_mode)[0]) - (get_coords(self.positions[self.move_count-1], use_cell_coords,input_mode)[0])
+        y_dist = (get_coords(self.positions[self.move_count], use_cell_coords,input_mode)[1]) - (get_coords(self.positions[self.move_count-1], use_cell_coords,input_mode)[1])
 
         #self.drone.position() isn't something you can call on physical hardware
 
@@ -151,10 +152,8 @@ class Drone():
         print(x_dist, y_dist, dist, self.speed)
 
         time = dist / self.speed
-        #time = round(time,2)
-        print("duration: "+str(time))
 
-        return 6
+        return time
 
 def parse_input(input_path, allcfs, input_mode, speed, next_moves):
     all_drones = []
@@ -191,13 +190,15 @@ def land_all(Z, d, timeHelper,all_drones):
         cf.drone.land(0.05, 2.5)
         timeHelper.sleep(2.5)
 
-def set_initial_positions(all_drones, use_cell_coords,input_mode):
+def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
     # Set the initial positions of the drones in the simulation
     # For some reason this only works if it's after the takeoff
     for cf in all_drones:
-        pos = get_coords(cf.positions[0], use_cell_coords,input_mode)
-        cf.drone.goTo(pos,0,0)
-        cf.positions.pop(0)
+        pos = get_coords(cf.positions[cf.move_count], use_cell_coords,input_mode)
+        print("moving to", pos)
+        cf.drone.goTo(pos,0,10)
+        timeHelper.sleep(10)
+        #cf.positions.pop(0)
 
 def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode):
     # Cycle through the time slots
@@ -221,7 +222,6 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
             cf = all_drones[i]
             if next_moves[i] == 0: # if it's time for the drone to change status (i.e. it has finished its current task)
-
                 # Could implement a move counter in Drone class e.g. drone.nmoves to track how many cells it had visited, then do drone.positions[nmoves] and times[nmoves] instead of costly(?) pop() operations
                 # Sensing and waiting could technically be combined into one state of length (sensing_time + wait time) since they both currently just involve staying in the same spot, but have split them here to allow extension for different functionality in each state (e.g. to perform sensing actions) 
 
@@ -232,13 +232,14 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
                 elif cf.status == "sensing":
                     cf.status = "waiting"
-                    print(i,"waiting for",cf.times[0])
-                    next_moves[i] = cf.times[0] +1
-                    cf.times.pop(0)
+                    print(i,"waiting for",cf.times[cf.move_count - 1])
+                    next_moves[i] = cf.times[cf.move_count - 1] +1
+                    #cf.times.pop(0)
 
                     # if that was the last position, mark the drone as finished
                     # NB: This assumes there is no wait time at the last cell in the drones path
-                    if len(cf.times) < 1:  
+                    #if len(cf.times) < 1:
+                    if cf.move_count >= len(cf.times): 
                         # if all times are used up, then mark drone as done
                         next_moves[i] = -1
 
@@ -286,16 +287,15 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     all_drones, next_moves = parse_input(input_path, allcfs, input_mode, speed, next_moves)
 
-    take_off_all(Z, 2.5, timeHelper, all_drones)
-
-    if simulation == True:
-        set_initial_positions(all_drones, use_cell_coords,input_mode)
-
     try:
-        pass
+        take_off_all(Z, 2.5, timeHelper, all_drones)
+
+        #if simulation == True:
+        set_initial_positions(timeHelper,all_drones, use_cell_coords,input_mode)
+
         follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode)
     except Exception as error:
-        print(error)
+        print("Error:",error)
         land_all(Z, 0.05, timeHelper, all_drones)  
 
     land_all(Z, 0.05, timeHelper, all_drones)
@@ -304,6 +304,7 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 #main(True, "cdca", "example_cdca_output.txt", 2, True, 2, 0.5, 0.05)
 
 #main(True, "cdca", "epospaths/cdca_demo3.txt", 2, True, 2, 0.5, 0.05)
-main(False, "default", "epospaths/default_demo.txt", 1, True, 0, 0.5, 0.05)
+#main(False, "default", "epospaths/default_demo.txt", 1, True, 1, 0.5, 0.05)
+main(False, "cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
 
 #print(read_default_output("epospaths/default_demo.txt")[0][0][0])
