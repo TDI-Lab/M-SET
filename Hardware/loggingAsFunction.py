@@ -78,6 +78,9 @@ class logAsFunction:
                     self.lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
                     self.lg_stab.add_variable('pm.batteryLevel','uint8_t')
                     self.lg_stab.add_variable('pm.state','int8_t')
+                    self.lg_stab.add_variable('stateEstimate.x','float')
+                    self.lg_stab.add_variable('stateEstimate.y','float')
+                    self.lg_stab.add_variable('stateEstimate.z','float')
                     with SyncCrazyflie(self.uri[drone], cf=Crazyflie(rw_cache='./cache')) as scf:
                         self.my_dict[drone].write("\n")
                         with SyncLogger(scf, self.lg_stab) as logger:
@@ -85,6 +88,8 @@ class logAsFunction:
         
                                 data = log_entry[1]
                                 self.my_dict[drone].write(str(elapsed)+","+str(data['pm.batteryLevel'])+","+str(data['pm.state']))
+                                print(str(elapsed)+","+str(data['pm.batteryLevel'])+","+str(data['pm.state']))
+                                print(str(data['stateEstimate.x'])+","+str(data['stateEstimate.y'])+","+str(data['stateEstimate.z']))
                                 break
 
                 self.WLock.release()
