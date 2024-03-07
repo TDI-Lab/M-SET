@@ -3,6 +3,7 @@ import csv
 from logTester import *
 from loggingAsFunction import *
 from logTestB import *
+from aSync import *
 import time
 
 
@@ -53,9 +54,20 @@ def testThreadLogging(drones, tests):
     status = False
     t1.join()
 
-
+def testThreadLoggingAsync(drones, tests):
+    #loggers = RecordingFactory(tests, drones)
+    logger = aSync(drones)
+    interval = 2
+    status = True
+    t1 = threading.Thread(target = logger.runCallback)
+    t1.start()
+    while input("Continue") == "y":
+        print(str(logger.data))
+    status = False
+    t1.join()
 
 #testLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["test", "testB","logAsFunction"])
 #testLogging(["radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
 #testLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
-testThreadLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
+#testThreadLogging(["radio://0/90/2M/E7E7E7E704", "radio://0/80/2M/E7E7E7E701"], ["logAsFunction"])
+testThreadLoggingAsync(["radio://0/80/2M/E7E7E7E702"], ["testThreadLoggingAsync"])
