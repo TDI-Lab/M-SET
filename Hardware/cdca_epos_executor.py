@@ -12,14 +12,11 @@ Z=0.5
 
 def get_coords(position, use_cell_coords, input_mode):
     if use_cell_coords == True:
-        if input_mode == "default":
-            #return default_epos_coords[str(position).replace(' ','')]
-            x = convert_coords(position[0],"x")
-            y = convert_coords(position[1],"y")
-            z = 0.5 # should be Z, but hardcoding it for now to narrow down possible errors
-            return([x,y,z])
-        elif input_mode == "cdca":
-            return epos_cdca_coords[str(position).replace(' ','')]
+        #return default_epos_coords[str(position).replace(' ','')]
+        x = convert_coords(position[0],"x")
+        y = convert_coords(position[1],"y")
+        z = 0.5 # should be Z, but hardcoding it for now to narrow down possible errors
+        return([x,y,z])
     else:
         return [position[0],position[1],Z]
 
@@ -31,42 +28,21 @@ def convert_coords(val, axis):
     else:
         return NameError
 
+"""
 # Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
-cell_coords = {
-    "[1.0,1.5]": [0,0,Z], # centre of screen
-    "[0.0,0.0]": [-0.5533,-0.235,Z],
-    "[1.0,0.0]": [0, -0.235,Z],
-    "[2.0,0.0]": [0.5533,-0.235,Z],
-    "[0.0,1.0]": [-0.5533, 0.235,Z],
-    "[1.0,1.0]": [0,0.235,Z],
-    "[2.0,1.0]": [0.5533,0.235,Z],
-    "[2.5,1.5]": [0.8299, 0.47,Z] # top right corner of testbed
-}
-
-epos_cdca_coords = {
-    "[0.0,0.0]": [0.0,0.0,Z],
-    "[1.0,1.0]": [-0.5533,-0.235,Z], #0
-    "[2.0,1.0]": [0, -0.235,Z], #1
-    "[3.0,1.0]": [0.5533,-0.235,Z], #2
-    "[1.0,2.0]": [-0.5533, 0.235,Z], #3
-    "[2.0,2.0]": [0,0.235,Z], #4
-    "[3.0,2.0]": [0.5533,0.235,Z], #5
-    "[4.0,0.0]": [0.8299, 0.47,Z]
-}
-
 default_epos_coords = {
-    "(1.0,1.0,1.0)": [-0.5533,-0.235,Z], #0
-    "(2.0,1.0,1.0)": [0, -0.235,Z], #1
-    "(3.0,1.0,1.0)": [0.5533,-0.235,Z], #2
-    "(1.0,2.0,1.0)": [-0.5533, 0.235,Z], #3
-    "(2.0,2.0,1.0)": [0,0.235,Z], #4
-    "(3.0,2.0,1.0)": [0.5533,0.235,Z], #5
+    "(1.0,1.0,1.0)": [-0.5533,-0.235,Z], # cell 0
+    "(2.0,1.0,1.0)": [0, -0.235,Z], # cell 1
+    "(3.0,1.0,1.0)": [0.5533,-0.235,Z], # cell 2
+    "(1.0,2.0,1.0)": [-0.5533, 0.235,Z], # cell 3
+    "(2.0,2.0,1.0)": [0,0.235,Z], # cell 4
+    "(3.0,2.0,1.0)": [0.5533,0.235,Z], # cell 5
     "(0.0,0.0,0.0)": [-0.8299,-0.47,0.5], # Base 0, bottom left corner
     "(4.0,0.0,0.0)": [0.8299,-0.47,Z], # Base 1, bottom right corner
     "(4.0,3.0,0.0)": [0.8299, 0.47,Z], # Base 2, top right corner
     "(0.0,3.0,0.0)": [-0.8299, 0.47,Z] # Base 3, top left corner
-
 }
+"""
 
 def read_cdca_output(filename):
     try:
@@ -140,12 +116,8 @@ class Drone():
         return (travel_time + 1)
     
     def calc_travel_time(self, use_cell_coords,input_mode):
-        #x_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[0]**2) - (self.drone.position()[0]**2)
-        #y_dist = (get_coords(self.positions[0], use_cell_coords,input_mode)[1]**2) - (self.drone.position()[1]**2)
         x_dist = (get_coords(self.positions[self.move_count], use_cell_coords,input_mode)[0]) - (get_coords(self.positions[self.move_count-1], use_cell_coords,input_mode)[0])
         y_dist = (get_coords(self.positions[self.move_count], use_cell_coords,input_mode)[1]) - (get_coords(self.positions[self.move_count-1], use_cell_coords,input_mode)[1])
-
-        #self.drone.position() isn't something you can call on physical hardware
 
         dist = math.sqrt((x_dist**2 + y_dist**2))
 
@@ -198,7 +170,6 @@ def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
         print("moving to", pos)
         cf.drone.goTo(pos,0,10)
         timeHelper.sleep(10)
-        #cf.positions.pop(0)
 
 def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode):
     # Cycle through the time slots
@@ -222,7 +193,6 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
             cf = all_drones[i]
             if next_moves[i] == 0: # if it's time for the drone to change status (i.e. it has finished its current task)
-                # Could implement a move counter in Drone class e.g. drone.nmoves to track how many cells it had visited, then do drone.positions[nmoves] and times[nmoves] instead of costly(?) pop() operations
                 # Sensing and waiting could technically be combined into one state of length (sensing_time + wait time) since they both currently just involve staying in the same spot, but have split them here to allow extension for different functionality in each state (e.g. to perform sensing actions) 
 
                 if cf.status == "moving" or cf.status == "idle":
@@ -234,7 +204,6 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                     cf.status = "waiting"
                     print(i,"waiting for",cf.times[cf.move_count - 1])
                     next_moves[i] = cf.times[cf.move_count - 1] +1
-                    #cf.times.pop(0)
 
                     # if that was the last position, mark the drone as finished
                     # NB: This assumes there is no wait time at the last cell in the drones path
@@ -268,7 +237,7 @@ simulation - Is it being run in simulation - True or False
 input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
+def main(input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
     if input_mode == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif input_mode == "default":
@@ -300,11 +269,5 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     land_all(Z, 0.05, timeHelper, all_drones)
     
-#main(True, "cdca", "example_cdca_output.txt", 2, True, 1, 1, 0.05)
-#main(True, "cdca", "example_cdca_output.txt", 2, True, 2, 0.5, 0.05)
-
-#main(True, "cdca", "epospaths/cdca_demo3.txt", 2, True, 2, 0.5, 0.05)
 #main(False, "default", "epospaths/default_demo.txt", 1, True, 1, 0.5, 0.05)
-main(False, "cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
-
-#print(read_default_output("epospaths/default_demo.txt")[0][0][0])
+main("cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
