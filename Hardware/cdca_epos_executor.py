@@ -3,6 +3,8 @@ import os
 import sys
 import math
 
+from aSync import aSync
+
 #crazyswarm_scripts_file_path="/path/to/crazyswarm/scripts"
 crazyswarm_scripts_file_path = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 # append a new directory to sys.path
@@ -121,9 +123,9 @@ class Drone():
 
         dist = math.sqrt((x_dist**2 + y_dist**2))
 
-        print(x_dist, y_dist, dist, self.speed)
-
         time = dist / self.speed
+
+        print(x_dist, y_dist, dist, self.speed, time)
 
         return time
 
@@ -170,6 +172,10 @@ def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
         print("moving to", pos)
         cf.drone.goTo(pos,0,10)
         timeHelper.sleep(10)
+
+def log_all_drones(all_drones, vars):
+    logger = aSync(all_drones)
+    logger.runCallback()
 
 def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode):
     # Cycle through the time slots
@@ -237,7 +243,7 @@ simulation - Is it being run in simulation - True or False
 input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
+def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, global_travel_time=6):
     if input_mode == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif input_mode == "default":
@@ -256,6 +262,9 @@ def main(input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing
 
     all_drones, next_moves = parse_input(input_path, allcfs, input_mode, speed, next_moves)
 
+    if simulation == True:
+        log_all_drones(all_drones, ["battery"])
+
     try:
         take_off_all(Z, 2.5, timeHelper, all_drones)
 
@@ -263,12 +272,15 @@ def main(input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing
         set_initial_positions(timeHelper,all_drones, use_cell_coords,input_mode)
 
         follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode)
+
     except Exception as error:
         print("Error:",error)
-        land_all(Z, 0.05, timeHelper, all_drones)  
+        land_all(Z, 0.05, timeHelper, all_drones)
 
     land_all(Z, 0.05, timeHelper, all_drones)
+
+    if simulation == True:
+        log_all_drones(all_drones, ["battery"])
     
-main("default", "epospaths/default_demo.txt", 1, True, 1, 0.5, 0.05)
-#main("cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
-#Sensing time should be able to be 0 (and should be set as such)
+#main(True, "cdca", "epospaths/debug_demo.txt", 1, True, 1, 0.5, 0.05)
+main(True, "default", "epospaths/debug_default_demo.txt", 1, True, 1, 0.5, 0.1)
