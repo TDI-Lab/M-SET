@@ -24,7 +24,7 @@ def convert_coords(val, axis):
     if axis == "x":
         return (val-2)*0.553
     elif axis == "y":
-        return (val-2)*0.235
+        return ((2*val)-3)*0.235
     else:
         return NameError
 
@@ -269,5 +269,6 @@ def main(input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing
 
     land_all(Z, 0.05, timeHelper, all_drones)
     
-#main(False, "default", "epospaths/default_demo.txt", 1, True, 1, 0.5, 0.05)
-main("cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
+main("default", "epospaths/default_demo.txt", 1, True, 1, 0.5, 0.05)
+#main("cdca", "epospaths/cdca_demo5.txt", 1, True, 1, 0.5, 0.05)
+#Sensing time should be able to be 0 (and should be set as such)
