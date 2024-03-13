@@ -114,6 +114,8 @@ class Drone():
             travel_time = math.ceil(travel_time)
         elif travel_time_mode == 2:
             pass
+        elif travel_time_mode == 3:
+            travel_time = math.ceil(travel_time)
 
         return (travel_time + 1)
     
@@ -195,16 +197,23 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                         # add one to the action time of the other drones
                         next_moves[j] = next_moves[j] + 1
 
+        in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
 
             cf = all_drones[i]
+
             if next_moves[i] == 0: # if it's time for the drone to change status (i.e. it has finished its current task)
                 # Sensing and waiting could technically be combined into one state of length (sensing_time + wait time) since they both currently just involve staying in the same spot, but have split them here to allow extension for different functionality in each state (e.g. to perform sensing actions) 
 
                 if cf.status == "moving" or cf.status == "idle":
-                    cf.status = "sensing"
-                    print(i, "sensing")
-                    next_moves[i] = sensing_time +1
+                    if (in_position == True) or (travel_time_mode != 3):
+                        cf.status = "sensing"
+                        print(i, "sensing")
+                        next_moves[i] = sensing_time +1
+                    else:
+                        cf.status = "idle"
+                        print(i, "idle")
+                        next_moves[i] = 1
 
                 elif cf.status == "sensing":
                     cf.status = "waiting"
@@ -217,6 +226,8 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                     if cf.move_count >= len(cf.times): 
                         # if all times are used up, then mark drone as done
                         next_moves[i] = -1
+                        cf.status = "idle"
+                        print(i, "reached end of path")
 
                     # otherwise, we can consider...
                     # if wait time was 0 then need to move straight to moving in this iteration too
@@ -228,12 +239,14 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
         # minus 1 second from all next_moves (represents 1 second passing)
         next_moves = next_moves - np.full((1,len(all_drones)),1)[0]
+        #print(next_moves)
 
         # increment timeslot
         timeHelper.sleep(1)
         t+=1
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
+    print("End of simulation")
     timeHelper.sleep(3)
 
 
@@ -262,13 +275,12 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     all_drones, next_moves = parse_input(input_path, allcfs, input_mode, speed, next_moves)
 
-    if simulation == True:
+    if simulation == False:
         log_all_drones(all_drones, ["battery"])
 
     try:
         take_off_all(Z, 2.5, timeHelper, all_drones)
 
-        #if simulation == True:
         set_initial_positions(timeHelper,all_drones, use_cell_coords,input_mode)
 
         follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode)
@@ -279,8 +291,8 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     land_all(Z, 0.05, timeHelper, all_drones)
 
-    if simulation == True:
+    if simulation == False:
         log_all_drones(all_drones, ["battery"])
     
-#main(True, "cdca", "epospaths/debug_demo.txt", 1, True, 1, 0.5, 0.05)
-main(True, "default", "epospaths/debug_default_demo.txt", 1, True, 1, 0.5, 0.1)
+main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "default", "epospaths/debug_default_demo.txt", 3, True, 1, 0.5, 0.1)
