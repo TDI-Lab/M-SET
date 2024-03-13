@@ -111,9 +111,22 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
     
     def parallel_flights(self, flight1, flight2):
 
+        # Check if x coordinates are not changing
+        if flight1.flight_path[0][0] == flight1.flight_path[-1][0] and flight2.flight_path[0][0] == flight2.flight_path[-1][0]:
+            return True
+
+        # Check if y coordinates are not changing
+
+        if flight1.flight_path[0][1] == flight1.flight_path[-1][1] and flight2.flight_path[0][1] == flight2.flight_path[-1][1]:
+            return True
+
         # Calculate gradients and intercepts
+        if flight1.flight_path[-1][0] - flight1.flight_path[0][0] == 0 or flight2.flight_path[-1][0] - flight2.flight_path[0][0] == 0:
+            return False # We know theyre not the same / parallel from previous checks
+
         m1 = (flight1.flight_path[-1][1] - flight1.flight_path[0][1]) / (flight1.flight_path[-1][0] - flight1.flight_path[0][0])
         c1 = flight1.flight_path[0][1] - m1 * flight1.flight_path[0][0]
+
 
         m2 = (flight2.flight_path[-1][1] - flight2.flight_path[0][1]) / (flight2.flight_path[-1][0] - flight2.flight_path[0][0])
         c2 = flight2.flight_path[0][1] - m2 * flight2.flight_path[0][0]
@@ -121,7 +134,6 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         # Check for almost parallel paths with similar intercepts
         if abs(m1 - m2) < 1e-6:
             # Handle the case of almost parallel paths
-            print("Almost parallel paths")
             return True
         else:
             return False
