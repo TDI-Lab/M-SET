@@ -23,9 +23,20 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         dependency_tree = self.build_dependency_tree(drones)
         if dependency_tree is None:
             return False
+        if dependency_tree is PARALLEL_COLLISION:
+            print("PARALLEL COLLISION DETECTED\nCOLLISION AVOIDANCE aborted")
+            return False
         hierachy = self.build_execution_hierarchy(dependency_tree)
+        
         self.visualize_dependency_tree(dependency_tree)
-        self.augment_plans(drones, hierachy)
+        ret = self.augment_plans(drones, hierachy)
+
+        if ret is PARALLEL_COLLISION:
+            print("PARALLEL COLLISION DETECTED\nCA aborted")
+        drone_positions = self.discretise_flight_paths(drones)
+        if (self.collisions(drone_positions)):
+            print("COLLISIONS STILL DETECTED AFTER AUGMENTATION")
+            # return True
         
 
     def build_dependency_tree(self, drones):
@@ -50,7 +61,8 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
 
                 collision_flag, drone_flag = self.check_collision(flight1.flight, flight2.flight)
                 if collision_flag:
-
+                    if drone_flag is PARALLEL_COLLISION:
+                        return PARALLEL_COLLISION
                     # Add dependency on earlier flight based on drone_flag
                     if drone_flag == 2:
                         print("Drone flag 2")
@@ -99,9 +111,22 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
     
     def parallel_flights(self, flight1, flight2):
 
+        # Check if x coordinates are not changing
+        if flight1.flight_path[0][0] == flight1.flight_path[-1][0] and flight2.flight_path[0][0] == flight2.flight_path[-1][0]:
+            return True
+
+        # Check if y coordinates are not changing
+
+        if flight1.flight_path[0][1] == flight1.flight_path[-1][1] and flight2.flight_path[0][1] == flight2.flight_path[-1][1]:
+            return True
+
         # Calculate gradients and intercepts
+        if flight1.flight_path[-1][0] - flight1.flight_path[0][0] == 0 or flight2.flight_path[-1][0] - flight2.flight_path[0][0] == 0:
+            return False # We know theyre not the same / parallel from previous checks
+
         m1 = (flight1.flight_path[-1][1] - flight1.flight_path[0][1]) / (flight1.flight_path[-1][0] - flight1.flight_path[0][0])
         c1 = flight1.flight_path[0][1] - m1 * flight1.flight_path[0][0]
+
 
         m2 = (flight2.flight_path[-1][1] - flight2.flight_path[0][1]) / (flight2.flight_path[-1][0] - flight2.flight_path[0][0])
         c2 = flight2.flight_path[0][1] - m2 * flight2.flight_path[0][0]
@@ -109,7 +134,6 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         # Check for almost parallel paths with similar intercepts
         if abs(m1 - m2) < 1e-6:
             # Handle the case of almost parallel paths
-            print("Almost parallel paths")
             return True
         else:
             return False
@@ -184,29 +208,30 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                     longest = self.flight_nodes[node].flight.duration
             for node in execution_hierarchy[row_index+1]:    # Make all flights in same schedule to have same duration
                 if (self.flight_nodes[node].flight.duration <= longest):
-                    
-                    drones[self.flight_nodes[node].drone_index].augment_plan(self.flight_nodes[node].flight_index, 2) 
-                    
-                    # for drone in drones:
-                    #     drone.print_itinerary()
+                    while (self.does_flight_collide(drones, self.flight_nodes[node].drone_index, self.flight_nodes[node].flight_index)):
+                        drones[self.flight_nodes[node].drone_index].augment_plan(self.flight_nodes[node].flight_index, 1) 
+                        print("Adding extra second...\ns")
+                   
             row_index += 1
         dependency_tree = self.build_dependency_tree(drones)
         if dependency_tree is None:
             return False
+        elif dependency_tree is PARALLEL_COLLISION:
+            return PARALLEL_COLLISION
         self.build_execution_hierarchy(dependency_tree)
         self.visualize_dependency_tree(dependency_tree)
 
 
-    def does_flight_collide(self, flight, drones):
-        for drone in drones:
-            for other_flight in drone.flights:
-                # Skip if the same flight
-                if flight == other_flight:
-                    continue
-                if self.get_safe_collision_duration(flight, other_flight):
-                    return True
+    # def does_flight_collide(self, drone_index, discritised_positions):
+    #     for drone in drones:
+    #         for other_flight in drone.flights:
+    #             # Skip if the same flight
+    #             if flight == other_flight:
+    #                 continue
+    #             if self.get_safe_collision_duration(flight, other_flight):
+    #                 return True
                 
-        return False
+    #     return False
 
 
     def flights_collide(self, flight1, flight2):
@@ -227,6 +252,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                 parallel = self.parallel_flights(flight1, flight2)
                 if parallel:
                     print("Parallel flights")
+                    return True, PARALLEL_COLLISION
                 return True, drone_flag
             
         return False, None
@@ -272,3 +298,78 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                 else: return True, 0
         
         return False, None
+
+    def discretise_flight_paths(self, drones, from_time=0, to_time=math.inf):
+        # Discretise the flight paths of the drones per each timestep per drone per flight path
+        drone_positions=[] #Each element is a list of drone positions at each timestep
+
+        #earliest start time of each drones first flight
+        earliest_start_time = [drone.flights[0].start_time for drone in drones]
+        min_start_time = min(earliest_start_time)
+        
+        for drone in drones:
+            positions_for_drone = []
+            for i in range(len(drone.flights)):
+                
+                
+                flight = drone.flights[i]
+                if flight.start_time > to_time or flight.finish_time < from_time:
+                    continue
+                if i == 0: #ensure positions at start line up
+                    for k in range(flight.start_time - min_start_time):
+                        positions_for_drone.insert(0, flight.flight_path[0])
+
+                for j in range(max(flight.start_time, from_time), min(flight.finish_time, to_time)):
+                    positions_for_drone.append(flight.flight_path[j - flight.start_time])
+
+                if i < len(drone.flights) - 1: #ensure positions between flights line up
+                    next_flight = drone.flights[i + 1]
+                    time_difference = next_flight.start_time - flight.finish_time
+                    for k in range(time_difference):
+                        positions_for_drone.append(next_flight.flight_path[0]) 
+
+            drone_positions.append(positions_for_drone)
+
+        for drone in drone_positions:
+            print(drone, "\n")
+        return drone_positions
+    
+    def collisions(self, drone_positions):
+        # Check for collisions between drones
+        for i in range(len(drone_positions)):
+            for j in range(len(drone_positions)):
+                if i == j:
+                    continue
+                for k in range(len(drone_positions[i])):
+                    if (j < i and k < len(drone_positions[j])) or (j > i and k < len(drone_positions[i])):
+                        break
+                    if math.dist(drone_positions[i][k], drone_positions[j][k]) < MINIMUM_DISTANCE:
+                        return True
+        return False
+    
+    def collisions_with_drone(self, drone_index, drone_positions):
+        # Check for collisions between drones with drone at drone_index
+        for i in range(len(drone_positions)):
+            if i == drone_index:
+                continue
+            for k in range(min(len(drone_positions[i]), len(drone_positions[drone_index]))):
+                if math.dist(drone_positions[i][k], drone_positions[drone_index][k]) < MINIMUM_DISTANCE:
+                    return True
+        return False
+    
+
+   
+    
+    def does_flight_collide(self, drones, drone_index, flight_index):
+        #get the discretised positions of the drones from the start of the flight to end of the flight
+        drone_positions = self.discretise_flight_paths(drones, drones[drone_index].flights[flight_index].start_time)
+                                                      #  drones[drone_index].flights[flight_index].finish_time)
+        
+        if self.collisions_with_drone(drone_index, drone_positions):
+            return True
+        else:
+            return False
+
+ 
+
+    
