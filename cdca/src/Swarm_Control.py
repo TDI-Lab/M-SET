@@ -34,7 +34,8 @@ class Swarm_Control:
     collision_data = {
       'number_of_collisions': offline_collision_stats.get_number_of_collisions(),
       'number_of_cross_collisions': offline_collision_stats.get_number_of_cross_collisions(),
-      'number_of_parallel_collisions': offline_collision_stats.get_number_of_parallel_collisions()
+      'number_of_parallel_collisions': offline_collision_stats.get_number_of_parallel_collisions(),
+      'number_of_dest_occupied_collisions': offline_collision_stats.get_number_of_dest_occupied_collisions()
     }
 
     print(collision_data)

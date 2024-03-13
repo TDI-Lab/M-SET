@@ -1,7 +1,13 @@
 .idea
 ./out
 *.class
-path_generation/EPOS/
 *.iml
 *.ini
 *.env
+*.zip
+drone_sense.properties
+results
+path_generation/EPOS/
+path_generation/PlanGeneration/conf/
+path_generation/PlanGeneration/datasets/
+__pycache__/
