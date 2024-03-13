@@ -175,8 +175,14 @@ def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
         cf.drone.goTo(pos,0,10)
         timeHelper.sleep(10)
 
-def log_all_drones(all_drones, vars):
-    logger = aSync(all_drones)
+def return_uris(channels,numbers):
+    uris = []
+    for i in range(0,len(channels)):
+        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+str(numbers[i]))
+    return uris
+
+def log_all_drones(drone_uris, vars):
+    logger = aSync(drone_uris)
     logger.runCallback()
 
 def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode):
@@ -228,6 +234,8 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                         next_moves[i] = -1
                         cf.status = "idle"
                         print(i, "reached end of path")
+                        cf.drone.land(0.05, 2.5)
+                        timeHelper.sleep(2.5)
 
                     # otherwise, we can consider...
                     # if wait time was 0 then need to move straight to moving in this iteration too
@@ -275,8 +283,10 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     all_drones, next_moves = parse_input(input_path, allcfs, input_mode, speed, next_moves)
 
+    drone_uris = return_uris([1,2],[80,80])
+
     if simulation == False:
-        log_all_drones(all_drones, ["battery"])
+        log_all_drones(drone_uris, ["battery"])
 
     try:
         take_off_all(Z, 2.5, timeHelper, all_drones)
@@ -289,10 +299,11 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
         print("Error:",error)
         land_all(Z, 0.05, timeHelper, all_drones)
 
-    land_all(Z, 0.05, timeHelper, all_drones)
+    #land_all(Z, 0.05, timeHelper, all_drones)
 
     if simulation == False:
-        log_all_drones(all_drones, ["battery"])
-    
-main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+        log_all_drones(drone_uris, ["battery"])
+
+# Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 3, True, 1, 0.5, 0.1)
+main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
