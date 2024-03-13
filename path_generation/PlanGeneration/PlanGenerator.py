@@ -2,7 +2,7 @@ import configparser
 import csv
 from os import listdir
 from os.path import isdir
-from shutil import rmtree
+from shutil import rmtree, copy2
 
 import numpy as np
 from pathlib import Path
@@ -39,7 +39,7 @@ class PlanGenerator:
             if isdir(dataset):
                 rmtree(dataset)
 
-    def generate_plans(self, is_timeslots=False):
+    def generate_plans(self, mission_file=None, is_timeslots=False):
         # 1. Initialize the output directory
         dataset_path = f'{self.parent_path}/datasets/'
         if not Path(dataset_path).exists():
@@ -47,6 +47,10 @@ class PlanGenerator:
         dataset_path += f"{self.properties.dataset_name}/"
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
+
+        #  copy if mission file defined
+        if mission_file is not None:
+            copy2(mission_file, dataset_path)
 
         # 2. Set the map of the sensing environment
         map_setting = MapSetting()

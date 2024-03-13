@@ -104,7 +104,8 @@ class PathGenerationController:
         # Generate plans for each agent, where num is the number of agents
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
-        result_code = self._pg_controller.generate_plans(False)
+        result_code = self._pg_controller.generate_plans(
+            self.config.get("global", "MissionFile"), False)
         return result_code
 
     # Move the generated plans to the EPOS directory

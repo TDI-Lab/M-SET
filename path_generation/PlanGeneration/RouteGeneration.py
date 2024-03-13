@@ -91,6 +91,8 @@ class RouteGeneration:
         hover_energy = max_usage - flight_energy
         # calculate the total energy consumption
         self.energy_consumption = max_usage
+        if self.energy_consumption is None:
+            print("")
         # calculate the total sensing value of the path
         actual_sensing_total = hover_energy/self.hover_power
 

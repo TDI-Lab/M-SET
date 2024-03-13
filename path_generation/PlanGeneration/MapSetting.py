@@ -87,10 +87,10 @@ class MapSetting:
         for i in range(data_map.shape[0]):
             item = data_map.iloc[i]
             item_id = int(item['id'])
-            x = item['x']
-            y = item['y']
-            z = item['z']
-            value = item['value']
+            x = float(item['x'])
+            y = float(item['y'])
+            z = float(item['z'])
+            value = float(item['value'])
 
             min_x = min(x, min_x)
             min_y = min(y, min_y)
