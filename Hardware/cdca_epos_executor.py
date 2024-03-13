@@ -306,4 +306,10 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 3, True, 1, 0.5, 0.1)
-main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+
+# Collision demos
+#main(True, "default", "epospaths/head_on_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+main(True, "default", "epospaths/cross_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
