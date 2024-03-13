@@ -63,6 +63,7 @@ class aSync:
         self.lg_stab.add_variable('stateEstimate.x', 'float')
         self.lg_stab.add_variable('stateEstimate.y', 'float')
         self.lg_stab.add_variable('stateEstimate.z', 'float')
+        self.lg_stab.add_variable('pm.batteryLevel', 'float')
 
     def runCallback(self):
         with SyncCrazyflie(self.drones[0], cf=Crazyflie(rw_cache='./cache')) as scf:
@@ -74,7 +75,7 @@ class aSync:
 
     def log_stab_callback(self, timestamp, data, logconf):
         self.data = data
-        return ('[%d][%s]: %s' % (timestamp, logconf.name, data))
+        print('[%d][%s]: %s' % (timestamp, logconf.name, data))
 
     def simple_log_async(self, scf, logconf):
         cf = scf.cf
