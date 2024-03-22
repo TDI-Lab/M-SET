@@ -1,5 +1,5 @@
 import math 
-from .Swarm_Constants import DISTANCE_STEP
+from .Swarm_Constants import DISTANCE_STEP, TIME_STEP
 
 class Flight:
   # Class for drone flights between two cells.
@@ -14,7 +14,7 @@ class Flight:
 
   def calculate_duration(self):
     # Calculate flight duration.
-    self.duration = len(self.flight_path) - 1
+    self.duration = (len(self.flight_path) - 1) * TIME_STEP
 
 
   def calculate_flight_path(self, origin, destination):
