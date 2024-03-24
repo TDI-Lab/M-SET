@@ -14,7 +14,7 @@ class Flight:
 
   def calculate_duration(self):
     # Calculate flight duration.
-    self.duration = (len(self.flight_path) - 1) * TIME_STEP
+    self.duration = round((len(self.flight_path) - 1) * TIME_STEP, 2)
 
 
   def calculate_flight_path(self, origin, destination):
