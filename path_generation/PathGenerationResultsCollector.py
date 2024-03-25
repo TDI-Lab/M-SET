@@ -460,7 +460,8 @@ class PathGenerationResultsCollector:
         fig.tight_layout()
         fig.savefig(f"{self.parent_path}/results/plans_global_cost.png")
 
-    def check_collision(self, p1, p2, new_p1, new_p2):
+    def check_collision(self, p1, p2, new_p1, new_p2, bounds=(-1, 1, -1, 1)):
+        #  bounds=(x0, x1, y0, y1)
         a, b = 0., 0.
         if new_p1[0] - p1[0] != 0.:
             a = (new_p1[1] - p1[1]) / (new_p1[0] - p1[0])
@@ -469,9 +470,15 @@ class PathGenerationResultsCollector:
         if a == b:
             return False
         #  Compute line intercepts for each trajectory
+        c = p1[1] - a * p1[0]
+        d = p2[1] - b * p2[0]
         #  Compute intersection
+        p_x = (d - c) / (a - b)
+        p_y = a * p_x + c
         #  Check if they collide within the grid bounds
-        print(a, b)
+        if not (bounds[0] <= p_x <= bounds[1] and bounds[2] <= p_y <= bounds[3]):
+            return False
+        return True
 
     def experiment_combinations_collisions(self):
         pg = PathGenerator()
@@ -493,6 +500,8 @@ class PathGenerationResultsCollector:
         #  Calculate collisions for each combination
         combination_collisions = {}
         for combination, plan in runs_for_combinations.items():
+            collisions = 0
+            moves = 0
             combination_collisions[combination] = 0
             plans = [i[1] for i in plan.items()]
             for agent1_plan in plans:
@@ -500,7 +509,10 @@ class PathGenerationResultsCollector:
                     if agent1_plan == agent2_plan:
                         continue
                     for i in range(1, min(len(agent1_plan), len(agent2_plan))):
-                        self.check_collision(agent1_plan[i-1], agent2_plan[i-1], agent1_plan[i], agent2_plan[i])
+                        moves += 1
+                        if self.check_collision(agent1_plan[i - 1], agent2_plan[i - 1], agent1_plan[i], agent2_plan[i]):
+                            collisions += 1
+            combination_collisions[combination] = (collisions, moves)
 
 
 if __name__ == '__main__':
