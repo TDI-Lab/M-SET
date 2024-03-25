@@ -7,22 +7,22 @@ class PathGenerator:
 
     def __init__(self):
         self._state = 0
-        self._generation_manager = PathGenerationController()
+        self.generation_manager = PathGenerationController()
 
     def get_state(self) -> int:
         return self._state
 
     def generate_paths(self, raw=False) -> [List[Tuple[float, List[float]]], None]:
         # Generate num paths and return them
-        result_code = self._generation_manager.generate_paths()
+        result_code = self.generation_manager.generate_paths()
         if result_code != 0:
             return None
-        result_code = self._generation_manager.select_plan()
+        result_code = self.generation_manager.select_plan()
         if result_code != 0:
             return None
 
         #  Get results from file
-        result = self._generation_manager.extract_results()
+        result = self.generation_manager.extract_results()
         if raw:
             return result
         return self.convert_data_to_table(result)

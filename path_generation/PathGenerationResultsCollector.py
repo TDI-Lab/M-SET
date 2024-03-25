@@ -2,6 +2,7 @@
 Will eventually move these into a results factory when it's available.
 """
 from copy import deepcopy
+from itertools import groupby
 from os import listdir
 from pathlib import Path
 
@@ -401,7 +402,7 @@ class PathGenerationResultsCollector:
             base_epos_conf["globalSignalPath"] = "datasets/testbed/testbed.target"
             base_epos_conf["globalCostFunction"] = "MIS"
             #  Generate experiments with different plan sizes
-            plan_sizes = [2**i for i in range(1, 8)]
+            plan_sizes = [2 ** i for i in range(1, 8)]
             for i in plan_sizes:
                 new_pg_conf = deepcopy(base_plan_gen_conf)
                 new_pg_conf["plan"]["planNum"] = i
@@ -459,7 +460,49 @@ class PathGenerationResultsCollector:
         fig.tight_layout()
         fig.savefig(f"{self.parent_path}/results/plans_global_cost.png")
 
+    def check_collision(self, p1, p2, new_p1, new_p2):
+        a, b = 0., 0.
+        if new_p1[0] - p1[0] != 0.:
+            a = (new_p1[1] - p1[1]) / (new_p1[0] - p1[0])
+        if new_p2[0] - p2[0] != 0.:
+            b = (new_p2[1] - p2[1]) / (new_p2[0] - p2[0])
+        if a == b:
+            return False
+        #  Compute line intercepts for each trajectory
+        #  Compute intersection
+        #  Check if they collide within the grid bounds
+        print(a, b)
+
+    def experiment_combinations_collisions(self):
+        pg = PathGenerator()
+        pg.generate_paths(True)
+        #  Generate combinations and their first respective runs
+        results = self.__retrieve_file_data("agents-position")
+        total_combinations = set([tuple(map(int, i.strip("\n").split(",")[:-1])) for i in results])
+        #  Separate all runs
+        runs = self.__retrieve_file_data("selected-plans")
+        all_runs = [line.strip("\n").split(",") for line in runs]
+        all_runs = [list(map(int, line)) for line in all_runs]
+        all_runs = [list(group) for k, group in groupby(all_runs, lambda x: x[0])]
+        runs_for_combinations = {}
+        for combination in total_combinations:
+            runs_for_combinations[combination[1:]] = all_runs[combination[0] - 1][-1][2:]
+        for combination, indexes in runs_for_combinations.items():
+            plans = pg.convert_data_to_table(pg.generation_manager.extract_results(indexes))
+            runs_for_combinations[combination] = plans
+        #  Calculate collisions for each combination
+        combination_collisions = {}
+        for combination, plan in runs_for_combinations.items():
+            combination_collisions[combination] = 0
+            plans = [i[1] for i in plan.items()]
+            for agent1_plan in plans:
+                for agent2_plan in plans:
+                    if agent1_plan == agent2_plan:
+                        continue
+                    for i in range(1, min(len(agent1_plan), len(agent2_plan))):
+                        self.check_collision(agent1_plan[i-1], agent2_plan[i-1], agent1_plan[i], agent2_plan[i])
+
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.experiment_average_sensing()
+    pgr.experiment_combinations_collisions()

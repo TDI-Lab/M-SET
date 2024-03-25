@@ -102,11 +102,12 @@ class PathGenerationController:
         self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
         plan_gen_properties = self.__construct_plan_generation_properties()
         self.config_generator.write_config_file(plan_gen_properties)
+        mission_file = f"{self.config.get('global', 'MissionFile')}"
         # Generate plans for each agent, where num is the number of agents
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
         result_code = self._pg_controller.generate_plans(
-            self.config.get("global", "MissionFile"), False)
+            mission_file, False)
         return result_code
 
     # Move the generated plans to the EPOS directory
@@ -177,10 +178,12 @@ class PathGenerationController:
                 selected_paths.append(selected_path)
         return selected_paths
 
-    def extract_results(self) -> List[Tuple[float, List[float], List[str]]]:
+    def extract_results(self, indexes=None) -> List[Tuple[float, List[float], List[str]]]:
         # Extract the results from the selected plans and paths
-        plan_indexes = self.__get_plan_indexes()
-        print(f"Selected plan indexes: {plan_indexes}")
+        if indexes is None:
+            plan_indexes = self.__get_plan_indexes()
+        else:
+            plan_indexes = indexes
         selected_plans = self.__extract_sensing_values_from_indexes(plan_indexes)
         selected_paths = self.__extract_paths_from_indexes(plan_indexes)
         results = []
