@@ -16,7 +16,7 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncLogger import SyncLogger
 
 # URI to the Crazyflie to connect to
-uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702')
+uri = uri_helper.uri_from_env(default='radio://0/90/2M/E7E7E7E703')
 # MAKE SURE THE CHANNEL IS CORRECT HERE e.g. 80 or 90 usually
 # MAKE SURE THE NUMBER IS CORRECT HERE e.g. E7E7E7E701 for drone 1, 02 at the end instead for drone 2 etc.
 

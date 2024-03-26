@@ -19,10 +19,14 @@ def main():
     input_p = Input_Parser(plans)
     parsed_plans = input_p.parsed_input
     
+    print("")
     for plan in parsed_plans:
         print(plan)
+    print("")
+
     swarm_controller = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
     swarm_controller.detect_potential_collisions()
+    print("final plan: \n", parsed_plans)
     
     #swarm_controller.plans =  execute these plans with hardware/simulation
 
