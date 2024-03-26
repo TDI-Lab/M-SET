@@ -27,7 +27,7 @@ class Input_Parser:
             else:
                 drone_plan[-1][1] += EPOS_TIMESTEP
         parsed_input.append(drone_plan)
-    print(parsed_input)
+    print("parsed input: ", parsed_input)
     return parsed_input
 
 

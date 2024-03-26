@@ -178,7 +178,7 @@ def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
-        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+str(numbers[i]))
+        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i]))
     return uris
 
 def log_all_drones(drone_uris, vars):
@@ -221,7 +221,8 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                         print(i, "idle")
                         next_moves[i] = 1
 
-                elif cf.status == "sensing":
+                #elif
+                if cf.status == "sensing":
                     cf.status = "waiting"
                     print(i,"waiting for",cf.times[cf.move_count - 1])
                     next_moves[i] = cf.times[cf.move_count - 1] +1
@@ -283,7 +284,7 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
 
     all_drones, next_moves = parse_input(input_path, allcfs, input_mode, speed, next_moves)
 
-    drone_uris = return_uris([1,2],[80,80])
+    drone_uris = return_uris([80,90],[2,3])
 
     if simulation == False:
         log_all_drones(drone_uris, ["battery"])
@@ -305,11 +306,19 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
         log_all_drones(drone_uris, ["battery"])
 
 # Debugging demos    
-#main(True, "default", "epospaths/debug_default_demo.txt", 3, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/debug_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/debug_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
+
+# Demos
+#main(True, "default", "epospaths/Evangelos_default_demo.txt", 2, True, 1, 0.5, 0.1)
+main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1)
+#main(True, "default", "epospaths/sanity_test.txt", 2, True, 1, 0.5, 0.1)
 
 # Collision demos
-#main(True, "default", "epospaths/head_on_demo.txt", 3, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
-main(True, "default", "epospaths/cross_demo.txt", 3, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 3, True, 1, 0.5, 0.1)
+#main(True, "default", "epospaths/head_on_demo.txt", 2, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
+#main(True, "default", "epospaths/cross_demo.txt", 2, True, 1, 0.5, 0.1)
+#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
+        
+#log_all_drones(return_uris([80],[1]), ["battery"])
+#log_all_drones(return_uris([80,90],[2,3]), ["battery"])
