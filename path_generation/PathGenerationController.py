@@ -13,7 +13,8 @@ from path_generation.PlanGeneration.PlanGenerator import PlanGenerator
 
 class PathGenerationController:
 
-    def __init__(self):
+    def __init__(self, copy_config=True):
+        self.copy_config = copy_config
         self.parent_path = Path(__file__).parent.resolve()
         self.config = configparser.ConfigParser()
         self.config.read(f"{self.parent_path}/../drone_sense.properties")
@@ -98,10 +99,11 @@ class PathGenerationController:
         return properties
 
     def generate_paths(self) -> int:
-        # Create config files from drone_sense.properties
-        self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
-        plan_gen_properties = self.__construct_plan_generation_properties()
-        self.config_generator.write_config_file(plan_gen_properties)
+        if self.copy_config:
+            # Create config files from drone_sense.properties
+            self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
+            plan_gen_properties = self.__construct_plan_generation_properties()
+            self.config_generator.write_config_file(plan_gen_properties)
         mission_file = f"{self.config.get('global', 'MissionFile')}"
         # Generate plans for each agent, where num is the number of agents
         self._pg_controller = PlanGenerator()
@@ -120,9 +122,10 @@ class PathGenerationController:
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
         self._epos_controller = EPOSWrapper()
-        self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
-        epos_properties = self.__construct_epos_properties()
-        self.config_generator.write_config_file(epos_properties)
+        if self.copy_config:
+            self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
+            epos_properties = self.__construct_epos_properties()
+            self.config_generator.write_config_file(epos_properties)
         show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
         show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
         result_code = self._epos_controller.run(out=show_out, err=show_err)

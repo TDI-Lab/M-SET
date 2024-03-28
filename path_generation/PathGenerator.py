@@ -5,9 +5,9 @@ from pathlib import Path
 
 class PathGenerator:
 
-    def __init__(self):
+    def __init__(self, copy_config=True):
         self._state = 0
-        self.generation_manager = PathGenerationController()
+        self.generation_manager = PathGenerationController(copy_config=copy_config)
 
     def get_state(self) -> int:
         return self._state
@@ -30,8 +30,7 @@ class PathGenerator:
     # Read the testbed mapping from a csv file
     # Extract the coordinate of the testbed from the file
     def read_testbed_mapping(self, debug=False):
-        parent_path = Path(__file__).parent.resolve()
-        path_to_testbed = parent_path / 'PlanGeneration/datasets/testbed/testbed.csv'
+        path_to_testbed = self.generation_manager.config.get("global", "MissionFile")
 
         mapping = {'sense': [], 'base': []}
         with open(path_to_testbed, 'r') as f:
