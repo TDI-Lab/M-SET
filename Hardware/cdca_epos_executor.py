@@ -99,15 +99,6 @@ def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest
     else:
         return max(base * (round(number/base) + 1), base)
 
-    #return base * (round(number/base) + min(min((max(diff,1)),1),max(diff,0)))
-
-    return base * (round(number/base) + min(0,min(max(diff,1),1)))
-
-    return base * (round(number/base) + min(round(number/base),0))
-
-
-    return base * (round(number/base) + min(max(number%base,1),1)) # Breaks if base>=1
-
 class Drone():
     def __init__(self, drone, speed):
         self.positions = []
@@ -217,8 +208,7 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
         if t % 1 == 0: # Only print integer values of t
             print("t=",t)
-
-        print(next_moves)
+            
         if travel_time_mode == 2:
             if np.any((next_moves < timestep_length) & (next_moves > 0)):
                 for j in range(0,len(next_moves)):
@@ -231,7 +221,6 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
                         # add one to the action time of the other drones
                         next_moves[j] = next_moves[j] + timestep_length # not sure if this is right or it should be the below instead
                         #next_moves[j] = roundup_nearest(next_moves[i],timestep_length) # seems to break it
-        print(next_moves)
 
         in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
@@ -361,6 +350,9 @@ main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0
         
 #log_all_drones(return_uris([80],[1]), ["battery"])
 #log_all_drones(return_uris([80,90],[2,3]), ["battery"])
+
+# Floating point precision issues with timestep_length<1 that cant be represented accurately/simply in binary, stick to 2^{-x} to be safe
+# Check timings are correct for movements with timestep_length<1
 
 # Floating point precision issues with timestep_length<1 that cant be represented accurately/simply in binary, stick to 2^{-x} to be safe
 # Check timings are correct for movements with timestep_length<1
