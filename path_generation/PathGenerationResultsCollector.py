@@ -571,14 +571,24 @@ class PathGenerationResultsCollector:
             return False
         return True
 
-    def experiment_combinations_collisions(self):
+    def experiment_num_agents_collisions(self):
+        pass
+
+    def experiment_num_visited_cells_collisions(self):
+        pass
+
+    def experiment_map_size_collisions(self):
         #  Set target directories
         parent_path = Path(__file__).parent.resolve()
         properties_path = f"{parent_path}/../drone_sense.properties"
         #  Set EPOS properties
         collision_probabilities = []
+        collision_probabilities_min = []
+        collision_probabilities_max = []
         config = ConfigManager()
-        for map_size in range(2, 13):
+        low = 2
+        high = 12
+        for map_size in range(low, high+1):
             #  Set system properties
             config.set_target_path(properties_path)
             system_conf = deepcopy(self.STANDARD_SYSTEM_CONF)
@@ -586,9 +596,7 @@ class PathGenerationResultsCollector:
             system_conf["global"]["MissionFile"] = f"{parent_path}/../examples/{map_size}x{map_size}.csv"
             system_conf["path_generation"]["MaximumNumberOfVisitedCells"] = map_size
             system_conf["epos"]["PlanDimension"] = map_size*map_size
-            system_conf["epos"]["EPOSstdout"] = "False"
-            system_conf["epos"]["EPOSstderr"] = "True"
-            system_conf["epos"]["NumberOfSimulations"] = 120
+            system_conf["epos"]["NumberOfSimulations"] = 100
             system_conf["epos"]["IterationsPerSimulation"] = 8
             system_conf["path_generation"]["NumberOfPlans"] = 64
             system_conf["epos"]["globalCostFunction"] = "MIS"
@@ -632,14 +640,32 @@ class PathGenerationResultsCollector:
                                 if self.check_collision(agent1_plan[i - 1], agent2_plan[i - 1], agent1_plan[i], agent2_plan[i]):
                                     collisions += 1
                 combination_collisions[combination] = (collisions, moves)
+            #  Calculate the probability for a collision from each combination
             cur_cps = []
             for collisions, moves in combination_collisions.values():
-                cur_cps.append(float(collisions)/moves)
+                cur_cps.append((float(collisions)/moves)*100.)
             collision_probabilities.append((mean(cur_cps), std(cur_cps)))
+            collision_probabilities_min.append(min(cur_cps))
+            collision_probabilities_max.append(max(cur_cps))
         print(collision_probabilities)
         #  Plot!
+        means = np.array([i[0] for i in collision_probabilities])
+        stds = np.array([i[1] for i in collision_probabilities])
+        lowers = means - stds
+        uppers = means + stds
+        sizes = [i for i in range(low, high+1)]
+        plt.plot(sizes, means)
+        plt.fill_between(sizes,
+                         lowers,
+                         uppers,
+                         color="b", alpha=.15)
+        plt.grid()
+        plt.title("Affect of Map Size on Collision Rates")
+        plt.xlabel("Map Size (# Cells)")
+        plt.ylabel("% Chance of Drone Collision per Step")
+        plt.show()
 
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.experiment_combinations_collisions()
+    pgr.experiment_map_size_collisions()
