@@ -87,74 +87,74 @@ class PathGenerationResultsCollector:
     }
 
     STANDARD_SYSTEM_CONF = {
-    "global": {
-        "MissionName": "testbed",
-        "MissionFile": "testbed.csv",
-        "NumberOfDrones": 4
-    },
+        "global": {
+            "MissionName": "testbed",
+            "MissionFile": "testbed.csv",
+            "NumberOfDrones": 4
+        },
 
-    "path_generation": {
-        "NumberOfPlans": 8,
-        "MaximumNumberOfVisitedCells": 6
-    },
+        "path_generation": {
+            "NumberOfPlans": 8,
+            "MaximumNumberOfVisitedCells": 6
+        },
 
-    "epos": {
-        "EPOSstdout": False,
-        "EPOSstderr": False,
-        "NumberOfSimulations": 1,
-        "IterationsPerSimulation": 32,
-        "NumberOfChildren": 2,
-        "PlanDimension": 6,
-        "Shuffle": 0,
-        "ShuffleFile": "permuation.csv",
-        "NumberOfWeights": 2,
-        "WeightsString": "0.0,0.0",
-        "behaviours": "same",
-        "agentsBehaviourPath": "default",
-        "constraint": "SOFT",
-        "constraintPlansPath": "default",
-        "constraintCostsPath": "default",
-        "strategy": "never",
-        "periodically.reorganizationPeriod": 3,
-        "convergence.memorizationOffset": 5,
-        "globalCost.reductionThreshold": 0.5,
-        "strategy.reorganizationSeed": 0,
-        "globalSignalPath": "",
-        "globalCostFunction": "VAR",
-        "scaling": "STD",
-        "localCostFunction": "INDEX",
-        "logger.GlobalCostLogger": "true",
-        "logger.LocalCostMultiObjectiveLogger": "true",
-        "logger.TerminationLogger": "true",
-        "logger.SelectedPlanLogger": "true",
-        "logger.GlobalResponseVectorLogger": "true",
-        "logger.PlanFrequencyLogger": "true",
-        "logger.UnfairnessLogger": "true",
-        "logger.GlobalComplexCostLogger": "false",
-        "logger.WeightsLogger": "false",
-        "logger.ReorganizationLogger": "true",
-        "logger.VisualizerLogger": "false",
-        "logger.PositionLogger": "true",
-        "logger.HardConstraintLogger": "false"
-    },
+        "epos": {
+            "EPOSstdout": False,
+            "EPOSstderr": False,
+            "NumberOfSimulations": 1,
+            "IterationsPerSimulation": 32,
+            "NumberOfChildren": 2,
+            "PlanDimension": 6,
+            "Shuffle": 0,
+            "ShuffleFile": "permuation.csv",
+            "NumberOfWeights": 2,
+            "WeightsString": "0.0,0.0",
+            "behaviours": "same",
+            "agentsBehaviourPath": "default",
+            "constraint": "SOFT",
+            "constraintPlansPath": "default",
+            "constraintCostsPath": "default",
+            "strategy": "never",
+            "periodically.reorganizationPeriod": 3,
+            "convergence.memorizationOffset": 5,
+            "globalCost.reductionThreshold": 0.5,
+            "strategy.reorganizationSeed": 0,
+            "globalSignalPath": "",
+            "globalCostFunction": "VAR",
+            "scaling": "STD",
+            "localCostFunction": "INDEX",
+            "logger.GlobalCostLogger": "true",
+            "logger.LocalCostMultiObjectiveLogger": "true",
+            "logger.TerminationLogger": "true",
+            "logger.SelectedPlanLogger": "true",
+            "logger.GlobalResponseVectorLogger": "true",
+            "logger.PlanFrequencyLogger": "true",
+            "logger.UnfairnessLogger": "true",
+            "logger.GlobalComplexCostLogger": "false",
+            "logger.WeightsLogger": "false",
+            "logger.ReorganizationLogger": "true",
+            "logger.VisualizerLogger": "false",
+            "logger.PositionLogger": "true",
+            "logger.HardConstraintLogger": "false"
+        },
 
-    "drone": {
-        "BatteryCapacity": 2700,
-        "BodyMass": 0.027,
-        "BatteryMass": 0.005,
-        "NumberOfRotors": 4,
-        "RotorDiameter": 0.03,
-        "ProjectedBodyArea": 0.0599,
-        "ProjectedBatteryArea": 0.0037,
-        "PowerEfficiency": 1.25,
-        "GroundSpeed": 6.94,
-        "AirSpeed": 8.5
-    },
+        "drone": {
+            "BatteryCapacity": 275000,
+            "BodyMass": 1.07,
+            "BatteryMass": 0.31,
+            "NumberOfRotors": 4,
+            "RotorDiameter": 0.15,
+            "ProjectedBodyArea": 0.0599,
+            "ProjectedBatteryArea": 0.0037,
+            "PowerEfficiency": 1.25,
+            "GroundSpeed": 6.94,
+            "AirSpeed": 8.5
+        },
 
-    "environment": {
-        "AirDensity": 1.225
+        "environment": {
+            "AirDensity": 1.225
+        }
     }
-}
 
     def __init__(self):
         self.parent_path = Path(__file__).parent.resolve()
@@ -538,8 +538,8 @@ class PathGenerationResultsCollector:
             rows = ["type,id,x,y,z,value\n"]
             #  Create sensing cells
             cell_id = 0
-            for i in range(1, size+1):
-                for j in range(1, size+1):
+            for i in range(1, size + 1):
+                for j in range(1, size + 1):
                     new_row = f"SENSE,{cell_id},{i},{j},1,1\n"
                     rows.append(new_row)
                     cell_id += 1
@@ -571,11 +571,137 @@ class PathGenerationResultsCollector:
             return False
         return True
 
-    def experiment_num_agents_collisions(self):
-        pass
+    def __generate_collision_probabilities(self):
+        #  Run path generation
+        pg = PathGenerator()
+        pg.generate_paths(True)
+        #  Generate combinations and their first respective runs
+        results = self.__retrieve_file_data("agents-position")
+        total_combinations = set([tuple(map(int, i.strip("\n").split(",")[:-1])) for i in results])
+        #  Separate all runs
+        runs = self.__retrieve_file_data("selected-plans")
+        all_runs = [line.strip("\n").split(",") for line in runs]
+        all_runs = [list(map(int, line)) for line in all_runs]
+        all_runs = [list(group) for k, group in groupby(all_runs, lambda x: x[0])]
+        runs_for_combinations = {}
+        for combination in total_combinations:
+            if combination[1:] not in runs_for_combinations:
+                runs_for_combinations[combination[1:]] = [all_runs[combination[0] - 1][-1][2:]]
+            else:
+                runs_for_combinations[combination[1:]].append(all_runs[combination[0] - 1][-1][2:])
+        for combination, indexes in runs_for_combinations.items():
+            runs_for_combinations[combination] = []
+            for index_set in indexes:
+                plans = pg.convert_data_to_table(pg.generation_manager.extract_results(index_set))
+                runs_for_combinations[combination].append(plans)
+        #  Calculate collisions for each combination
+        combination_collisions = {}
+        for combination, plans in runs_for_combinations.items():
+            collisions = 0
+            moves = 0
+            combination_collisions[combination] = 0
+            for plan in plans:
+                agent_movements = [i[1] for i in list(plan.items())]
+                for agent1_plan in agent_movements:
+                    for agent2_plan in agent_movements:
+                        if agent1_plan == agent2_plan:
+                            continue
+                        for i in range(1, min(len(agent1_plan), len(agent2_plan))):
+                            moves += 1
+                            if self.check_collision(agent1_plan[i - 1], agent2_plan[i - 1], agent1_plan[i],
+                                                    agent2_plan[i]):
+                                collisions += 1
+            combination_collisions[combination] = (collisions, moves)
+        #  Calculate the probability for a collision from each combination
+        cur_cps = []
+        for collisions, moves in combination_collisions.values():
+            cur_cps.append((float(collisions) / moves) * 100.)
+        return mean(cur_cps), std(cur_cps)
 
     def experiment_num_visited_cells_collisions(self):
-        pass
+        #  Set target directories
+        parent_path = Path(__file__).parent.resolve()
+        properties_path = f"{parent_path}/../drone_sense.properties"
+        #  Set EPOS properties
+        collision_probabilities = []
+        config = ConfigManager()
+        low = 2
+        high = 15
+        for num_visited_cells in range(low, high + 1):
+            #  Set system properties
+            config.set_target_path(properties_path)
+            system_conf = deepcopy(self.STANDARD_SYSTEM_CONF)
+            system_conf["global"]["MissionName"] = f"5x5"
+            system_conf["global"]["MissionFile"] = f"{parent_path}/../examples/5x5.csv"
+            system_conf["global"]["NumberOfAgents"] = 12
+            system_conf["path_generation"]["MaximumNumberOfVisitedCells"] = num_visited_cells
+            system_conf["epos"]["PlanDimension"] = 25
+            system_conf["epos"]["NumberOfSimulations"] = 50
+            system_conf["epos"]["IterationsPerSimulation"] = 8
+            system_conf["path_generation"]["NumberOfPlans"] = 64
+            system_conf["epos"]["globalCostFunction"] = "MIS"
+            system_conf["drone"]["BatteryCapacity"] = 270000
+            config.write_config_file(system_conf)
+            collision_probabilities.append(self.__generate_collision_probabilities())
+
+        #  Plot!
+        means = np.array([i[0] for i in collision_probabilities])
+        stds = np.array([i[1] for i in collision_probabilities])
+        lowers = means - stds
+        uppers = means + stds
+        sizes = [i for i in range(low, high + 1)]
+        plt.plot(sizes, means)
+        plt.fill_between(sizes,
+                         lowers,
+                         uppers,
+                         color="b", alpha=.15)
+        plt.grid()
+        plt.title("Affect of # Visited Cells on Collision Rates")
+        plt.xlabel("# Visited Cells")
+        plt.ylabel("% Chance of Drone Collision per Step")
+        plt.show()
+
+    def experiment_num_agents_collisions(self):
+        #  Set target directories
+        parent_path = Path(__file__).parent.resolve()
+        properties_path = f"{parent_path}/../drone_sense.properties"
+        #  Set EPOS properties
+        collision_probabilities = []
+        config = ConfigManager()
+        low = 2
+        high = 140
+        for num_agents in range(low, high + 1):
+            #  Set system properties
+            config.set_target_path(properties_path)
+            system_conf = deepcopy(self.STANDARD_SYSTEM_CONF)
+            system_conf["global"]["MissionName"] = f"6x6"
+            system_conf["global"]["MissionFile"] = f"{parent_path}/../examples/12x12.csv"
+            system_conf["global"]["NumberOfAgents"] = num_agents
+            system_conf["path_generation"]["MaximumNumberOfVisitedCells"] = 16
+            system_conf["epos"]["PlanDimension"] = 144
+            system_conf["epos"]["NumberOfSimulations"] = 25
+            system_conf["epos"]["IterationsPerSimulation"] = 8
+            system_conf["path_generation"]["NumberOfPlans"] = 64
+            system_conf["epos"]["globalCostFunction"] = "MIS"
+            config.write_config_file(system_conf)
+            collision_probabilities.append(self.__generate_collision_probabilities())
+
+        #  Plot!
+        means = np.array([i[0] for i in collision_probabilities])
+        stds = np.array([i[1] for i in collision_probabilities])
+        lowers = means - stds
+        uppers = means + stds
+        sizes = [i for i in range(low, high + 1)]
+        plt.plot(sizes, means)
+        plt.fill_between(sizes,
+                         lowers,
+                         uppers,
+                         color="b", alpha=.15)
+        plt.grid()
+        plt.title("Affect of # Agents on Collision Rates")
+        plt.xlabel("# Agents")
+        plt.ylabel("% Chance of Drone Collision per Step")
+        plt.show()
 
     def experiment_map_size_collisions(self):
         #  Set target directories
@@ -588,72 +714,26 @@ class PathGenerationResultsCollector:
         config = ConfigManager()
         low = 2
         high = 12
-        for map_size in range(low, high+1):
+        for map_size in range(low, high + 1):
             #  Set system properties
             config.set_target_path(properties_path)
             system_conf = deepcopy(self.STANDARD_SYSTEM_CONF)
             system_conf["global"]["MissionName"] = f"{map_size}x{map_size}"
             system_conf["global"]["MissionFile"] = f"{parent_path}/../examples/{map_size}x{map_size}.csv"
             system_conf["path_generation"]["MaximumNumberOfVisitedCells"] = map_size
-            system_conf["epos"]["PlanDimension"] = map_size*map_size
+            system_conf["epos"]["PlanDimension"] = map_size * map_size
             system_conf["epos"]["NumberOfSimulations"] = 100
             system_conf["epos"]["IterationsPerSimulation"] = 8
             system_conf["path_generation"]["NumberOfPlans"] = 64
             system_conf["epos"]["globalCostFunction"] = "MIS"
             config.write_config_file(system_conf)
-            #  Run path generation
-            pg = PathGenerator()
-            pg.generate_paths(True)
-            #  Generate combinations and their first respective runs
-            results = self.__retrieve_file_data("agents-position")
-            total_combinations = set([tuple(map(int, i.strip("\n").split(",")[:-1])) for i in results])
-            #  Separate all runs
-            runs = self.__retrieve_file_data("selected-plans")
-            all_runs = [line.strip("\n").split(",") for line in runs]
-            all_runs = [list(map(int, line)) for line in all_runs]
-            all_runs = [list(group) for k, group in groupby(all_runs, lambda x: x[0])]
-            runs_for_combinations = {}
-            for combination in total_combinations:
-                if combination[1:] not in runs_for_combinations:
-                    runs_for_combinations[combination[1:]] = [all_runs[combination[0] - 1][-1][2:]]
-                else:
-                    runs_for_combinations[combination[1:]].append(all_runs[combination[0] - 1][-1][2:])
-            for combination, indexes in runs_for_combinations.items():
-                runs_for_combinations[combination] = []
-                for index_set in indexes:
-                    plans = pg.convert_data_to_table(pg.generation_manager.extract_results(index_set))
-                    runs_for_combinations[combination].append(plans)
-            #  Calculate collisions for each combination
-            combination_collisions = {}
-            for combination, plans in runs_for_combinations.items():
-                collisions = 0
-                moves = 0
-                combination_collisions[combination] = 0
-                for plan in plans:
-                    agent_movements = [i[1] for i in list(plan.items())]
-                    for agent1_plan in agent_movements:
-                        for agent2_plan in agent_movements:
-                            if agent1_plan == agent2_plan:
-                                continue
-                            for i in range(1, min(len(agent1_plan), len(agent2_plan))):
-                                moves += 1
-                                if self.check_collision(agent1_plan[i - 1], agent2_plan[i - 1], agent1_plan[i], agent2_plan[i]):
-                                    collisions += 1
-                combination_collisions[combination] = (collisions, moves)
-            #  Calculate the probability for a collision from each combination
-            cur_cps = []
-            for collisions, moves in combination_collisions.values():
-                cur_cps.append((float(collisions)/moves)*100.)
-            collision_probabilities.append((mean(cur_cps), std(cur_cps)))
-            collision_probabilities_min.append(min(cur_cps))
-            collision_probabilities_max.append(max(cur_cps))
-        print(collision_probabilities)
+            collision_probabilities.append(self.__generate_collision_probabilities())
         #  Plot!
         means = np.array([i[0] for i in collision_probabilities])
         stds = np.array([i[1] for i in collision_probabilities])
         lowers = means - stds
         uppers = means + stds
-        sizes = [i for i in range(low, high+1)]
+        sizes = [i * i for i in range(low, high + 1)]
         plt.plot(sizes, means)
         plt.fill_between(sizes,
                          lowers,
@@ -668,4 +748,4 @@ class PathGenerationResultsCollector:
 
 if __name__ == '__main__':
     pgr = PathGenerationResultsCollector()
-    pgr.experiment_map_size_collisions()
+    pgr.experiment_num_visited_cells_collisions()
