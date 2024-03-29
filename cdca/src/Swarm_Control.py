@@ -68,63 +68,47 @@ class Swarm_Control:
             from_time = min(drone.flights[0].start_time for drone in drones)
 
         num_positions = int(math.ceil((to_time - from_time) / TIME_STEP)) + 1
-    
 
         for drone in drones:
-            positions_for_drone = []
+            positions_for_drone = [None] * num_positions
 
-            check_flight_time_range = lambda flight, time_from, time_to: time_from <= flight.start_time <= time_to or time_from <= flight.finish_time <= time_to
-            flights_in_time = [flight for flight in drone.flights if check_flight_time_range(flight, from_time, to_time)]
-            if len(flights_in_time) == 0:
-                #get last known position of drone
-                flights_before_time = [flight for flight in drone.flights if flight.finish_time < from_time]
-                pos = flights_before_time[-1].flight_path[-1]
-                positions_for_drone.extend([pos] * num_positions)
-                drone_positions.append(positions_for_drone)
+            flight_i = 0
+            for flight in drone.flights:
+                if flight.finish_time < from_time or flight.start_time > to_time:
+                    continue  # Skip flights outside the time range
 
-                continue
-            for i, flight in enumerate(flights_in_time): 
-                if i > 0 and flights_in_time[i - 1].finish_time == flight.start_time:
-                    positions_for_drone.pop(-1)
-                if i == 0 and flight.start_time < from_time: # Cut off positions of first flight that is before from_time
-                    if ((from_time - flight.start_time) *10) % (TIME_STEP*10) != 0: # Check if the time difference is not a multiple of TIME_STEP
-                        prefix_flight_num = int(round(flight.finish_time - from_time) / TIME_STEP) + 2
+                start_index = max(0, int((flight.start_time - from_time) / TIME_STEP))
+                end_index = min(num_positions, start_index + len(flight.flight_path))
+
+                for i in range(start_index, end_index):
+                    if positions_for_drone[i] is None:  # Avoid duplicate positions
+                        positions_for_drone[i] = flight.flight_path[i - start_index]
+
+            # Fill in gaps with the last known position
+            last_known_position = None
+            for i in range(num_positions):
+                if positions_for_drone[i] is not None:
+                    last_known_position = positions_for_drone[i]
+                elif last_known_position is not None:
+                    positions_for_drone[i] = last_known_position
+
+            # If the drone's first flight starts after from_time, prepend positions with the first known position
+            if flight_i == 0 and flight.start_time > from_time:
+                first_known_position = flight.flight_path[0]
+                for i in range(num_positions):
+                    if positions_for_drone[i] is None:
+                        positions_for_drone[i] = first_known_position
                     else:
-                        prefix_flight_num = int(round(flight.finish_time - from_time) / TIME_STEP) + 1
-                   
-                    extra = max(0, prefix_flight_num - len(flight.flight_path))
+                        break
+            flight_i += 1
+            # If the drone's last flight finishes before to_time, extend positions with the last known position
+            if drone.flights[-1].finish_time < to_time:
+                positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
 
-                    prefix_flight_num -= extra
-
-                    positions_for_drone.extend(flight.flight_path[-prefix_flight_num:])
-                    # positions_for_drone.extend([flight.flight_path[0]] * extra) # Add the first position of the flight to the drone's path using list multiplication
-                elif i == 0 and flight.start_time > from_time: # Add positions to start if first flight is after from_time
-
-                    prefix_flight_num = int((flight.start_time - from_time) / TIME_STEP) 
-                    positions_for_drone.extend([flight.flight_path[0]] * prefix_flight_num)
-                    positions_for_drone.extend(flight.flight_path)
-
-                else:
-                    positions_for_drone.extend(flight.flight_path)
-
-                # Add positions for the time between this flight and the next flight
-                if i < len(flights_in_time) - 1 and flights_in_time[i + 1].start_time > flight.finish_time:
-                    if len(flights_in_time) == 1:
-                        gap_flight_num = int((flights_in_time[i + 1].start_time - flight.finish_time) / TIME_STEP) - 2
-                    else:
-                        gap_flight_num = int((flights_in_time[i + 1].start_time - flight.finish_time) / TIME_STEP) - 1
-                    positions_for_drone.extend([flight.flight_path[-1]] * gap_flight_num)
-
-            if flights_in_time[-1].finish_time < to_time:
-                suffix_flight_num = int(round((to_time - round(flights_in_time[-1].finish_time, 2)) / TIME_STEP) )
-                positions_for_drone.extend([flights_in_time[-1].flight_path[-1]] * suffix_flight_num)
-
-            assert len(positions_for_drone)   == num_positions
             drone_positions.append(positions_for_drone)
-
+        
         return drone_positions
 
-  
   def visualise_swarm(self):
     # Visualise the swarm.
     discreet_positions = self.discretise_flight_paths(self.drones)
