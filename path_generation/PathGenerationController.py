@@ -105,7 +105,6 @@ class PathGenerationController:
             plan_gen_properties = self.__construct_plan_generation_properties()
             self.config_generator.write_config_file(plan_gen_properties)
         mission_file = f"{self.config.get('global', 'MissionFile')}"
-        # Generate plans for each agent, where num is the number of agents
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
         result_code = self._pg_controller.generate_plans(

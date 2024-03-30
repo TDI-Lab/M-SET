@@ -61,7 +61,6 @@ class PlanGenerator:
         # 3. Set the target for drones, i,e., the required sensing value of each cell
         cells = map_setting.cells
         target_arr = [cell["value"] for cell in cells]
-        cells_num = len(target_arr)
         # output the target to .target file
         target_path = (f"{self.parent_path}/datasets/{self.properties.dataset_name}/"
                        f"{self.properties.dataset_name}.target")
@@ -81,13 +80,10 @@ class PlanGenerator:
                 drone_route = RouteGeneration()
                 # the departure and destination (charging station)
                 station_idx = agent_id % self.properties.stations_num
-                # the number of cells that the drone visits
-                visited_cells_num = plan_id % self.properties.max_visited_cells_num + 1
                 # to find a route
                 drone_route.find_route(station_idx, self.properties.max_visited_cells_num, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
-                visited_cells_list = drone_route.visited_cells
                 plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)
 
                 path_taken = drone_route.path_taken
