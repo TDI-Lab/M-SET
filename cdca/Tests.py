@@ -6,6 +6,7 @@ from src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from src.Input_Parser import Input_Parser
 from src.Swarm_Constants import TIME_DELAY
 from src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
+from src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
 
 class TestFlight(unittest.TestCase):
 
@@ -97,17 +98,70 @@ class TestSwarmControl(unittest.TestCase):
         self.assertEqual(result['number_of_parallel_collisions'], 0, '')
         self.assertEqual(result['number_of_dest_occupied_collisions'], 1, '')
 
-    def test_dependency_collision_avoidance(self):
-        plans = [[[[1,2], 5], [[3,1], 3], [[1,2], 3]],
-                    [[[2,2], 5], [[2,1], 3], [[8,8], 3]],
-                    [[[3,2], 5], [[2,2], 3], [[4,4], 3]],
-                    [[[1,1], 5], [[1,6], 3], [[1,1], 3]],
-                    [[[7,7], 5], [[8,8], 3], [[1,5], 3]]]
-       
+ 
+
+    def test_dependency_collision_avoidance_dest_occupied(self):
+      
+        plans = [[[[9,1], 1], [[1,1], 3]], [[[1,1], 20], [[9,9], 3]]] # dest occupied collision
+        
         swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance())
+
+        result_before_ca = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
+
         swarm_controller.detect_potential_collisions()
-        self.assertEqual(swarm_controller.drones[0].plan[0][1], 5, '')
-    
+        # swarm_controller.visualise_swarm()
+
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
+
+    def test_dependency_collision_avoidance_parallel_collision(self):
+      
+        plans = [[[[1,1], 5], [[9,9], 3]], [[[9,9], 5], [[1,1], 3]]] # parallel collision
+        
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance())
+
+        result_before_ca = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
+
+        swarm_controller.detect_potential_collisions()
+        # swarm_controller.visualise_swarm()
+
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
+
+    def test_dependency_collision_avoidance_final_dest_occupied(self):
+      
+        plans = [[[[9,1], 1], [[1,1], 3]], [[[1,9], 1], [[1,1], 3]]] # final dest occupied collision
+        
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance())
+
+        result_before_ca = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
+
+        swarm_controller.detect_potential_collisions()
+        # swarm_controller.visualise_swarm()
+
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
+
+    def test_dependency_collision_avoidance_cross_collision(self):
+      
+        plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]]] # cross collision
+        
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance())
+
+        result_before_ca = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
+
+        swarm_controller.detect_potential_collisions()
+        # swarm_controller.visualise_swarm()
+
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
+
+
+
 
 class TestInputParser(unittest.TestCase):
 
