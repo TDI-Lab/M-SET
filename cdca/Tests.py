@@ -125,7 +125,7 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Parallel Collision test for Dependency Collision Avoidance")
 
         result = swarm_controller.get_offline_collision_stats()
         self.assertEqual(result['number_of_collisions'], 0, '')
@@ -140,7 +140,7 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Final Destination Occupied Collision test for Dependency Collision Avoidance")
 
         result = swarm_controller.get_offline_collision_stats()
         self.assertEqual(result['number_of_collisions'], 0, '')
@@ -155,10 +155,10 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Cross Collision test for Dependency Collision Avoidance")
 
-        # result = swarm_controller.get_offline_collision_stats()
-        # self.assertEqual(result['number_of_collisions'], 0, '')
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
 
     def test_potentialfields_collision_avoidance_dest_occupied(self):
       
@@ -170,10 +170,10 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Destination Occupied Collision test for Potential Fields Collision Avoidance")
 
-    #     # result = swarm_controller.get_offline_collision_stats()
-    #     # self.assertEqual(result['number_of_collisions'], 0, '')
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
 
     def test_potentialfields_collision_avoidance_parallel_collision(self):
       
@@ -185,10 +185,10 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Parallel Collision test for Potential Fields Collision Avoidance")
 
-        # result = swarm_controller.get_offline_collision_stats()
-        # self.assertEqual(result['number_of_collisions'], 0, '')
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
 
     def test_potentialfields_collision_avoidance_final_dest_occupied(self):
       
@@ -200,10 +200,10 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Final Destination Occupied Collision test for Potential Fields Collision Avoidance")
 
-        # result = swarm_controller.get_offline_collision_stats()
-        # self.assertEqual(result['number_of_collisions'], 0, '')
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
 
     def test_potentialfields_collision_avoidance_cross_collision(self):
       
@@ -215,10 +215,10 @@ class TestSwarmControl(unittest.TestCase):
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
 
         swarm_controller.detect_potential_collisions()
-        swarm_controller.visualise_swarm()
+        swarm_controller.visualise_swarm("Cross Collision test for Potential Fields Collision Avoidance")
 
-        # result = swarm_controller.get_offline_collision_stats()
-        # self.assertEqual(result['number_of_collisions'], 0, '')
+        result = swarm_controller.get_offline_collision_stats()
+        self.assertEqual(result['number_of_collisions'], 0, '')
 
 
 

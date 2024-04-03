@@ -113,6 +113,7 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     comparison_until = min(subject_flight.finish_time, flight.finish_time)
 
     num_timesteps = int(math.ceil((comparison_until - comparison_from) / TIME_STEP)) + 1
+    
     for i in range(num_timesteps):
         subjet_flight_index = i# - subject_flight.start_time
         flight_index = i# - flight.start_time

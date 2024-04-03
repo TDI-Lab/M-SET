@@ -109,33 +109,29 @@ class Swarm_Control:
         
         return drone_positions
 
-  def visualise_swarm(self):
-    # Visualise the swarm.
+  def visualise_swarm(self, title=""):
     discreet_positions = self.discretise_flight_paths(self.drones)
 
-    # Create a figure and a 3D subplot
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    # Create a scatter plot for each drone
     scatters = []
     for i in range(len(discreet_positions)):
         scatter = ax.scatter([], [], [], label=f'Drone {i+1}', s=50)
         scatters.append(scatter)
 
-    # Set labels
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
     ax.legend()
 
-    # Set axes limits
     ax.set_xlim([0, 10])  
     ax.set_ylim([0, 10])  
     ax.set_zlim([0, 10])  
 
+    ax.set_title(title)
 
-    # Create a text box for the time
+    # Create text box for time
     time_text = ax.text2D(0.02, 0.95, '', transform=ax.transAxes)
 
     # Update function for the animation
@@ -153,7 +149,6 @@ class Swarm_Control:
       # Update the time text
       time_text.set_text(f'Time: {frame * (FRAMES_PER_TIMESTEP/TIME_STEP)/100 :.2f} s')
 
-    # Create the animation
       
     total_frames = int(len(discreet_positions[0])  * FRAMES_PER_TIMESTEP )
 
