@@ -23,9 +23,13 @@ class Flight:
     self.flight_path = [origin[0]]
     
     distance_covered = 0
+    epsilon = 0.001
     while ((distance_covered + DISTANCE_STEP) < self.distance):
-        self.flight_path.append(self.get_coordinates(origin[0], destination[0], distance_covered + DISTANCE_STEP))
-        distance_covered += DISTANCE_STEP
+      next_coordinate = self.get_coordinates(origin[0], destination[0], distance_covered + DISTANCE_STEP)
+      if math.dist(next_coordinate, destination[0]) <= epsilon:
+        break
+      self.flight_path.append(next_coordinate)
+      distance_covered += DISTANCE_STEP
 
     self.flight_path.append(destination[0])
 
