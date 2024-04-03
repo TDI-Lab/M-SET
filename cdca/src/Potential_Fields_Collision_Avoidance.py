@@ -10,9 +10,11 @@ from src.Swarm_Constants import *
 from mpl_toolkits.mplot3d import Axes3D
 
 class PF_Drone(Drone):
-    def __init__(self, drone, resolution_factor):
+    def __init__(self, drone_id, drone, resolution_factor):
         self.original_drone = drone
         super().__init__( drone.plan)
+        self.drone_id = drone_id
+
         self.resolution_factor = resolution_factor
         self.goals = [self.drone_to_grid(flight.flight_path[-1]) for flight in self.flights]
         self.position = np.array(self.drone_to_grid(self.plan[0][0])) 
@@ -35,86 +37,110 @@ class PF_Drone(Drone):
         drone = self
         flight_path = drone.positions
         index = 1
+        delay = 0
 
         for i in range(len(flight_path) - 1):
+            prev_destination = list(self.grid_to_drone([flight_path[i][0], flight_path[i][1]]))
+
             destination = list(self.grid_to_drone([flight_path[i + 1][0], flight_path[i + 1][1]]))
+
+            if prev_destination == destination:
+                # delay += TIME_STEP
+                continue
+
+            
+            #if destination is .0:
+            if destination[0] % 1 == 0:
+                destination[0] = int(destination[0])
+            if destination[1] % 1 == 0:
+                destination[1] = int(destination[1])
+
+
+
             if float(destination[0]) == float(drone.plan[goal][0][0]) and float(destination[1]) == float(drone.plan[goal][0][1]):
+                
                 continue
             elif float(destination[0]) == float(drone.plan[goal+1][0][0]) and float(destination[1]) == float(drone.plan[goal+1][0][1]):
                 goal += 1
                 continue
-                
+            #if drone is within certain distance of goal, move to next goal
+            elif math.dist(destination, drone.plan[goal-1][0]) < DISTANCE_STEP or math.dist(destination, drone.plan[goal][0]) < DISTANCE_STEP:
+                # goal += 1
+                continue                
             else:
-                drone.original_drone.plan.insert(goal + index, [destination, 0])
+                drone.original_drone.plan.insert(goal + index, [destination, delay])
 
                 index += 1
 
+        #if final position is more than DISTANCE_STEP away from goal, remove final plan as it is not reached
+        if math.dist(destination, drone.plan[-1][0]) > DISTANCE_STEP:
+            last_plan = drone.original_drone.plan.pop(-1)
+            secondlast_plan = drone.original_drone.plan.pop(-1) #remove the last two plans for good measure (if it hasnt reached the last goal, there is probably a drone already there)
+            print("Last position not reached: ", last_plan[0])
+            print("Removing from flights")
+            drone.original_drone.plan[-1][1] = secondlast_plan[1] + last_plan[1] + drone.original_drone.plan[-1][1]
         drone.original_drone.augment_plan(0, 0)
 
 
 
 class Potential_Fields_Collision_Avoidance(Collision_Strategy):
-    def __init__(self):
-        self.resolution_factor = 2
+    def __init__(self, resolution_factor=2, visualise=False):
+        self.resolution_factor = resolution_factor
         self.grid_size = GRID_SIZE * self.resolution_factor
+        self.visualise = visualise
 
     def detect_potential_collisions(self, drones):
         # Detect potential collisions by iterating through the drones and their flights.
-        drone_index = 0
         collision = False
         drone_positions = self.discretise_flight_paths(drones)
-        for i, drone in enumerate(drones):
+        for i in range(len(drones)):
 
             collision_flag = self.does_drone_collide( i, drone_positions)
             if collision_flag:
                 collision = True
                 break
 
-          
-        
         if collision:
             self.potential_fields(drones)
-        return False
+
+        return False #Always return false as more iterations of potential fields are not going to help
     
     def potential_fields(self, drones):
         # Initialise PF_Drone objects
-        drones = [PF_Drone(drone, self.resolution_factor) for drone in drones]
-        
+        drones = [PF_Drone(i, drone, self.resolution_factor) for i, drone in enumerate(drones)]
+        self.number_of_drones = len(drones)
+
         drones_not_done = len(drones)
 
         self.time_step = 0
         pfs_per_drone = [[] for _ in drones]
         count = 0
-        drones_done = []
         while (drones_not_done) > 0 and count < 100:
             count += 1
 
             for i, drone in enumerate(drones):
 
-                # Skip drones that have reached all their goals
-                if drone.finished:
-                    continue
+               
 
                 if drone.current_wait_time > 0:
                     drone.current_wait_time -= TIME_STEP
-                    drone.positions.append(drone.position)
-                    continue
+
                     
                 potential_field = self.calculate_potential_field(drone, drones)
-                magnitudes = np.sqrt(potential_field[0]**2 + potential_field[1]**2)
-                print("Magnitudes for potential field: ", magnitudes)
+                # magnitudes = np.sqrt(potential_field[0]**2 + potential_field[1]**2)
+                # print("Magnitudes for potential field: ", magnitudes)
                 # Add potential field to list for visualisation
                 pfs_per_drone[i].append(potential_field)
-
+                
+                # Dont move drones that have reached all their goals, still calculate their potential fields for visualiations
+                # if not drone.finished or drone.current_wait_time != 0:
                 self.adjust_drone_path(drone, potential_field)
             
             self.time_step += TIME_STEP
             self.time_step = round(self.time_step, 2)
-            print("Time step: ", self.time_step)
         for i, drone in enumerate(drones):
-            # self.animate_potential_fields(pfs_per_drone[i], drone, i)
-            print("num of pfs: ", len(pfs_per_drone[i]))
-            self.animate_vector_fields(pfs_per_drone[i], drone)
+            if self.visualise:
+                self.animate_vector_fields(pfs_per_drone[i], drone)
             drone.convert_to_flights()
 
     def calculate_potential_field(self, drone, drones):
@@ -137,7 +163,6 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # self.visualize_gradient(goal_potential, gradient)
         potential_field += goal_potential  # Positive attraction to goal
         # self.visualize_gradient(potential_field)
-        # self.plot_vector_field(potential_field)
         return potential_field
     
 
@@ -152,198 +177,106 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0]**2 + vectors[1]**2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-        maximum = MINIMUM_DISTANCE * self.resolution_factor * 5
+        maximum = MINIMUM_DISTANCE * self.resolution_factor * 10
         mask = (distances >= minimum) & (distances <= maximum)
+
         # Apply the mask to the vectors and divide by the square of the distances
         vectors[0] = vectors[0] * mask / (distances**2 + 1e-9)
         vectors[1] = vectors[1] * mask / (distances**2 + 1e-9)
+
         # Scale the vectors by a factor that is inversely proportional to the distance
         scale_factor = maximum / (distances + 1e-9)
         vectors[0] *= scale_factor
         vectors[1] *= scale_factor
-        # Cap the magnitudes of the vectors to be at most 0.5
-        vectors[0] = np.clip(vectors[0], -2, 2)
-        vectors[1] = np.clip(vectors[1], -2, 2)
-        # Calculate and print the magnitudes of the vectors
-        magnitudes = np.sqrt(vectors[0]**2 + vectors[1]**2)
-        print("rMagnitudes: ", magnitudes)
-        # self.plot_vector_field(vectors)
 
-        # print("vectors shape: ", vectors[0].shape, vectors[1].shape)
+        # Cap the magnitudes of the vectors based on drone index
+        clip_range = np.clip(self.number_of_drones - drone.drone_id, 0.5, 3)
+        vectors[0] = np.clip(vectors[0], -clip_range, clip_range)
+        vectors[1] = np.clip(vectors[1], -clip_range, clip_range)
+
         return vectors
 
     def calculate_attraction_to_goal(self, drone):
         x = np.linspace(0, self.grid_size, self.grid_size)
         y = np.linspace(0, self.grid_size, self.grid_size)
         X, Y = np.meshgrid(x,y)
+
         # Calculate the vectors pointing towards the goal
         vectors = [drone.goal[0] - X, drone.goal[1] - Y]
+
         # Normalize the vectors to get unit vectors
         distances = np.sqrt(vectors[0]**2 + vectors[1]**2)
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
         
-        # Set the vector at the goal position to zero
-        unit_vectors[0][drone.goal[1], drone.goal[0]] = 0
-        unit_vectors[1][drone.goal[1], drone.goal[0]] = 0
+        # Set the vectors at positions a specified distance away from the goal to zero
+        distance_threshold = (DISTANCE_STEP) * self.resolution_factor
+        goal_position = drone.goal.astype(int)
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                distance_to_goal = np.linalg.norm(np.array([i, j]) - goal_position)
+                if distance_to_goal <= distance_threshold:
+                    unit_vectors[0][j, i] = 0
+                    unit_vectors[1][j, i] = 0
         
-        # Calculate and print the magnitudes of the vectors
-        magnitudes = np.sqrt(unit_vectors[0]**2 + unit_vectors[1]**2)
-        print("aMagnitudes: ", magnitudes)
-        # self.plot_vector_field(unit_vectors)
-
-        # print("goal unit vectors shape: ", unit_vectors[0].shape, unit_vectors[1].shape)
-
         return unit_vectors
 
 
-    def plot_vector_field(self, unit_vectors, drone):
-        x = np.linspace(0, self.grid_size, self.grid_size)
-        y = np.linspace(0, self.grid_size, self.grid_size)
-        X, Y = np.meshgrid(x, y)
-
-        fig, ax = plt.subplots()
-        # print("vector[0]: ", unit_vectors[0].shape, "vector[1]: ", unit_vectors[1].shape)
-        # The unit_vectors list contains two arrays: one for the x-components of the vectors, and one for the y-components
-        # Select the first set of vectors
-        U = unit_vectors[0][0]
-        V = unit_vectors[1][0]
-
-        Q = ax.quiver(X, Y, U, V)
-        drone_position, = ax.plot([], [], 'ro')  # plot drone as a red dot
-
-        def update(num, Q, drone_position):
-            """updates the horizontal and vertical vector components by a
-            fixed increment on each frame
-            """
-            U = np.cos(num / 100.) * unit_vectors[0]
-            V = np.sin(num / 100.) * unit_vectors[1]
-
-            Q.set_UVC(U, V)
-
-            # update drone's position
-            drone_position.set_data(drone.position[0], drone.position[1])
-
-            return Q, drone_position
-
-        # you need to set blit=False, or the first set of arrows never gets
-        # cleared on subsequent frames
-        ani = animation.FuncAnimation(fig, update, fargs=(Q, drone_position),
-                                      interval=10, blit=False)
-        plt.show()
-
-    def visualize_gradient(self, scalar_field, gradient):
-        x = np.linspace(0, self.grid_size, self.grid_size)
-        y = np.linspace(0, self.grid_size, self.grid_size)
-        X, Y = np.meshgrid(x, y)
-
-        # The gradient list contains two arrays: one for the x-components of the vectors, and one for the y-components
-        U = gradient[0]
-        V = gradient[1]
-
-        plt.figure(figsize=(10, 10))
-        plt.quiver(X, Y, U, V, color='r')
-
-        # Also plot the scalar field for reference
-        plt.contourf(X, Y, scalar_field, alpha=0.5)
-        plt.colorbar(label='Distance to goal')
-        plt.title('Gradient of Scalar Field (Distance to Goal)')
-        plt.show()
-        
-   
-
-    def animate_gradient(self, potential_fields, drone):
-        fig = plt.figure(figsize=(7,7))
-
-        # Create a 3D subplot for the surface plot
-        ax1 = fig.add_subplot(2, 1, 1, projection='3d')
-
-        # Create a 2D subplot for the quiver plot
-        ax2 = fig.add_subplot(2, 1, 2)
-
-        # Create a grid of x, y coordinates
-        y, x = np.mgrid[0:potential_fields[0].shape[0], 0:potential_fields[0].shape[1]]
-
-        # Initial surface plot and quiver plot
-        surf = ax1.plot_surface(x, y, potential_fields[0], cmap='viridis')
-        quiver = ax2.quiver(x, y, *np.gradient(-potential_fields[0], edge_order=2), color='r')
-        ax2.scatter(*(drone.positions[0]), color='b')
-        def update(i):
-            # Update surface plot
-            ax1.clear()
-            ax1.plot_surface(x, y, potential_fields[i], cmap='viridis')
-            ax1.scatter(*(drone.positions[i]), color='b')
-
-            ax1.set_title('3D Visualization of Potential Field')
-
-            # Update quiver plot
-            ax2.clear()
-            ax2.quiver(x, y, potential_fields[i], color='r')
-            ax2.scatter(*drone.positions[i], color='b')
-            ax2.set_title('Gradient of Potential Field')
-
-        ani = animation.FuncAnimation(fig, update, frames=len(potential_fields), repeat=False)
-
-        plt.tight_layout()
-        plt.show()
+    
 
     def animate_vector_fields(self, vector_fields, drone):
         fig = plt.figure(figsize=(7,7))
-
-        # Create a 2D subplot for the quiver plot
         ax = fig.add_subplot(1, 1, 1)
-
-        # Create a grid of x, y coordinates
         y, x = np.mgrid[0:vector_fields[0][0].shape[0], 0:vector_fields[0][0].shape[1]]
 
-        # Initial quiver plot
         quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])
         ax.scatter(*(drone.positions[0]), color='b')
 
         def update(i):
-            # Update quiver plot
             ax.clear()
             ax.quiver(x, y, vector_fields[i][0], vector_fields[i][1])
+            # if i > len(drone.positions) - 1:
+            #     ax.scatter(*drone.positions[-1], color='b')
+            # else:
             ax.scatter(*drone.positions[i], color='b')
-            ax.set_title('Vector Field')
+            ax.set_title('Vector Field for drone')
 
         ani = animation.FuncAnimation(fig, update, frames=len(vector_fields), repeat=False)
 
         plt.tight_layout()
         plt.show()
     def adjust_drone_path(self, drone, potential_field):
-         # Calculate the gradient of the potential field
-        # Get the gradient at the drone's position
-        grid_drone_position = (drone.position).astype(int)
+
+        # If drone shouldnt move, add its current position to its positions list for timestep consistency
+        if drone.finished or drone.current_wait_time != 0:
+            drone.positions.append(drone.position.tolist())
+            return
+
+
+        grid_drone_position = (drone.position).astype(int) #This can lose information, so we can increase resolution_factor if needed
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
-        print("Vector at drone's position: ", vector_at_drone)
+
         direction = vector_at_drone
-        random_vector = np.random.normal(scale=0.1, size=direction.shape)
+        random_vector = np.random.normal(scale=0.1, size=direction.shape) # Add some noise to the direction to reduce local minima
         direction += random_vector
 
-        # The direction of the lowest potential is the negative of the gradient
-        # Add a small random component to the direction
-        # direction += np.random.normal(scale=0.2, size=direction.shape)
-        # print("Potential field at drone's position: ", potential_field[drone_position_int[1], drone_position_int[0]])
-        # print("Computed gradient at drone's position: ", gradient_at_drone)
-        # Add a leftward bias to the direction
-        # direction += np.array([-direction[1], direction[0]]) * 0.1
-        # Get distance from the current position to the goal
+    
         distance_to_goal = np.linalg.norm(drone.position - drone.goal)
-        # Check if the drone is close enough to the goal
+
         if distance_to_goal <= (DISTANCE_STEP * self.resolution_factor):
-            drone.positions.append(drone.goal)
+            drone.positions.append(drone.goal.tolist())
+            drone.position = (drone.goal)
+
+            drone.goals_reached += 1
+
             # If the drone is close enough to the goal, increment the number of goals reached
             # If the drone has reached all its goals, stop
-            if drone.goals_reached >= len(drone.flights)-1:
+            if drone.goals_reached == len(drone.flights):
                 drone.finished = True
                 return
-            else:
-                drone.goals_reached += 1
             # Set the goal to the next flight's starting position
             drone.goal = np.array(drone.goals[drone.goals_reached])
             drone.current_wait_time = drone.plan[drone.goals_reached][1]
             self.direction = np.subtract(drone.goal, drone.position)
-            print(" Direction: ", drone.direction, "Position: ", drone.position, "Goal: ", drone.goal)
 
         else:
             if np.linalg.norm(direction) != 0:
@@ -351,8 +284,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 drone.direction = new_direction
             else:
                 drone.direction = direction
-            # Normalize the direction vector
-            # drone.direction = direction / np.linalg.norm(direction)
+
             # Move the drone a fixed distance in that direction
             potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size-1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size-1:
@@ -362,7 +294,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             else:
                 drone.position = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
-                print(" Direction: ", drone.direction, "Position: ", drone.position, "Goal: ", drone.goal)
+                # print(" Direction: ", drone.direction, "Position: ", drone.position, "Goal: ", drone.goal)
 
    
 
@@ -402,7 +334,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             # If the drone's first flight starts after from_time, prepend positions with the first known position
             if flight_i == 0 and flight.start_time > from_time:
-                first_known_position = flight.flight_path[0]
+                first_known_position = drone.flights[0].flight_path[0]
                 for i in range(num_positions):
                     if positions_for_drone[i] is None:
                         positions_for_drone[i] = first_known_position

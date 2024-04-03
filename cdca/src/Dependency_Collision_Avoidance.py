@@ -21,12 +21,12 @@ class FlightNode:
 
 class Dependency_Collision_Avoidance(Collision_Strategy):
     # A collision avoidance strategy that creates a dependency tree.
-    def __init__(self, only_collision_detection = False, visualise_dependencies=True):
+    def __init__(self, only_collision_detection = False, visualise=True):
     # Initialise the Basic Collection Detction/Avoidance strategy.
         self.only_collision_detection = only_collision_detection
         # self.collisions = []
         flight_nodes = []
-        self.visualise_dependencies = visualise_dependencies
+        self.visualise_dependencies = visualise
 
     def get_offline_collision_stats(self, drones):
         # Get collision data.
@@ -313,7 +313,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
 
             # If the drone's first flight starts after from_time, prepend positions with the first known position
             if flight_i == 0 and flight.start_time > from_time:
-                first_known_position = flight.flight_path[0]
+                first_known_position = drone.flights[0].flight_path[0]
                 for i in range(num_positions):
                     if positions_for_drone[i] is None:
                         positions_for_drone[i] = first_known_position
