@@ -101,7 +101,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                     continue
                     
                 potential_field = self.calculate_potential_field(drone, drones)
-
+                magnitudes = np.sqrt(potential_field[0]**2 + potential_field[1]**2)
+                print("Magnitudes for potential field: ", magnitudes)
                 # Add potential field to list for visualisation
                 pfs_per_drone[i].append(potential_field)
 
@@ -151,7 +152,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0]**2 + vectors[1]**2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-        maximum = MINIMUM_DISTANCE * self.resolution_factor * 2
+        maximum = MINIMUM_DISTANCE * self.resolution_factor * 5
         mask = (distances >= minimum) & (distances <= maximum)
         # Apply the mask to the vectors and divide by the square of the distances
         vectors[0] = vectors[0] * mask / (distances**2 + 1e-9)
@@ -160,9 +161,12 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         scale_factor = maximum / (distances + 1e-9)
         vectors[0] *= scale_factor
         vectors[1] *= scale_factor
+        # Cap the magnitudes of the vectors to be at most 0.5
+        vectors[0] = np.clip(vectors[0], -2, 2)
+        vectors[1] = np.clip(vectors[1], -2, 2)
         # Calculate and print the magnitudes of the vectors
         magnitudes = np.sqrt(vectors[0]**2 + vectors[1]**2)
-        # print("Magnitudes: ", magnitudes)
+        print("rMagnitudes: ", magnitudes)
         # self.plot_vector_field(vectors)
 
         # print("vectors shape: ", vectors[0].shape, vectors[1].shape)
@@ -178,9 +182,13 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0]**2 + vectors[1]**2)
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
         
+        # Set the vector at the goal position to zero
+        unit_vectors[0][drone.goal[1], drone.goal[0]] = 0
+        unit_vectors[1][drone.goal[1], drone.goal[0]] = 0
+        
         # Calculate and print the magnitudes of the vectors
         magnitudes = np.sqrt(unit_vectors[0]**2 + unit_vectors[1]**2)
-        # print("Magnitudes: ", magnitudes)
+        print("aMagnitudes: ", magnitudes)
         # self.plot_vector_field(unit_vectors)
 
         # print("goal unit vectors shape: ", unit_vectors[0].shape, unit_vectors[1].shape)
@@ -309,6 +317,9 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
         print("Vector at drone's position: ", vector_at_drone)
         direction = vector_at_drone
+        random_vector = np.random.normal(scale=0.1, size=direction.shape)
+        direction += random_vector
+
         # The direction of the lowest potential is the negative of the gradient
         # Add a small random component to the direction
         # direction += np.random.normal(scale=0.2, size=direction.shape)
