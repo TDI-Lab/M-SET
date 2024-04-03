@@ -288,7 +288,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             # Move the drone a fixed distance in that direction
             potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size-1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size-1:
-                print("Drone out of bounds")
+                # print("Drone out of bounds")
                 drone.positions.append(drone.position.tolist())
 
             else:

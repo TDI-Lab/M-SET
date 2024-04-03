@@ -21,7 +21,7 @@ class FlightNode:
 
 class Dependency_Collision_Avoidance(Collision_Strategy):
     # A collision avoidance strategy that creates a dependency tree.
-    def __init__(self, only_collision_detection = False, visualise=True):
+    def __init__(self, only_collision_detection = False, visualise=False):
     # Initialise the Basic Collection Detction/Avoidance strategy.
         self.only_collision_detection = only_collision_detection
         # self.collisions = []
@@ -221,7 +221,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                                 drones[other_flight_node.drone_index].augment_plan(other_flight_node.flight_index, -1)
 
                                 print(f"Destination occupied. ... Drone {self.flight_nodes[node].drone_index} cannot reach destination\n")
-                                print(f"Augmenting plan for drone {drones[other_flight_node.drone_index].drone_index} to move for 1 second earlier\n")
+                                print(f"Augmenting plan for drone {other_flight_node.drone_index} to move for 1 second earlier\n")
                                 
                                 
                             elif flag == CROSS_COLLISION:

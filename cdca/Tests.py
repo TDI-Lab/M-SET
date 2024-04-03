@@ -104,7 +104,7 @@ class TestSwarmControl(unittest.TestCase):
       
         plans = [[[[9,1], 1], [[1,1], 3]], [[[1,1], 20], [[9,9], 3]]] # dest occupied collision
         
-        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance(visualise=True))
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance(visualise=False))
 
         # result_before_ca = swarm_controller.get_offline_collision_stats()
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
@@ -134,7 +134,7 @@ class TestSwarmControl(unittest.TestCase):
       
         plans = [[[[9,1], 1], [[1,1], 3]], [[[1,9], 1], [[1,1], 3]]] # final dest occupied collision
         
-        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance(visualise=True))
+        swarm_controller = Swarm_Control(plans, Dependency_Collision_Avoidance(visualise=False))
 
         # result_before_ca = swarm_controller.get_offline_collision_stats()
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')
@@ -194,7 +194,7 @@ class TestSwarmControl(unittest.TestCase):
       
         plans = [[[[9,1], 1], [[1,1], 3]], [[[1,9], 1], [[1,1], 3]]] # final dest occupied collision
         
-        swarm_controller = Swarm_Control(plans, Potential_Fields_Collision_Avoidance(visualise=True))
+        swarm_controller = Swarm_Control(plans, Potential_Fields_Collision_Avoidance(visualise=False))
 
         # result_before_ca = swarm_controller.get_offline_collision_stats()
         # self.assertEqual(result_before_ca['number_of_collisions'], 1, '')

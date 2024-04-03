@@ -112,9 +112,10 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     comparison_from = max(subject_flight.start_time, flight.start_time)
     comparison_until = min(subject_flight.finish_time, flight.finish_time)
 
-    for i in range(comparison_from, comparison_until):
-        subjet_flight_index = i - subject_flight.start_time
-        flight_index = i - flight.start_time
+    num_timesteps = int(math.ceil((comparison_until - comparison_from) / TIME_STEP)) + 1
+    for i in range(num_timesteps):
+        subjet_flight_index = i# - subject_flight.start_time
+        flight_index = i# - flight.start_time
 
         point_A = subject_flight.flight_path[subjet_flight_index]
         point_B = flight.flight_path[flight_index]
