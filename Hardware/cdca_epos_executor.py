@@ -200,6 +200,22 @@ def log_all_drones(drone_uris, vars):
     logger = aSync(drone_uris)
     logger.runCallback()
 
+def adjust_moves(next_moves, timestep_length, travel_time_mode):
+    if travel_time_mode == 2:
+        if np.any((next_moves < timestep_length) & (next_moves > 0)):
+            for j in range(0,len(next_moves)):
+                if (next_moves[j] < timestep_length and next_moves[j] > 0):
+                    print("if",j)
+                    # round up the travel_time of the subject drone
+                    next_moves[j] = roundup_nearest(next_moves[j],timestep_length) # here
+                else:
+                    print("else",j)
+                    # add one to the action time of the other drones
+                    next_moves[j] = next_moves[j] + timestep_length # not sure if this is right or it should be the below instead
+                    #next_moves[j] = roundup_nearest(next_moves[i],timestep_length) # seems to break it
+
+    return next_moves
+
 def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_coords, sensing_time, global_travel_time,input_mode, timestep_length, simulation):
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
@@ -208,19 +224,9 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
 
         if t % 1 == 0: # Only print integer values of t
             print("t=",t)
-            
-        if travel_time_mode == 2:
-            if np.any((next_moves < timestep_length) & (next_moves > 0)):
-                for j in range(0,len(next_moves)):
-                    if (next_moves[j] < timestep_length and next_moves[j] > 0):
-                        print("if",j)
-                        # round up the travel_time of the subject drone
-                        next_moves[j] = roundup_nearest(next_moves[j],timestep_length) # here
-                    else:
-                        print("else",j)
-                        # add one to the action time of the other drones
-                        next_moves[j] = next_moves[j] + timestep_length # not sure if this is right or it should be the below instead
-                        #next_moves[j] = roundup_nearest(next_moves[i],timestep_length) # seems to break it
+
+        # Adjust next_moves to account for latency between timesteps    
+        next_moves = adjust_moves(next_moves, timestep_length, travel_time_mode)
 
         in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
@@ -293,7 +299,7 @@ simulation - Is it being run in simulation - True or False
 input_mode - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coords, sensing_time, Z, speed, timestep_length=1, global_travel_time=6):
+def main(simulation, input_mode, input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, Z=0.5, speed=0.1, timestep_length=1, global_travel_time=6):
     if input_mode == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif input_mode == "default":
@@ -333,13 +339,16 @@ def main(simulation, input_mode, input_file_path, travel_time_mode, use_cell_coo
     if simulation == False:
         log_all_drones(drone_uris, ["battery"])
 
+if __name__ == '__main__':
+    main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0.5)    
+
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
 #main(True, "cdca", "epospaths/debug_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
 
 # Demos
 #main(True, "default", "epospaths/Evangelos_default_demo.txt", 2, True, 1, 0.5, 0.1)
-main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0.5)
+#   main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0.5)
 #main(True, "default", "epospaths/sanity_test.txt", 2, True, 1, 0.5, 0.1)
 
 # Collision demos
