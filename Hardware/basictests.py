@@ -52,10 +52,25 @@ class TestCdcaEposExecutor (unittest.TestCase):
     def test_follow_plan(self):
         follow_plans(self.timeHelper, self.all_drones, self.next_moves, TRAVEL_TIME_MODE, USE_CELL_COORDS, 0, GLOBAL_TRAVEL_TIME, INPUT_MODE, TIMESTEP_LENGTH, IN_SIMULATION)
 
+    def test_move_next_cell(self):
+        ...
+
+    def test_adjust_moves(self, next_moves=None):
+        # Unless another value for next_moves is supplied, use self.next moves
+        # Included to allow a manually created next_moves array to be tested in isolation, without the need to setup the surrounding simulation which the generated next_moves array would then be taken from
+        if next_moves == None:
+            next_moves = self.next_moves
+        
+        print("Before: ",next_moves)
+        adjust_moves(next_moves, TIMESTEP_LENGTH, TRAVEL_TIME_MODE)
+        print("After: ",next_moves)
+
 test = TestCdcaEposExecutor()
 test.setUp()
 test.test_example()
-test.test_follow_plan()
+test.test_move_next_cell()
+test.test_adjust_moves()
+#test.test_follow_plan()
 
 #main(IN_SIMULATION, INPUT_MODE, input_file_path, TRAVEL_TIME_MODE, USE_CELL_COORDS, 0, HOVER_HEIGHT, SPEED, TIMESTEP_LENGTH=1, GLOBAL_TRAVEL_TIME=6)
 #main(True, "cdca", "epospaths/Testpaths/onenice.csv", 2, True, 0, 0.5, 0.1, 1)
