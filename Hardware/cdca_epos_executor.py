@@ -109,7 +109,6 @@ class Drone():
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, travel_time_mode, global_travel_time, i,input_mode, timestep_length):
-        self.status = "moving"
         print(i,"moving to",self.positions[self.move_count])
         pos = get_coords(self.positions[self.move_count],use_cell_coords,input_mode)
         if travel_time_mode == 0:
@@ -145,6 +144,19 @@ class Drone():
         print(x_dist, y_dist, dist, self.speed, time)
 
         return time
+    
+    def land_drone(self, timeHelper, simulation, input_mode, use_cell_coords):
+        # Land the drones
+        # NB: This action is performed differently in simulation vs. on real hardware 
+        if simulation == False:
+            # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
+            #   Therefore, this can only be done when not in simulation
+            self.drone.land(0.05, 2.5)
+        else: 
+            # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
+            land_pos = get_coords(self.positions[self.move_count-1],use_cell_coords,input_mode)
+            self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
+        timeHelper.sleep(2.5)
 
 def parse_input(input_path, allcfs, input_mode, speed, next_moves):
     all_drones = []
@@ -193,7 +205,7 @@ def set_initial_positions(timeHelper, all_drones, use_cell_coords,input_mode):
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
-        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: 0 only needs to be there for drone IDs < 10 - need to change this
+        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
 def log_all_drones(drone_uris, vars):
@@ -203,11 +215,12 @@ def log_all_drones(drone_uris, vars):
 def adjust_moves(next_moves, timestep_length, travel_time_mode):
     if travel_time_mode == 2:
         if np.any((next_moves < timestep_length) & (next_moves > 0)):
+            print("Adjusting moves")
             for j in range(0,len(next_moves)):
                 if (next_moves[j] < timestep_length and next_moves[j] > 0):
                     print("if",j)
                     # round up the travel_time of the subject drone
-                    next_moves[j] = roundup_nearest(next_moves[j],timestep_length) # here
+                    next_moves[j] = roundup_nearest(next_moves[j],timestep_length) # remove this to preserve consistent speed? Or does it need to go slower to give other drones the chance to get out of the way?
                 else:
                     print("else",j)
                     # add one to the action time of the other drones
@@ -220,73 +233,84 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
-    while np.any(next_moves > -1): # need to change this to >= 0 if allow timeslots of size <1 sec
+    while np.any(next_moves > -1): # need to change this to >= 0 if allow timeslots of size >1 sec?
 
         if t % 1 == 0: # Only print integer values of t
             print("t=",t)
 
-        # Adjust next_moves to account for latency between timesteps    
-        next_moves = adjust_moves(next_moves, timestep_length, travel_time_mode)
+        # Adjust next_moves to account for latency between timesteps
+        next_moves = adjust_moves(next_moves, timestep_length, travel_time_mode) # REMOVE THIS?
 
         in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
 
             cf = all_drones[i]
 
-            if round_nearest(next_moves[i], timestep_length) == 0: # if it's time for the drone to change status (i.e. it has finished its current task) 
-                # Sensing is obsolete - REMOVE
-                if cf.status == "moving" or cf.status == "idle":
-                    if (in_position == True) or (travel_time_mode != 3):
-                        cf.status = "sensing"
+            # if it's time for the drone to change status (i.e. it has finished its current task)
+            if round_nearest(next_moves[i], timestep_length) == 0: # IS THIS ROUNDING CORRECT?  
+
+                # CHECK IF DRONE REACHED END OF PATH
+                if cf.move_count >= len(cf.times): 
+                    # if that was the last position, mark the drone as finished
+                    next_moves[i] = -1
+                    cf.status = "idle"
+                    print(i, "reached end of path")
+                    cf.land_drone(timeHelper, simulation, input_mode, use_cell_coords)
+
+                # OTHERWISE, CONTINUE
+                else:
+
+                    # ASSIGN STATUS CHANGES
+                    if cf.status == "moving" or cf.status == "idle":
+                        if (in_position == True) or (travel_time_mode != 3):
+                            if input_mode == "cdca":
+                                # if input_move is cdca, then waiting phase follows movement phase
+                                cf.status = "waiting"
+
+                                # If waiting time is 0 then move straight to moving phase (again)
+                                if (cf.times[max(0,cf.move_count - 1)]) == 0:
+                                    cf.status = "moving"
+
+                            else:
+                                # Only cdca has waiting phase, so move to sensing phase in all other cases
+                                cf.status = "sensing"
+                                
+                                # If sensing_time is 0, then move straight to moving phase (again)
+                                if sensing_time == 0:
+                                    cf.status == "moving"
+
+                        else:
+                            # If not ready to move from idle phase, then remain idle
+                            cf.status = "idle"
+                            print(i, "idle")
+                            next_moves[i] = timestep_length
+                    
+                    elif cf.status == "waiting" or cf.status == "sensing":
+                        cf.status = "moving"
+
+                    print(cf.status)
+
+                    # PERFORM ACTIONS OF (new) CURRENT PHASE                
+                    if cf.status == "sensing":
                         print(i, "sensing")
                         next_moves[i] = sensing_time + timestep_length
-                    else:
-                        cf.status = "idle"
-                        print(i, "idle")
-                        next_moves[i] = 1
 
-                #elif
-                if cf.status == "sensing":
-                    cf.status = "waiting"
-                    print(i,"waiting for",cf.times[cf.move_count - 1])
-                    next_moves[i] = cf.times[cf.move_count - 1] + timestep_length
+                    elif cf.status == "waiting":
+                        print(i,"waiting for",cf.times[cf.move_count - 1])
+                        next_moves[i] = cf.times[cf.move_count - 1] + timestep_length
 
-                    # if that was the last position, mark the drone as finished
-                    # NB: This assumes there is no wait time at the last cell in the drones path
-                    #if len(cf.times) < 1:
-                    if cf.move_count >= len(cf.times): 
-                        # if all times are used up, then mark drone as done
-                        next_moves[i] = -1
-                        cf.status = "idle"
-                        print(i, "reached end of path")
+                    elif cf.status == "moving":
+                        next_moves[i] = cf.move_next_cell(use_cell_coords, travel_time_mode, global_travel_time, i, input_mode, timestep_length)
 
-                        # Land the drones
-                        if simulation == False:
-                            # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
-                            # Therefore, this can only be done when not in simulation
-                            cf.drone.land(0.05, 2.5)
-                        else: 
-                            # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance
-                            land_pos = get_coords(cf.positions[cf.move_count-1],use_cell_coords,input_mode)
-                            cf.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
-                        timeHelper.sleep(2.5)
-
-                    # otherwise, we can consider...
-                    # if wait time was 0 then need to move straight to moving in this iteration too
-                    elif next_moves[i] == 0:
-                        next_moves[i] = cf.move_next_cell(use_cell_coords, travel_time_mode, global_travel_time, i,input_mode, timestep_length)
-
-                else: # cf.status == "waiting"
-                    next_moves[i] = cf.move_next_cell(use_cell_coords, travel_time_mode, global_travel_time, i, input_mode, timestep_length)
+                    elif cf.status == "idle":
+                        pass
 
         # minus 1 timestep_length from all next_moves (represents 1 timestep_length passing)
         next_moves = next_moves - np.full((1,len(all_drones)),timestep_length)[0]
-        #print(next_moves)
 
         # increment timeslot
-        timeHelper.sleep(timestep_length)
+        timeHelper.sleep(timestep_length) # Replace with timeHelper.sleepForTime(Hz)?
         t = round_nearest(t + timestep_length, timestep_length)
-        #print(next_moves)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
     print("End of simulation")
@@ -340,7 +364,7 @@ def main(simulation, input_mode, input_file_path, travel_time_mode=2, use_cell_c
         log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
-    main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0.5)    
+    main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 1)    
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
