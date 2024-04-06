@@ -239,7 +239,7 @@ def follow_plans(timeHelper, all_drones, next_moves, travel_time_mode, use_cell_
             print("t=",t)
 
         # Adjust next_moves to account for latency between timesteps
-        next_moves = adjust_moves(next_moves, timestep_length, travel_time_mode) # REMOVE THIS?
+        #next_moves = adjust_moves(next_moves, timestep_length, travel_time_mode) # REMOVE THIS?
 
         in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
