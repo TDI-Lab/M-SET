@@ -11,7 +11,7 @@ X_DISTANCE = 0.5533
 Y_DISTANCE = 0.47 # check that's 0.235*2
 X_DURATION=3
 Y_DURATION=3
-IN_SIMULATION = True
+IN_SIMULATION = False
 
 CRAZYSWARM_SCRIPTS_FILE_PATH = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
@@ -21,14 +21,14 @@ swarm = Crazyswarm()
 timeHelper = swarm.timeHelper
 allcfs = swarm.allcfs
 
-for drone in allcfs.crazyflies:
-    drone.setGroupMask(MASK)
+# for drone in allcfs.crazyflies:
+#     drone.setGroupMask(MASK)
 
-drone_uris = return_uris((80,90),(2,3))
+drone_uris = return_uris([80],[2])
 
 def exp_takeoffland(drone_uris, sim):
     n=0
-    while not timeHelper.isShutdown():
+    while True:
         try:
             print("N: ",n)
             if sim == False:
@@ -39,7 +39,10 @@ def exp_takeoffland(drone_uris, sim):
             timeHelper.sleep(TAKEOFF_DURATION)
             n+=1
         except:
-            log_all_drones(drone_uris, ("battery"))
+            if sim == False:
+                log_all_drones(drone_uris, ("battery"))
+
+        n = n+1
 
 def exp_hover(drone_uris, sim):
     n=0
