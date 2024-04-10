@@ -176,7 +176,8 @@ class Basic_Collision_Avoidance(Collision_Strategy):
 
     orthogonal_line = [y_difference * multiplier, x_difference * multiplier]
 
-    orthogonal_point = [collision_point[0] - orthogonal_line[0], collision_point[1] - orthogonal_line[1]]
+    orthogonal_point = [round(collision_point[0] - orthogonal_line[0], 0), round(collision_point[1] - orthogonal_line[1],0)]
+
 
     return orthogonal_point
 
