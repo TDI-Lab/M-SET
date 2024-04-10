@@ -9,10 +9,10 @@ from aSync import aSync
 # SETTING CONSTANTS
 HOVER_HEIGHT = 0.5 #m
 SPEED = 0.1 #m/s
-INPUT_MODE = "cdca" # "cdca" or "default"
-ENABLE_LOGGING = True
-IN_SIMULATION = False # Should be set automatically by --sim in command line
-TRAVEL_TIME_MODE = 2
+INPUT_MODE = "cdca" # CAN BE OVERWITTEN AT COMMAND LINE # "cdca" or "default"
+ENABLE_LOGGING = False
+IN_SIMULATION = True # Should be set automatically by --sim in command line
+TRAVEL_TIME_MODE = 2 # REMOVE
 USE_CELL_COORDS = True # True=path uses testbed grid coords, False=path uses the actual positions from the physical testing environment
 TIMESTEP_LENGTH = 0.015625 # Should always be a value that can be represented by 2^{x}, where x is an integer
 GLOBAL_TRAVEL_TIME = 6 # s, Not required unless TRAVEL_TIME_MODE=0
@@ -335,7 +335,12 @@ IN_SIMULATION - Is it being run in simulation - True or False
 INPUT_MODE - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True):
+def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True, input_mode=INPUT_MODE):
+    # Allows INPUT_MODE to be overwritten by supplying a new value (as opposed to using the one from the config file)
+    global INPUT_MODE
+    INPUT_MODE = input_mode
+
+
     if INPUT_MODE == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif INPUT_MODE == "default":
@@ -375,7 +380,10 @@ def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time
     log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
-    main("epospaths/Evangelos_cdca_demo4.txt",run=True)    
+    #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
+    #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
+    #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
+    main("epospaths/April/16cells.txt", input_mode="default")
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
