@@ -9,14 +9,15 @@ from aSync import aSync
 # SETTING CONSTANTS
 HOVER_HEIGHT = 0.5 #m
 SPEED = 0.1 #m/s
-INPUT_MODE = "cdca"
-IN_SIMULATION = True # Should be set automatically by --sim in command line
+INPUT_MODE = "cdca" # "cdca" or "default"
+ENABLE_LOGGING = True
+IN_SIMULATION = False # Should be set automatically by --sim in command line
 TRAVEL_TIME_MODE = 2
-USE_CELL_COORDS = True
-TIMESTEP_LENGTH = 0.015625
-GLOBAL_TRAVEL_TIME = 6 # Not required unless TRAVEL_TIME_MODE=0
-SENSING_TIME=0
-CRAZYSWARM_SCRIPTS_FILE_PATH = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts" # Needs to be set on individual system
+USE_CELL_COORDS = True # True=path uses testbed grid coords, False=path uses the actual positions from the physical testing environment
+TIMESTEP_LENGTH = 0.015625 # Should always be a value that can be represented by 2^{x}, where x is an integer
+GLOBAL_TRAVEL_TIME = 6 # s, Not required unless TRAVEL_TIME_MODE=0
+SENSING_TIME=0 # s
+CRAZYSWARM_SCRIPTS_FILE_PATH = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts" # Needs to be set on the individual system
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
@@ -219,8 +220,9 @@ def return_uris(channels,numbers):
     return uris
 
 def log_all_drones(drone_uris, vars):
-    logger = aSync(drone_uris)
-    logger.runCallback()
+    if ENABLE_LOGGING == True:
+        logger = aSync(drone_uris)
+        logger.runCallback()
 
 def adjust_moves(next_moves):
     if TRAVEL_TIME_MODE == 2:
@@ -333,7 +335,7 @@ IN_SIMULATION - Is it being run in simulation - True or False
 INPUT_MODE - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6):
+def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True):
     if INPUT_MODE == "cdca":
         input_path = read_cdca_output(input_file_path)
     elif INPUT_MODE == "default":
@@ -354,27 +356,26 @@ def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     drone_uris = return_uris([80,90],[2,3])
 
-    if IN_SIMULATION == False:
-        log_all_drones(drone_uris, ["battery"])
+    log_all_drones(drone_uris, ["battery"])
 
-    try:
-        take_off_all(2.5, timeHelper, all_drones)
+    if run == True:
+        try:
+            take_off_all(2.5, timeHelper, all_drones)
 
-        set_initial_positions(timeHelper,all_drones)
+            set_initial_positions(timeHelper,all_drones)
 
-        follow_plans(timeHelper, all_drones, next_moves)
+            follow_plans(timeHelper, all_drones, next_moves)
 
-    except Exception as error:
-        print("Error:",error)
-        land_all(0.05, timeHelper, all_drones)
+        except Exception as error:
+            print("Error:",error)
+            land_all(0.05, timeHelper, all_drones)
 
     #land_all(0.05, timeHelper, all_drones)
 
-    if IN_SIMULATION == False:
-        log_all_drones(drone_uris, ["battery"])
+    log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
-    main("epospaths/Evangelos_cdca_demo4.txt")    
+    main("epospaths/Evangelos_cdca_demo4.txt",run=True)    
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
@@ -393,9 +394,3 @@ if __name__ == '__main__':
         
 #log_all_drones(return_uris([80],[1]), ["battery"])
 #log_all_drones(return_uris([80,90],[2,3]), ["battery"])
-
-# Floating point precision issues with TIMESTEP_LENGTH<1 that cant be represented accurately/simply in binary, stick to 2^{-x} to be safe
-# Check timings are correct for movements with TIMESTEP_LENGTH<1
-
-# Floating point precision issues with TIMESTEP_LENGTH<1 that cant be represented accurately/simply in binary, stick to 2^{-x} to be safe
-# Check timings are correct for movements with TIMESTEP_LENGTH<1
