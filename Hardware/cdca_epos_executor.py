@@ -4,7 +4,7 @@ import sys
 import math
 from decimal import Decimal
 
-from Hardware.Hardware_constants import *
+from Hardware_constants import *
 #from aSync import aSync
 
 # append a new directory to sys.path
@@ -395,14 +395,15 @@ if __name__ == '__main__':
     #NB: There is no support for passing raw plans (not in a file) through command line arguments, but these can be passed as a parameter when calling main(...) from code with raw=True
 
     if filepath != None:
-        main(filepath,input_mode=input_mode,raw=False)
+        pass#main(filepath,input_mode=input_mode,raw=False)
 
     else: # Here for debugging purposes
         
         #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
         #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False)
+        #main("epospaths/April/16cells.txt", input_mode="default", raw=False)
+        print("adasadasdwd")
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
