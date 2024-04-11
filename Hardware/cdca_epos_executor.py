@@ -4,7 +4,7 @@ import sys
 import math
 from decimal import Decimal
 
-from aSync import aSync
+#from aSync import aSync
 
 # SETTING CONSTANTS
 HOVER_HEIGHT = 0.5 #m
@@ -219,11 +219,15 @@ def return_uris(channels,numbers):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
+# DEPRACATED
 def log_all_drones(drone_uris, vars):
+    """
     if ENABLE_LOGGING == True:
         logger = aSync(drone_uris)
         logger.runCallback()
-
+    """
+    pass
+        
 def adjust_moves(next_moves):
     if TRAVEL_TIME_MODE == 2:
         if np.any((next_moves < TIMESTEP_LENGTH) & (next_moves > 0)):
