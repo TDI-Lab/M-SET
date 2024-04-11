@@ -11,7 +11,7 @@ HOVER_HEIGHT = 0.5 #m
 SPEED = 0.1 #m/s
 INPUT_MODE = "cdca" # CAN BE OVERWITTEN AT COMMAND LINE # "cdca" or "default"
 ENABLE_LOGGING = False
-IN_SIMULATION = True # Should be set automatically by --sim in command line
+IN_SIMULATION = False # Should be set automatically by --sim in command line
 TRAVEL_TIME_MODE = 2 # REMOVE
 USE_CELL_COORDS = True # True=path uses testbed grid coords, False=path uses the actual positions from the physical testing environment
 TIMESTEP_LENGTH = 0.015625 # Should always be a value that can be represented by 2^{x}, where x is an integer
@@ -335,16 +335,18 @@ IN_SIMULATION - Is it being run in simulation - True or False
 INPUT_MODE - "default": epos with no cdca, "cdca": waiting cdca
 input_file_path - path to input file
 """
-def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True, input_mode=INPUT_MODE):
+def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True, input_mode=INPUT_MODE):
     # Allows INPUT_MODE to be overwritten by supplying a new value (as opposed to using the one from the config file)
     global INPUT_MODE
     INPUT_MODE = input_mode
 
-
-    if INPUT_MODE == "cdca":
-        input_path = read_cdca_output(input_file_path)
-    elif INPUT_MODE == "default":
-        input_path = read_default_output(input_file_path)
+    if raw == True:
+        input_path = plan
+    else:
+        if INPUT_MODE == "cdca":
+            input_path = read_cdca_output(plan)
+        elif INPUT_MODE == "default":
+            input_path = read_default_output(plan)
     print("Path=",input_path)
 
     # Change directory to the crazyswarm/scripts folder
@@ -380,10 +382,35 @@ def main(input_file_path, travel_time_mode=2, use_cell_coords=True, sensing_time
     log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
-    #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
-    #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
-    #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-    main("epospaths/April/16cells.txt", input_mode="default")
+    # [--sim], [path], [input_mode]
+    
+    args = sys.argv
+    offset = 0
+    filepath = None
+    input_mode = INPUT_MODE # set both here and in main(...) to allow it to be set from command line or function call to main
+
+    if '--sim' in args:
+        IN_SIMULATION = True
+        offset = 1
+
+    #if len(args) > 1+offset: # if any arguments given (excluding '--sim')
+    for arg in args[1+offset:]:
+        if arg in ["default", "cdca"]:
+            input_mode = arg
+        elif os.path.isfile(arg):
+            filepath=arg
+
+    #NB: There is no support for passing raw plans (not in a file) through command line arguments, but these can be passed as a parameter when calling main(...) from code with raw=True
+
+    if filepath != None:
+        main(filepath,input_mode=input_mode,raw=False)
+
+    else: # Here for debugging purposes
+        
+        #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
+        #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
+        #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
