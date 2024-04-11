@@ -4,20 +4,8 @@ import sys
 import math
 from decimal import Decimal
 
+from Hardware.Hardware_constants import *
 #from aSync import aSync
-
-# SETTING CONSTANTS
-HOVER_HEIGHT = 0.5 #m
-SPEED = 0.1 #m/s
-INPUT_MODE = "cdca" # CAN BE OVERWITTEN AT COMMAND LINE # "cdca" or "default"
-ENABLE_LOGGING = False
-IN_SIMULATION = False # Should be set automatically by --sim in command line
-TRAVEL_TIME_MODE = 2 # REMOVE
-USE_CELL_COORDS = True # True=path uses testbed grid coords, False=path uses the actual positions from the physical testing environment
-TIMESTEP_LENGTH = 0.015625 # Should always be a value that can be represented by 2^{x}, where x is an integer
-GLOBAL_TRAVEL_TIME = 6 # s, Not required unless TRAVEL_TIME_MODE=0
-SENSING_TIME=0 # s
-CRAZYSWARM_SCRIPTS_FILE_PATH = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts" # Needs to be set on the individual system
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
