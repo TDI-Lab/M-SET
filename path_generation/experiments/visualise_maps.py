@@ -2,7 +2,11 @@ from matplotlib import pyplot as plt
 import helper
 
 
+figures = 1
+
+
 def visualise_map(size, map_type="regular"):
+    global figures
     with open(f"{helper.get_parent_path()}/../../examples/{size}x{size}_{map_type}.csv", "r",
               encoding="utf-8-sig") as file:
         lines = file.readlines()
@@ -18,11 +22,13 @@ def visualise_map(size, map_type="regular"):
         x_points.append(x)
         y_points.append(y)
         sizes.append(sensing_value)
-    plt.figure(1)
+    plt.figure(figures)
+    figures += 1
     plt.scatter(x_points, y_points, c=sizes, s=100., marker="s")
 
 
 def visualise_testbed():
+    global figures
     with open(f"{helper.get_parent_path()}/../../examples/testbed.csv", "r", encoding="utf-8-sig") as file:
         lines = file.readlines()
     lines = lines[1:]
@@ -37,11 +43,14 @@ def visualise_testbed():
         x_points.append(x)
         y_points.append(y)
         sizes.append(sensing_value)
-    plt.figure(2)
+    plt.figure(figures)
+    figures += 1
     plt.scatter(x_points, y_points, c=sizes, s=100., marker="s")
 
 
 if __name__ == "__main__":
-    visualise_map(3, "gaussian")
-    visualise_testbed()
+    num = 12
+    visualise_map(num, "regular")
+    visualise_map(num, "gaussian")
+    visualise_map(num, "random")
     plt.show()
