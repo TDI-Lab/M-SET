@@ -4,7 +4,11 @@ import sys
 import math
 from decimal import Decimal
 
-from Hardware.Hardware_constants import *
+try:
+    from Hardware_constants import *
+except:
+    from Hardware.Hardware_constants import * 
+    
 #from aSync import aSync
 
 # append a new directory to sys.path
@@ -402,7 +406,7 @@ if __name__ == '__main__':
         #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
         #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False)
+        main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
