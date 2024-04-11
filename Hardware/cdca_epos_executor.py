@@ -4,7 +4,7 @@ import sys
 import math
 from decimal import Decimal
 
-from Hardware.Hardware_constants import *
+from Hardware_constants import *
 #from aSync import aSync
 
 # append a new directory to sys.path
