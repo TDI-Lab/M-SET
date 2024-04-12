@@ -2,7 +2,7 @@ import configparser
 import csv
 from os import listdir, mkdir
 from os.path import isdir
-from shutil import rmtree
+from shutil import rmtree, copy2
 
 import numpy as np
 from pathlib import Path
@@ -41,7 +41,7 @@ class PlanGenerator:
             if isdir(dataset):
                 rmtree(dataset)
 
-    def generate_plans(self, is_timeslots=False):
+    def generate_plans(self, mission_file=None, is_timeslots=False):
         # 1. Initialize the output directory
         dataset_path = f'{self.parent_path}/datasets/'
         if not Path(dataset_path).exists():
@@ -49,6 +49,10 @@ class PlanGenerator:
         dataset_path += f"{self.properties.dataset_name}/"
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
+
+        #  copy if mission file defined
+        if mission_file is not None:
+            copy2(mission_file, dataset_path)
 
         # 2. Set the map of the sensing environment
         map_setting = MapSetting()
@@ -59,7 +63,6 @@ class PlanGenerator:
         # 3. Set the target for drones, i,e., the required sensing value of each cell
         cells = map_setting.cells
         target_arr = [cell["value"] for cell in cells]
-        cells_num = len(target_arr)
         # output the target to .target file
         target_path = (f"{self.parent_path}/datasets/{self.properties.dataset_name}/"
                        f"{self.properties.dataset_name}.target")
@@ -79,13 +82,10 @@ class PlanGenerator:
                 drone_route = RouteGeneration()
                 # the departure and destination (charging station)
                 station_idx = agent_id % self.properties.stations_num
-                # the number of cells that the drone visits
-                visited_cells_num = plan_id % self.properties.max_visited_cells_num + 1
                 # to find a route
                 drone_route.find_route(station_idx, self.properties.max_visited_cells_num, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
-                visited_cells_list = drone_route.visited_cells
                 plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)
 
                 path_taken = drone_route.path_taken

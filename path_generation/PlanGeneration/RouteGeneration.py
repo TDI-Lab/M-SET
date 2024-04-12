@@ -92,7 +92,7 @@ class RouteGeneration:
         # calculate the total energy consumption
         self.energy_consumption = max_usage
         # calculate the total sensing value of the path
-        actual_sensing_total = hover_energy/self.hover_power
+        actual_sensing_total = hover_energy / self.hover_power
 
         #  Compute total hovering time of generated path
         visited_cells_dict = {}
@@ -127,25 +127,6 @@ class RouteGeneration:
         self.ground_speed = power_consumption.ground_speed
         self.battery_capacity = power_consumption.battery_capacity
         self.energy_efficiency = power_consumption.power_efficiency
-
-    def Dijkstra_shortest_path(self, station):
-        # Create a graph
-        G = nx.Graph()
-        # Define nodes and their coordinates, and add nodes to the graph
-        points = {"station": (station['x'], station['y'])}
-        for v_cell_id in self.visited_cells:
-            cell = self.cells[v_cell_id]
-            points[str(v_cell_id)] = (cell['x'], cell['y'])
-        # Calculate pairwise distances between points and create a complete graph
-        for p1, p2 in itertools.combinations(points.keys(), 2):
-            distance = ((points[p1][0] - points[p2][0]) ** 2 + (points[p1][1] - points[p2][1]) ** 2) ** 0.5
-            G.add_edge(p1, p2, weight=distance)
-        # Find the TSP solution using NetworkX, assume the first node is the start/end point
-        tsp_solution = nx.approximation.traveling_salesman_problem(G, cycle=True)
-        # Calculate the total distance of the TSP route
-        total_distance = sum(G[point1][point2]['weight'] for point1, point2 in zip(tsp_solution[:-1], tsp_solution[1:]))
-
-        return tsp_solution, total_distance
 
     def greedy_tsp(self, station):
         g = nx.Graph()

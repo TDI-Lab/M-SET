@@ -8,27 +8,24 @@ from shutil import rmtree
 class EPOSWrapper:
 
     def __init__(self):
-        pass
+        self.parent_path = Path(__file__).parent.resolve()
 
     # Start the EPOS workflow
     def run(self, out=False, err=False):
 
-        # Get the parent path of the current file
-        parent_path = Path(__file__).parent.resolve()
         # Combine the parent path with the "output" directory
-        path = parent_path / "output"
+        path = f"{self.parent_path}/output"
 
-        self.cleanOutput(path)
+        self.clean_output(path)
         return self.runEPOS(show_out=out, show_err=err)
 
     # Run the EPOS jar file
     # Make sure the PATH to the java executable is correct
     def runEPOS(self, show_out=False, show_err=False):
-        parent_path = Path(__file__).parent.resolve()
         cmd = "java -jar IEPOS.jar"
         proc = subprocess.Popen(
             cmd,
-            cwd=parent_path,
+            cwd=self.parent_path,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
@@ -42,8 +39,7 @@ class EPOSWrapper:
         return proc.returncode
 
     # Clean the output directory
-    def cleanOutput(self, output_dir):
+    def clean_output(self, output_dir):
         if exists(output_dir):
             rmtree(output_dir)
-        #print(output_dir)
         mkdir(output_dir)
