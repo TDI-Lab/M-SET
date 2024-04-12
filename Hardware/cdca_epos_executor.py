@@ -10,6 +10,7 @@ except:
     from Hardware.Hardware_constants import * 
     
 #from aSync import aSync
+from ROSListener import listener, call_once
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
@@ -211,10 +212,12 @@ def return_uris(channels,numbers):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
-# DEPRACATED
-def log_all_drones(drone_uris, vars):
+def log_all_drones(ids, vars):
+    if IN_SIMULATION == False:
+        if ENABLE_LOGGING == True:
+            call_once(ids)
+            #listener(ids)
     """
-    if ENABLE_LOGGING == True:
         logger = aSync(drone_uris)
         logger.runCallback()
     """
@@ -336,6 +339,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     global INPUT_MODE
     INPUT_MODE = input_mode
 
+    print("PARSING INPUT")
     if raw == True:
         input_path = plan
     else:
@@ -349,6 +353,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the scripts folder
     os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
 
+    print("INITIALISING CRAZYSWARM")
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
@@ -357,11 +362,14 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     all_drones, next_moves = parse_input(input_path, allcfs, SPEED, next_moves)
 
-    drone_uris = return_uris([80,90],[2,3])
+    #drone_uris = return_uris([80,90],[2,3])
 
-    log_all_drones(drone_uris, ["battery"])
+    print("INITIALISING LOGGING")
+    ids = [1,2]
+    log_all_drones(ids, ["battery"])
 
     if run == True:
+        print("EXECUTING PATH")
         try:
             take_off_all(2.5, timeHelper, all_drones)
 
@@ -375,7 +383,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     #land_all(0.05, timeHelper, all_drones)
 
-    log_all_drones(drone_uris, ["battery"])
+    #log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
@@ -406,7 +414,8 @@ if __name__ == '__main__':
         #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
         #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-        main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
+        #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
