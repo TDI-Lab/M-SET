@@ -25,7 +25,7 @@ class PlanGenerator:
             plans_num=int(config.get('plan', 'planNum')),
             agents_num=int(config.get('plan', 'agentsNum')),
             total_hover_time=int(config.get('plan', 'timeslots')),
-            max_visited_cells_num=int(config.get('plan', 'maxVisitedCells')),
+            path_mode=config.get("plan", "pathMode"),
             stations_num=int(config.get('map', 'stationsNum')),
             height=int(config.get('map', 'height')),
             map_length=int(config.get('map', 'mapLength')),
@@ -83,7 +83,7 @@ class PlanGenerator:
                 # the departure and destination (charging station)
                 station_idx = agent_id % self.properties.stations_num
                 # to find a route
-                drone_route.find_route(station_idx, self.properties.max_visited_cells_num, map_setting, plan_id)
+                drone_route.find_route(station_idx, self.properties.path_mode, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
                 plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)

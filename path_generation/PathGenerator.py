@@ -5,8 +5,8 @@ from pathlib import Path
 
 class PathGenerator:
 
-    def __init__(self, copy_config=True):
-        self.generation_manager = PathGenerationController(copy_config=copy_config)
+    def __init__(self):
+        self.generation_manager = PathGenerationController()
 
     def generate_paths(self, raw=False) -> \
             [List[Tuple[float, List[float], List[str]]], Dict[int, List[Tuple[float, float, float]]], None]:

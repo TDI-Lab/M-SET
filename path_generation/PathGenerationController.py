@@ -33,7 +33,7 @@ class PathGenerationController:
                 "planNum": self.config.get("path_generation", "NumberOfPlans"),
                 "agentsNum": self.config.get("global", "NumberOfDrones"),
                 "timeSlots": 0,
-                "maxVisitedCells": self.config.get("path_generation", "MaximumNumberOfVisitedCells")
+                "pathMode": self.config.get("path_generation", "PathMode"),
             },
             "map": {
                 "stationsNum": 4,
@@ -110,13 +110,9 @@ class PathGenerationController:
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
         #  Move mission to datasets folder
-        src_path = self.config.get("global", "MissionFile")
-        dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
-        try:
-            copy2(src_path, dest_path)
-        except shutil.SameFileError:
-            pass
-        result_code = self._pg_controller.generate_plans(False)
+        mission_file = self.config.get("global", "MissionFile")
+        # dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
+        result_code = self._pg_controller.generate_plans(mission_file=mission_file)
         return result_code
 
     # Move the generated plans to the EPOS directory
