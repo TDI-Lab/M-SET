@@ -6,6 +6,7 @@ from os import listdir
 from pathlib import Path
 from shutil import copy2
 from typing import List, Tuple
+from itertools import groupby
 
 from path_generation.ConfigManager import ConfigManager
 from path_generation.EPOS.EPOSWrapper import EPOSWrapper
@@ -135,11 +136,25 @@ class PathGenerationController:
     def __get_plan_indexes(self):
         # read selected-plan.csv from the first directory within the output directory
         results_dir = listdir(f"{self.parent_path}/EPOS/output")[0]
+        termination_iters = f"{self.parent_path}/EPOS/output/{results_dir}/termination.csv"
+        with open(termination_iters) as file:
+            lines = file.readlines()
+        termination_indexes = [int(i.strip("\n").split(",")[1]) for i in lines[1:]]
         selected_plans_file = f"{self.parent_path}/EPOS/output/{results_dir}/selected-plans.csv"
         with open(selected_plans_file) as file:
             lines = file.readlines()
-        # extract plan indexes from the last line of the file, converting them from strings to integers
-        plan_indexes = [int(index) for index in lines[-1].strip("\n").split(",")[2:]]
+        #  extract plans from each simulation, and select the "best" index
+        lines = [list(map(int, line.strip("\n").split(","))) for line in lines[1:]]
+        seperated_simulations = [list(group) for k, group in groupby(lines, lambda x: x[0])]
+        indexes = {}
+        for termination_index, simulation in zip(termination_indexes, seperated_simulations):
+            termination_indexes = tuple(simulation[termination_index-1][2:])
+            if termination_indexes not in indexes:
+                indexes[termination_indexes] = 1
+            else:
+                indexes[termination_indexes] += 1
+        indexes = list(indexes.items())
+        plan_indexes = list(max(indexes, key=lambda x: x[1])[0])
         return plan_indexes
 
     def __extract_sensing_values_from_indexes(self, indexes):
