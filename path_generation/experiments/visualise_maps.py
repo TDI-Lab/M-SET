@@ -1,6 +1,7 @@
+import numpy as np
 from matplotlib import pyplot as plt
 import helper
-
+from path_generation.PathGenerator import PathGenerator
 
 figures = 1
 
@@ -48,9 +49,32 @@ def visualise_testbed():
     plt.scatter(x_points, y_points, c=sizes, s=100., marker="s")
 
 
+def visualise_sensing():
+    pg = PathGenerator()
+    results = pg.generate_paths(raw=True)
+    results = [np.array(result[1]) for result in results]
+    final_sensing = sum(results)
+    print(final_sensing)
+    requirements = pg.read_sensing_requirements()
+    x_points = []
+    y_points = []
+    cs = []
+    for cell, sensing in zip(requirements["sense"], final_sensing):
+        x_points.append(float(cell["x"]))
+        y_points.append(float(cell["y"]))
+        cs.append(float(sensing)*100.)
+    #  Plot base stations
+    for base in requirements["base"]:
+        x_points.append(float(base["x"]))
+        y_points.append(float(base["y"]))
+        cs.append(0.)
+    plt.scatter(x_points, y_points, c=cs, s=100., marker="s")
+
+
 if __name__ == "__main__":
-    num = 12
-    visualise_map(num, "regular")
-    visualise_map(num, "gaussian")
-    visualise_map(num, "random")
+    # num = 12
+    # visualise_map(num, "regular")
+    # visualise_map(num, "gaussian")
+    # visualise_map(num, "random")
+    visualise_sensing()
     plt.show()
