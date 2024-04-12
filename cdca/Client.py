@@ -11,6 +11,7 @@ from src.Swarm_Constants import EPOS_TIMESTEP
 # plans = Input_Parser(example_input).parsed_input
 
 plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]],[[[9,9], 20], [[1,1], 3]], [[[1,9], 20], [[9,1], 3]]]
+#plans = [[[[0.0, 0.0], 5], [[1.0, 1.0], 25], [[2.0, 1.0], 45], [[3.0, 1.0], 20], [[0.0, 0.0], 5]],[[[4.0, 0.0], 5], [[3.0, 1.0], 15], [[2.0, 1.0], 35], [[1.0, 1.0], 20], [[4.0, 0.0], 5]]]
 
 swarm_controller = Swarm_Control(plans, Basic_Collision_Avoidance())
 
