@@ -6,7 +6,7 @@ from path_generation.PathGenerator import PathGenerator
 
 
 def main():
-    raw = False
+    raw = True
     #  Hello :)  There are two steps to running the path generator (once the config is set up)
     #  First, instantiate the PathGenerator object
     pg = PathGenerator()
