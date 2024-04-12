@@ -33,7 +33,7 @@ class PathGenerationController:
                 "planNum": self.config.get("path_generation", "NumberOfPlans"),
                 "agentsNum": self.config.get("global", "NumberOfDrones"),
                 "timeSlots": 0,
-                "maxVisitedCells": self.config.get("path_generation", "MaximumNumberOfVisitedCells")
+                "pathMode": self.config.get("path_generation", "PathMode"),
             },
             "map": {
                 "stationsNum": 4,
@@ -106,17 +106,12 @@ class PathGenerationController:
         self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
         plan_gen_properties = self.__construct_plan_generation_properties()
         self.config_generator.write_config_file(plan_gen_properties)
-        # Generate plans for each agent, where num is the number of agents
+        # Generate plans for each agent
         self._pg_controller = PlanGenerator()
         self._pg_controller.clean_datasets()
         #  Move mission to datasets folder
-        src_path = self.config.get("global", "MissionFile")
-        dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
-        try:
-            copy2(src_path, dest_path)
-        except shutil.SameFileError:
-            pass
-        result_code = self._pg_controller.generate_plans(False)
+        mission_file = self.config.get("global", "MissionFile")
+        result_code = self._pg_controller.generate_plans(mission_file=mission_file)
         return result_code
 
     # Move the generated plans to the EPOS directory
@@ -135,7 +130,6 @@ class PathGenerationController:
         show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
         show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
         result_code = self._epos_controller.run(out=show_out, err=show_err)
-        self.move_plans()
         return result_code
 
     def __get_plan_indexes(self):
