@@ -3,6 +3,8 @@ import os
 import sys
 import math
 from decimal import Decimal
+import rospy
+from std_msgs.msg import String
 
 try:
     from Hardware_constants import *
@@ -10,12 +12,16 @@ except:
     from Hardware.Hardware_constants import * 
     
 #from aSync import aSync
-from ROSListener import listener, call_once
+from ROSListener import *
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
 from pycrazyswarm import Crazyswarm
 Z=HOVER_HEIGHT
+
+pub = rospy.Publisher('status_logger', String, queue_size=10)
+#rospy.init_node('status', anonymous=True)
+#rate = rospy.Rate(10) # 10hz
 
 def get_coords(position, use_cell_coords):
     if use_cell_coords == True:
@@ -162,6 +168,10 @@ class Drone():
             self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
+    def log_status(self):
+        #rospy.loginfo(self.status)
+        pub.publish(self.status)
+
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
 
@@ -241,6 +251,8 @@ def adjust_moves(next_moves):
     return next_moves
 
 def follow_plans(timeHelper, all_drones, next_moves):
+    pub.publish("Starting")
+
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
@@ -268,8 +280,16 @@ def follow_plans(timeHelper, all_drones, next_moves):
                     print(i, "reached end of path")
                     cf.land_drone(timeHelper)
 
+                    # LOG FINISHED ACTION
+                    cf.log_status()
+                    #log_all_drones([1],["battery"])
+
                 # OTHERWISE, CONTINUE
                 else:
+
+                    # LOG FINISHED ACTION
+                    cf.log_status()
+                    #log_all_drones([1],["battery"])
 
                     # ASSIGN STATUS CHANGES
                     if cf.status == "moving" or cf.status == "idle":
