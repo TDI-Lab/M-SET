@@ -63,14 +63,10 @@ class RouteGeneration:
         # find the searching range of a drone, that is, the indexes of cells close to the start/end charging station
         search_range_cells = self.map.groups_station_coverage[station['id']].copy()
         # choose the number of visited cells in a random way
-        visited_cells_num = len(search_range_cells) if path_mode == "normal" else 1
-        self.visited_cells = search_range_cells.copy()
-        # if len(search_range_cells) >= visited_cells_num:
-        #     self.visited_cells = random.sample(search_range_cells, visited_cells_num)
-        # else:
-        #     print(f"The searching range is too small! We need {visited_cells_num} "
-        #           f"but only have {len(search_range_cells)}")
-        #     return
+        if path_mode == "normal":
+            self.visited_cells = search_range_cells.copy()
+        elif path_mode == "greedy":
+            self.visited_cells = random.sample(search_range_cells, 1)
 
         # 3. find the shortest path via visited cells using Dijkstra's algorithm based on TSP problem
         tsp_solution, distance_total = self.greedy_tsp(station)
