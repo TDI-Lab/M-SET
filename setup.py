@@ -5,9 +5,9 @@ from collections import OrderedDict
 
 parameters = OrderedDict({
     "global": {
-        "MissionName": {"value": "testbed", "comment": "directory name for data produced in path generation"},
-        "MissionFile": {"value": "testbed.csv", "comment": "A full path to the sensing mission requirements"},
-        "NumberOfDrones": {"value": 4, "comment": "Number of drone operating in the file system"}
+        "MissionName": {"value": "", "comment": "directory name for data produced in path generation"},
+        "MissionFile": {"value": "", "comment": "An absolute path to the sensing mission requirements"},
+        "NumberOfDrones": {"value": 4, "comment": "Number of drone operating in the system"}
     },
 
     "path_generation": {

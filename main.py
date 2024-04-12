@@ -7,7 +7,10 @@ from path_generation.PathGenerator import PathGenerator
 
 def main():
     raw = False
+    #  Hello :)  There are two steps to running the path generator (once the config is set up)
+    #  First, instantiate the PathGenerator object
     pg = PathGenerator()
+    #  Then, call PathGenerator.generate_paths.  For CD/CA purposes, you want raw=False (so nothing)
     plans = pg.generate_paths(raw=raw)
     if raw:
         for plan in plans:
