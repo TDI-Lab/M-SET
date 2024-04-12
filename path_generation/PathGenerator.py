@@ -20,6 +20,7 @@ class PathGenerator:
         result_code = self.generation_manager.generate_paths()
         if result_code != 0:
             return None
+        self.generation_manager.move_plans()
         result_code = self.generation_manager.select_plan()
         if result_code != 0:
             return None
