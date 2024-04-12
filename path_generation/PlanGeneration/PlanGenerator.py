@@ -46,13 +46,14 @@ class PlanGenerator:
         dataset_path = f'{self.parent_path}/datasets/'
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
-        dataset_path += f"{self.properties.dataset_name}/"
+        dataset_path += f"{self.properties.dataset_name}"
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
 
         #  copy if mission file defined
         if mission_file is not None:
-            copy2(mission_file, dataset_path)
+            new_mission_file = f"{dataset_path}/{self.properties.dataset_name}.csv"
+            copy2(mission_file, new_mission_file)
 
         # 2. Set the map of the sensing environment
         map_setting = MapSetting()
@@ -97,8 +98,8 @@ class PlanGenerator:
                 agent_plans.append(plan_dict)
 
             # 4b. Output the plans of the drone into the datasets dir
-            agent_plans_path = f"{dataset_path}agent_{agent_id}.plans"
-            agent_paths = f"{dataset_path}agent_{agent_id}.paths"
+            agent_plans_path = f"{dataset_path}/agent_{agent_id}.plans"
+            agent_paths = f"{dataset_path}/agent_{agent_id}.paths"
             with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile, \
                     open(agent_paths, 'w', newline='', encoding='utf-8') as pathFile:
                 for index, agent_plan in enumerate(agent_plans):
