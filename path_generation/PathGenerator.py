@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from path_generation.PathGenerationController import PathGenerationController
 from pathlib import Path
 
@@ -6,14 +6,17 @@ from pathlib import Path
 class PathGenerator:
 
     def __init__(self, copy_config=True):
-        self._state = 0
         self.generation_manager = PathGenerationController(copy_config=copy_config)
 
-    def get_state(self) -> int:
-        return self._state
-
-    def generate_paths(self, raw=False) -> [List[Tuple[float, List[float]]], None]:
-        # Generate num paths and return them
+    def generate_paths(self, raw=False) -> \
+            [List[Tuple[float, List[float], List[str]]], Dict[int, List[Tuple[float, float, float]]], None]:
+        """
+        For parameter raw, if True, a list of sensing values at each location, along with the taken path is returned.
+        If False, a list of coordinates is returned for each agent instead, where the ith element
+        is the position the drone should be at time i.
+        :param raw: Return the 'raw' values from EPOS.
+        :return: n paths for n drones.
+        """
         result_code = self.generation_manager.generate_paths()
         if result_code != 0:
             return None
@@ -21,7 +24,6 @@ class PathGenerator:
         if result_code != 0:
             return None
 
-        #  Get results from file
         result = self.generation_manager.extract_results()
         if raw:
             return result
@@ -29,7 +31,12 @@ class PathGenerator:
 
     # Read the testbed mapping from a csv file
     # Extract the coordinate of the testbed from the file
-    def read_testbed_mapping(self, debug=False):
+    def read_sensing_requirements(self, debug=False) -> Dict[str, List[Dict]]:
+        """
+        Read the testbed mapping from a csv file and extract the coordinate of the testbed from the file.
+        :param debug: Debug mode
+        :return: A list of base stations and sensing points for the sensing requirements.
+        """
         path_to_testbed = self.generation_manager.config.get("global", "MissionFile")
 
         mapping = {'sense': [], 'base': []}
@@ -60,8 +67,14 @@ class PathGenerator:
     #       0   10,2 10,2 10,2
     #       1   0,50 1,48 1,21
     #       2   0,0   5,0 10,0  <- location of the agent at time t
-    def convert_data_to_table(self, plans):
-        sensing_map = self.read_testbed_mapping()
+    def convert_data_to_table(self, plans: List[Tuple[float, List[float], List[str]]]) -> (
+            Dict)[int, List[Tuple[float, float, float]]]:
+        """
+        Convert the plans to a 2D-array that consists of the location and the time.
+        :param plans: Drone plans extracted from EPOS
+        :return:
+        """
+        sensing_map = self.read_sensing_requirements()
         paths = {}
         for agent_id, plan in enumerate(plans):
             movements = []

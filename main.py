@@ -6,7 +6,7 @@ from path_generation.PathGenerator import PathGenerator
 
 
 def main():
-    raw = True
+    raw = False
     pg = PathGenerator()
     plans = pg.generate_paths(raw=raw)
     if raw:
