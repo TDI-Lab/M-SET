@@ -1,4 +1,6 @@
 import math
+from statistics import mean
+
 import pandas as pd
 
 
@@ -18,7 +20,7 @@ class MapSetting:
         # the number of cells in one edge of the map
         self.cells_num_edge = None
         # the radius of coverage range (to cover cells) of a charging station
-        self.radius_coverage = None
+        self.radius_coverage = {}
         # the groups for coverage range of each charging station
         self.groups_station_coverage = None
         # the groups for neighbouring cells of each cell
@@ -87,10 +89,10 @@ class MapSetting:
         for i in range(data_map.shape[0]):
             item = data_map.iloc[i]
             item_id = int(item['id'])
-            x = item['x']
-            y = item['y']
-            z = item['z']
-            value = item['value']
+            x = float(item['x'])
+            y = float(item['y'])
+            z = float(item['z'])
+            value = float(item['value'])
 
             min_x = min(x, min_x)
             min_y = min(y, min_y)
@@ -109,12 +111,18 @@ class MapSetting:
             else:
                 self.map_length = (x + y) / 2
 
-        self.cells_num_edge = int(max_y - min_y)
-        self.map_length = ((max_x - min_x) + (max_y - min_y))/2
+        #  Compute center of sensing area
+        avg_x = mean([float(i["x"]) for i in self.cells])
+        avg_y = mean([float(i["y"]) for i in self.cells])
+        avg_z = mean([float(i["z"]) for i in self.cells])
+        center = (avg_x, avg_y, avg_z)
+        for station in self.stations:
+            station_loc = (station["x"], station["y"], station["z"])
+            self.radius_coverage[station["id"]] = self.relative_distance_calc(station_loc, center)
+        self.cells_num_edge = float(max_y - min_y)
+        self.map_length = max((max_x - min_x), (max_y - min_y))
         cells_num_edge = int(math.sqrt(len(self.cells)))
-        stations_num_edge = int(math.sqrt(len(self.stations)))
         self.cells_length = float(self.map_length / cells_num_edge)
-        self.radius_coverage = self.cells_num_edge / stations_num_edge * self.cells_length * math.sqrt(2)
 
         self.search_cells_in_coverage()
 
@@ -135,7 +143,7 @@ class MapSetting:
             for station in self.stations:
                 distance = self.relative_distance_calc([station['x'], station['y'], height],
                                                        [cell['x'], cell['y'], cell['z']])
-                if distance <= self.radius_coverage:
+                if distance <= self.radius_coverage[station["id"]]:
                     self.groups_station_coverage[station['id']].append(cell['id'])
 
             # find the neighbouring cells indexes of this cell
