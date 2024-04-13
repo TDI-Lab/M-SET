@@ -15,9 +15,9 @@ plans = [[[[1,1], 5], [[9,9], 3]], [[[9,1], 5], [[1,9], 3]],[[[9,9], 20], [[1,1]
 swarm_controller = Swarm_Control(plans, Basic_Collision_Avoidance())
 
 # swarm_controller.print_itinerary()
-# swarm_controller.get_offline_collision_stats()
+swarm_controller.get_offline_collision_stats()
 
-swarm_controller.detect_potential_collisions()
+# swarm_controller.detect_potential_collisions()
 
 # swarm_controller.get_offline_collision_stats()
 # swarm_controller.print_itinerary()
