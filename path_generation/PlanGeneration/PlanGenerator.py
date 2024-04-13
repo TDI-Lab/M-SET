@@ -2,7 +2,7 @@ import configparser
 import csv
 from os import listdir, mkdir
 from os.path import isdir
-from shutil import rmtree
+from shutil import rmtree, copy2
 
 import numpy as np
 from pathlib import Path
@@ -25,7 +25,7 @@ class PlanGenerator:
             plans_num=int(config.get('plan', 'planNum')),
             agents_num=int(config.get('plan', 'agentsNum')),
             total_hover_time=int(config.get('plan', 'timeslots')),
-            max_visited_cells_num=int(config.get('plan', 'maxVisitedCells')),
+            path_mode=config.get("plan", "pathMode"),
             stations_num=int(config.get('map', 'stationsNum')),
             height=int(config.get('map', 'height')),
             map_length=int(config.get('map', 'mapLength')),
@@ -41,14 +41,19 @@ class PlanGenerator:
             if isdir(dataset):
                 rmtree(dataset)
 
-    def generate_plans(self, is_timeslots=False):
+    def generate_plans(self, mission_file=None, is_timeslots=False):
         # 1. Initialize the output directory
         dataset_path = f'{self.parent_path}/datasets/'
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
-        dataset_path += f"{self.properties.dataset_name}/"
+        dataset_path += f"{self.properties.dataset_name}"
         if not Path(dataset_path).exists():
             Path(dataset_path).mkdir()
+
+        #  copy if mission file defined
+        if mission_file is not None:
+            new_mission_file = f"{dataset_path}/{self.properties.dataset_name}.csv"
+            copy2(mission_file, new_mission_file)
 
         # 2. Set the map of the sensing environment
         map_setting = MapSetting()
@@ -59,7 +64,6 @@ class PlanGenerator:
         # 3. Set the target for drones, i,e., the required sensing value of each cell
         cells = map_setting.cells
         target_arr = [cell["value"] for cell in cells]
-        cells_num = len(target_arr)
         # output the target to .target file
         target_path = (f"{self.parent_path}/datasets/{self.properties.dataset_name}/"
                        f"{self.properties.dataset_name}.target")
@@ -79,13 +83,10 @@ class PlanGenerator:
                 drone_route = RouteGeneration()
                 # the departure and destination (charging station)
                 station_idx = agent_id % self.properties.stations_num
-                # the number of cells that the drone visits
-                visited_cells_num = plan_id % self.properties.max_visited_cells_num + 1
                 # to find a route
-                drone_route.find_route(station_idx, self.properties.max_visited_cells_num, map_setting, plan_id)
+                drone_route.find_route(station_idx, self.properties.path_mode, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
-                visited_cells_list = drone_route.visited_cells
                 plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)
 
                 path_taken = drone_route.path_taken
@@ -97,8 +98,8 @@ class PlanGenerator:
                 agent_plans.append(plan_dict)
 
             # 4b. Output the plans of the drone into the datasets dir
-            agent_plans_path = f"{dataset_path}agent_{agent_id}.plans"
-            agent_paths = f"{dataset_path}agent_{agent_id}.paths"
+            agent_plans_path = f"{dataset_path}/agent_{agent_id}.plans"
+            agent_paths = f"{dataset_path}/agent_{agent_id}.paths"
             with open(agent_plans_path, 'w', newline='', encoding='utf-8') as planFile, \
                     open(agent_paths, 'w', newline='', encoding='utf-8') as pathFile:
                 for index, agent_plan in enumerate(agent_plans):

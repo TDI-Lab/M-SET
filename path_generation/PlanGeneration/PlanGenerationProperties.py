@@ -7,7 +7,7 @@ class PlanGenerationProperties:
     plans_num: int
     agents_num: int
     total_hover_time: float
-    max_visited_cells_num: int
+    path_mode: str
     stations_num: int
     height: float
     map_length: int
