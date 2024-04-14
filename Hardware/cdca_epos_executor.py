@@ -272,6 +272,8 @@ def adjust_moves(next_moves):
     return next_moves
 
 def follow_plans(timeHelper, all_drones, next_moves):
+    log_all_status(all_drones, msg="Starting to follow plans")
+
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
@@ -367,7 +369,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    cf.log_all_status(msg="End of simulation")
+    cf.log_all_status(all_drones, msg="End of simulation")
     timeHelper.sleep(3)
 
 
@@ -408,7 +410,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     #drone_uris = return_uris([80,90],[2,3])
 
     print("INITIALISING LOGGING")
-    log_all_status(all_drones)
+    log_all_status(all_drones, msg="Initialising logging")
     """
     ids = [1,2]
     log_all_drones(ids, ["battery"])
