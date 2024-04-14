@@ -115,8 +115,8 @@ class Drone():
         self.times = [] 
         self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
         self.speed = speed
-        self.cf = cf # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
-        self.id = self.cf.id
+        self.cf = cf
+        self.id = self.cf.id # DEPRECATED
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
@@ -198,15 +198,20 @@ def parse_input(input_path, allcfs, speed, next_moves):
 
     return all_drones, next_moves
 
-def take_off_all(dur, timeHelper, allcfs, sequential=False):
+def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
     if sequential == True:
-        allcfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
+        if all_cfs == None:
+            all_cfs = [drone.cf for drone in all_drones]
+        all_cfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
         timeHelper.sleep(2.5)
+        log_all_drones(all_drones)
     else:
         # Tell the drones to take off one at a time
-        for cf in allcfs:
-            cf.drone.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
+        for drone in all_drones:
+            drone.cf.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
             timeHelper.sleep(2.5)
+            drone.cf.status = "hovering"
+            drone.cf.log_status(msg="Drone %s taken off" % drone.cf.id)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
