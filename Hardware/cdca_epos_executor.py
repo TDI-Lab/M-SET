@@ -130,7 +130,7 @@ class Drone():
             print("ERROR: Invalid value for TRAVEL_TIME_MODE.")
             return -1
 
-        self.drone.goTo(pos, 0, travel_time)
+        self.cf.goTo(pos, 0, travel_time)
         self.move_count += 1
         #self.positions.pop(0)
 
@@ -162,11 +162,11 @@ class Drone():
         if IN_SIMULATION == False:
             # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
             #   Therefore, this can only be done when not in simulation
-            self.drone.land(0.05, 2.5)
+            self.cf.land(0.05, 2.5)
         else: 
             # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
             land_pos = get_coords(self.positions[self.move_count-1],USE_CELL_COORDS)
-            self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
+            self.cf.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
     def log_status(self, msg=""):
@@ -217,8 +217,8 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
-    for cf in all_drones:
-        cf.drone.land(0.05, 2.5)
+    for drone in all_drones:
+        drone.cf.land(0.05, 2.5)
         timeHelper.sleep(2.5)
 
 def set_initial_positions(timeHelper, all_drones, duration):
@@ -241,7 +241,7 @@ def return_uris(channels,numbers):
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
-        drone.drone.log_status(msg=msg)
+        drone.cf.log_status(msg=msg)
 
 def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
