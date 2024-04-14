@@ -113,7 +113,7 @@ class Drone():
     def __init__(self, drone, id, speed):
         self.positions = []
         self.times = [] 
-        self.status = "idle" # idle -> ([sensing or waiting] moving)
+        self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
         self.speed = speed
         self.drone = drone # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
         self.id = id
@@ -290,6 +290,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
                     # if that was the last position, mark the drone as finished
                     next_moves[i] = -1
                     
+                    cf.status = "hovering"
                     cf.log_status(msg="Drone %s reached end of path" % i)
                     
                     cf.land_drone(timeHelper)
