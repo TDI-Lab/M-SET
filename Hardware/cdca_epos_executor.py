@@ -113,14 +113,14 @@ class Drone():
     def __init__(self, drone, id, speed):
         self.positions = []
         self.times = [] 
-        self.status = "idle" # idle -> (sensing, waiting, moving)
+        self.status = "idle" # idle -> ([sensing or waiting] moving)
         self.speed = speed
         self.drone = drone # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
         self.id = id
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
-        print(i,"moving to",self.positions[self.move_count])
+        self.log_status(msg="%s moving to %s" % (i, self.positions[self.move_count]))
         pos = get_coords(self.positions[self.move_count],use_cell_coords)
         if TRAVEL_TIME_MODE == 0:
             travel_time = GLOBAL_TRAVEL_TIME # use the constant travel duration mode
@@ -169,9 +169,11 @@ class Drone():
             self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
-    def log_status(self, id):
+    def log_status(self, msg=""):
         #rospy.loginfo(self.status)
-        pub.publish("Drone %s: %s" % self.id, self.status)
+        if msg != "":
+            print(msg)
+        pub.publish("Drone %s: %s. %s" % self.id, self.status, msg)
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -227,9 +229,9 @@ def return_uris(channels,numbers):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
-def log_all_status(all_drones):
+def log_all_status(all_drones,msg=""):
     for drone in all_drones:
-        drone.drone.log_status()
+        drone.drone.log_status(msg=msg)
 
 def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
@@ -279,13 +281,20 @@ def follow_plans(timeHelper, all_drones, next_moves):
             # if it's time for the drone to change status (i.e. it has finished its current task)
             if round_nearest(next_moves[i], TIMESTEP_LENGTH) == 0: # IS THIS ROUNDING CORRECT?  
 
+                # LOG FINISHED ACTION
+                cf.log_status()
+                #log_all_drones([1],["battery"])
+
                 # CHECK IF DRONE REACHED END OF PATH
                 if cf.move_count >= len(cf.times): 
                     # if that was the last position, mark the drone as finished
                     next_moves[i] = -1
-                    cf.status = "idle"
-                    print(i, "reached end of path")
+                    
+                    cf.log_status(msg="Drone %s reached end of path" % i)
+                    
                     cf.land_drone(timeHelper)
+                    cf.status = "idle"
+                    cf.log_status(msg="Drone %s landed" % i)
 
                     # LOG FINISHED ACTION
                     cf.log_status()
@@ -293,10 +302,6 @@ def follow_plans(timeHelper, all_drones, next_moves):
 
                 # OTHERWISE, CONTINUE
                 else:
-
-                    # LOG FINISHED ACTION
-                    cf.log_status()
-                    #log_all_drones([1],["battery"])
 
                     # ASSIGN STATUS CHANGES
                     if cf.status == "moving" or cf.status == "idle":
@@ -330,11 +335,11 @@ def follow_plans(timeHelper, all_drones, next_moves):
 
                     # PERFORM ACTIONS OF (new) CURRENT PHASE                
                     if cf.status == "sensing":
-                        print(i, "sensing")
+                        cf.log_status(msg="Drone %s sensing" % i)
                         next_moves[i] = SENSING_TIME + TIMESTEP_LENGTH
 
                     elif cf.status == "waiting":
-                        print(i,"waiting for",cf.times[cf.move_count - 1])
+                        cf.log_status(msg="%s waiting for %s" % (i, cf.times[cf.move_count - 1]))
                         next_moves[i] = cf.times[cf.move_count - 1] + TIMESTEP_LENGTH
 
                     elif cf.status == "moving":
@@ -351,7 +356,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    print("End of simulation")
+    cf.log_all_status(msg="End of simulation")
     timeHelper.sleep(3)
 
 
