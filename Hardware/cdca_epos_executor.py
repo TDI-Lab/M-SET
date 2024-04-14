@@ -219,15 +219,15 @@ def land_all(d, timeHelper,all_drones):
         cf.drone.land(0.05, 2.5)
         timeHelper.sleep(2.5)
 
-def set_initial_positions(timeHelper, all_drones):
+def set_initial_positions(timeHelper, all_drones, duration):
     # Set the initial positions of the drones in the simulation
     # For some reason this only works if it's after the takeoff
     for drone in all_drones:
         pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
         drone.status="moving"
         drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
-        drone.cf.goTo(pos,0,10)
-        timeHelper.sleep(10)
+        drone.cf.goTo(pos,0,duration)
+        timeHelper.sleep(duration)
         drone.status="hovering"
         drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
 
