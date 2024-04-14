@@ -110,13 +110,13 @@ def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest
         return max(base * (round(number/base) + 1), base)
 
 class Drone():
-    def __init__(self, drone, id, speed):
+    def __init__(self, cf, id, speed):
         self.positions = []
         self.times = [] 
         self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
         self.speed = speed
-        self.drone = drone # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
-        self.id = id
+        self.cf = cf # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
+        self.id = id # is there a way to set this from self.drone? i.e. an id built into the crazyflie object?
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
