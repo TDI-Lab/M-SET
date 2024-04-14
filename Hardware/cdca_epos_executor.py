@@ -110,12 +110,13 @@ def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest
         return max(base * (round(number/base) + 1), base)
 
 class Drone():
-    def __init__(self, drone, speed):
+    def __init__(self, drone, id, speed):
         self.positions = []
         self.times = [] 
         self.status = "idle" # idle -> (sensing, waiting, moving)
         self.speed = speed
-        self.drone = drone
+        self.drone = drone # change this attribute to be called cf or crazyflie, so long as it doesn't conflict with module name
+        self.id = id
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
@@ -168,9 +169,9 @@ class Drone():
             self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
-    def log_status(self):
+    def log_status(self, id):
         #rospy.loginfo(self.status)
-        pub.publish(self.status)
+        pub.publish("Drone %s: %s" % self.id, self.status)
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -179,7 +180,7 @@ def parse_input(input_path, allcfs, speed, next_moves):
     c = 0
     for drone in input_path:
         if c < len(allcfs.crazyflies):
-            d = Drone(allcfs.crazyflies[c],speed)
+            d = Drone(allcfs.crazyflies[c],c,speed)
             all_drones.append(d)
             for position in drone:
                 if INPUT_MODE == "cdca":
@@ -222,14 +223,18 @@ def return_uris(channels,numbers):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
+def log_all_status(all_drones):
+    for drone in all_drones:
+        drone.drone.log_status()
+
 def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
         if ENABLE_LOGGING == True:
             call_once(ids)
             #listener(ids)
     """
-        logger = aSync(drone_uris)
-        logger.runCallback()
+            logger = aSync(drone_uris)
+            logger.runCallback()
     """
     pass
         
@@ -251,8 +256,6 @@ def adjust_moves(next_moves):
     return next_moves
 
 def follow_plans(timeHelper, all_drones, next_moves):
-    pub.publish("Starting")
-
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
@@ -385,9 +388,12 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     #drone_uris = return_uris([80,90],[2,3])
 
     print("INITIALISING LOGGING")
+    log_all_status(all_drones)
+    """
     ids = [1,2]
     log_all_drones(ids, ["battery"])
-
+    """
+    
     if run == True:
         print("EXECUTING PATH")
         try:
