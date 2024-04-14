@@ -196,11 +196,15 @@ def parse_input(input_path, allcfs, speed, next_moves):
 
     return all_drones, next_moves
 
-def take_off_all(d, timeHelper,all_drones):
-# Tell the drones to take off
-    for cf in all_drones:
-        cf.drone.takeoff(targetHeight=HOVER_HEIGHT, duration=d)
+def take_off_all(dur, timeHelper, allcfs, sequential=False):
+    if sequential == True:
+        allcfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
         timeHelper.sleep(2.5)
+    else:
+        # Tell the drones to take off one at a time
+        for cf in allcfs:
+            cf.drone.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
+            timeHelper.sleep(2.5)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
@@ -397,7 +401,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     if run == True:
         print("EXECUTING PATH")
         try:
-            take_off_all(2.5, timeHelper, all_drones)
+            take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
             set_initial_positions(timeHelper,all_drones)
 
