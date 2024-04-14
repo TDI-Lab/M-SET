@@ -4,7 +4,7 @@ from .Drone import Drone
 from .Collision_Strategy import Collision_Strategy
 from .Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from .Offline_Collision_Stats import Offline_Collision_Stats
-from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
+from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
@@ -60,16 +60,20 @@ class Swarm_Control:
 
 
   def discretise_flight_paths(self, drones, from_time=None, to_time=None):
-        drone_positions = []
+    drone_positions = []
+    if to_time is None:
+        to_time = max(drone.flights[-1].finish_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
+    if from_time is None:
+        from_time = min(drone.flights[0].start_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
 
-        if to_time is None:
-            to_time = max(drone.flights[-1].finish_time for drone in drones)
-        if from_time is None:
-            from_time = min(drone.flights[0].start_time for drone in drones)
+    num_positions = int(math.ceil((to_time - from_time) / TIME_STEP)) + 1
 
-        num_positions = int(math.ceil((to_time - from_time) / TIME_STEP)) + 1
+    drones_with_no_flights = [i for i, drone in enumerate(drones) if not drone.flights]
 
-        for drone in drones:
+    for i, drone in enumerate(drones):
+        if i in drones_with_no_flights:
+            drone_positions.append([drone.plan[0][0]] * num_positions)
+        else:
             positions_for_drone = [None] * num_positions
 
             flight_i = 0
@@ -106,8 +110,13 @@ class Swarm_Control:
                 positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
 
             drone_positions.append(positions_for_drone)
-        
-        return drone_positions
+    for drone in drone_positions:
+        for pos in drone:
+            if pos is None:
+                print("Error: None position detected. Flights not proerly discretised. Exiting...")
+                return
+    return drone_positions
+
 
   def visualise_swarm(self, title=""):
     discreet_positions = self.discretise_flight_paths(self.drones)
@@ -125,9 +134,9 @@ class Swarm_Control:
     ax.set_zlabel('Z')
     ax.legend()
 
-    ax.set_xlim([0, 10])  
-    ax.set_ylim([0, 10])  
-    ax.set_zlim([0, 10])  
+    ax.set_xlim([-GRID_SIZE, GRID_SIZE])  
+    ax.set_ylim([-GRID_SIZE, GRID_SIZE])  
+    ax.set_zlim([-GRID_SIZE, GRID_SIZE])  
 
     ax.set_title(title)
 
