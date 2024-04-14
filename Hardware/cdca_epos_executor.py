@@ -171,9 +171,11 @@ class Drone():
 
     def log_status(self, msg=""):
         #rospy.loginfo(self.status)
-        if msg != "":
+        if msg != "" and PRINT_LOG_MESSAGES==True:
             print(msg)
-        pub.publish("Drone %s: %s. %s" % self.id, self.status, msg)
+        
+        if ENABLE_LOGGING == True:
+            pub.publish("Drone %s: %s. %s" % self.id, self.status, msg)
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
