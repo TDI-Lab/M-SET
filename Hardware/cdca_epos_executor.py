@@ -206,7 +206,11 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
             all_cfs = [drone.cf for drone in all_drones]
         all_cfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
         timeHelper.sleep(2.5)
+
+        for drone in all_drones:
+            drone.status = "hovering"
         log_all_drones(all_drones)
+    
     else:
         # Tell the drones to take off one at a time
         for drone in all_drones:
