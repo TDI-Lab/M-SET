@@ -222,11 +222,14 @@ def land_all(d, timeHelper,all_drones):
 def set_initial_positions(timeHelper, all_drones):
     # Set the initial positions of the drones in the simulation
     # For some reason this only works if it's after the takeoff
-    for cf in all_drones:
-        pos = get_coords(cf.positions[cf.move_count], USE_CELL_COORDS)
-        print("moving to", pos)
-        cf.drone.goTo(pos,0,10)
+    for drone in all_drones:
+        pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
+        drone.status="moving"
+        drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
+        drone.cf.goTo(pos,0,10)
         timeHelper.sleep(10)
+        drone.status="hovering"
+        drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
 
 def return_uris(channels,numbers):
     uris = []
