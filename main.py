@@ -4,11 +4,13 @@ Workflow executed from here.
 
 # from cdca.src import Basic_Collision_Avoidance, Dependency_Collision_Avoidance, Input_Parser, Swarm_Control
 import configparser
+from random import randint
 from cdca.src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
 from cdca.src.Input_Parser import Input_Parser
 from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
+# from path_generation.experiments.generate_missions import create_random_sensing_missions
 # from cdca.src import *
 from path_generation.PathGenerator import PathGenerator
 import csv
@@ -44,12 +46,31 @@ def write_results_to_csv(data, config_file_path='drone_sense.properties'):
         # Add a blank line for readability
         writer.writerow([])
 
-
+def create_new_random_sensing_mission(size=3):
+    sizes = [i for i in range(2, 13)]
+    mission_name = f"{size}x{size}_random.csv"
+    rows = ["type,id,x,y,z,value\n"]
+    #  Create sensing cells
+    cell_id = 0
+    for i in range(1, size + 1):
+        for j in range(1, size + 1):
+            sensing_value = randint(0, 10)
+            new_row = f"SENSE,{cell_id},{i},{j},1,{sensing_value}\n"
+            rows.append(new_row)
+            cell_id += 1
+    rows.append(f"BASE,0,0,0,0,0\n")
+    rows.append(f"BASE,1,{size + 1},0,0,0\n")
+    rows.append(f"BASE,2,0,{size + 1},0,0\n")
+    rows.append(f"BASE,3,{size + 1},{size + 1},0,0\n")
+    with open(f"examples/{mission_name}", "w") as file:
+        for row in rows:
+            file.write(row)
 
 def experiment_iteration():
     raw = False
     #  Hello :)  There are two steps to running the path generator (once the config is set up)
     #  First, instantiate the PathGenerator object
+    create_new_random_sensing_mission()
     pg = PathGenerator()
     #  Then, call PathGenerator.generate_paths.  For CD/CA purposes, you want raw=False (so nothing)
     plans = pg.generate_paths(raw=raw)
@@ -84,6 +105,9 @@ def experiment_iteration():
         plans3 = swarm_controller2.plans
         result3 = swarm_controller2.get_offline_collision_stats()
 
+        del swarm_controller
+        del swarm_controller2
+        del pg
 
         return {
         'plans': {
