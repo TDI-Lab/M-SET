@@ -10,28 +10,46 @@ from cdca.src.Input_Parser import Input_Parser
 from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
+from path_generation.ConfigManager import ConfigManager
 # from path_generation.experiments.generate_missions import create_random_sensing_missions
 # from cdca.src import *
 from path_generation.PathGenerator import PathGenerator
 import csv
 import json
 import os
+import os.path
 
-def write_results_to_csv(data, config_file_path='drone_sense.properties'):
-   # Load the config file
-    config = configparser.ConfigParser()
-    config.read(config_file_path)
 
-    # Get the model name from the config file
-    model_name = config.get('DEFAULT', 'ModelName', fallback='default')
 
-    # Check if the header has already been written
-    header_exists = os.path.isfile('path_generation/PlanGeneration/datasets/'+model_name+'_results.csv')
+class Config:
+    def __init__(self, config_file_path='drone_sense.properties'):
+        self.config_file_path = config_file_path
+        # Check if the config file exists
+        if not os.path.isfile(config_file_path):
+            print(f"Config file '{config_file_path}' not found.")
+            return
 
+        self.config = configparser.ConfigParser()
+        self.config.optionxform = str  # preserve case for options
+
+        self.config.read(config_file_path)
+
+    
+
+def write_results_to_csv(data, config):
+
+    # Now you can access the values in the config file like this:
+    mission_name = config.config.get('global', 'MissionName')
+
+    results_path = 'path_generation/PlanGeneration/datasets/'+mission_name+'/results.csv'
+
+    header_exists = os.path.isfile(results_path)
+    
     # Write the plans and the results to the CSV file
-    with open('path_generation/PlanGeneration/datasets/'+model_name+'_results.csv', 'a', newline='') as f:
+    with open(results_path, 'a', newline='') as f:
         writer = csv.writer(f)
-        
+         # Check if the header has already been written
+
         # Write the header if it doesn't exist
         if not header_exists:
             writer.writerow(['Strategy', 'Plan', 'Results'])
@@ -46,22 +64,21 @@ def write_results_to_csv(data, config_file_path='drone_sense.properties'):
         # Add a blank line for readability
         writer.writerow([])
 
-def create_new_random_sensing_mission(size=3):
-    sizes = [i for i in range(2, 13)]
-    mission_name = f"{size}x{size}_random.csv"
+def create_new_random_sensing_mission(size_n, size_m):
+    mission_name = f"{size_n}x{size_m}_random.csv"
     rows = ["type,id,x,y,z,value\n"]
     #  Create sensing cells
     cell_id = 0
-    for i in range(1, size + 1):
-        for j in range(1, size + 1):
+    for i in range(1, size_n + 1):
+        for j in range(1, size_m + 1):
             sensing_value = randint(0, 10)
             new_row = f"SENSE,{cell_id},{i},{j},1,{sensing_value}\n"
             rows.append(new_row)
             cell_id += 1
     rows.append(f"BASE,0,0,0,0,0\n")
-    rows.append(f"BASE,1,{size + 1},0,0,0\n")
-    rows.append(f"BASE,2,0,{size + 1},0,0\n")
-    rows.append(f"BASE,3,{size + 1},{size + 1},0,0\n")
+    rows.append(f"BASE,1,{size_n + 1},0,0,0\n")
+    rows.append(f"BASE,2,0,{size_m + 1},0,0\n")
+    rows.append(f"BASE,3,{size_n + 1},{size_m + 1},0,0\n")
     with open(f"examples/{mission_name}", "w") as file:
         for row in rows:
             file.write(row)
@@ -70,7 +87,6 @@ def experiment_iteration():
     raw = False
     #  Hello :)  There are two steps to running the path generator (once the config is set up)
     #  First, instantiate the PathGenerator object
-    create_new_random_sensing_mission()
     pg = PathGenerator()
     #  Then, call PathGenerator.generate_paths.  For CD/CA purposes, you want raw=False (so nothing)
     plans = pg.generate_paths(raw=raw)
@@ -105,10 +121,6 @@ def experiment_iteration():
         plans3 = swarm_controller2.plans
         result3 = swarm_controller2.get_offline_collision_stats()
 
-        del swarm_controller
-        del swarm_controller2
-        del pg
-
         return {
         'plans': {
             'no_ca': plans,
@@ -123,6 +135,23 @@ def experiment_iteration():
     }
 
 if __name__ == '__main__':
-    for i in range(3):
-        data = experiment_iteration()
-        write_results_to_csv(data)
+
+    # a list of n m for each experiment
+    experiment_sizes = [[2,3], [4,4]]
+
+    config = Config('drone_sense.properties')
+
+    n_iterations = 5
+    for i in range(len(experiment_sizes)):
+        abs_path = os.path.abspath('.')
+        config.config.set('global', 'MissionName', f"random_{experiment_sizes[i][0]}x{experiment_sizes[i][1]}")
+
+        config.config.set('global', 'MissionFile', f"{abs_path}/examples/{experiment_sizes[i][0]}x{experiment_sizes[i][1]}_random.csv")
+        with open(config.config_file_path, 'w') as configfile:
+            config.config.write(configfile)
+
+        for _ in range(n_iterations):
+            create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
+
+            data = experiment_iteration()
+            write_results_to_csv(data, config)

@@ -175,7 +175,7 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     y_difference = collision_point[1] - start_point[1]
     x_difference = start_point[0] - collision_point[0] 
 
-    multiplier = orthogonal_dist / math.sqrt((y_difference ** 2) + (x_difference ** 2))
+    multiplier = orthogonal_dist / (math.sqrt((y_difference ** 2) + (x_difference ** 2)) + 1e-10)
 
     orthogonal_line = [y_difference * multiplier, x_difference * multiplier]
 
