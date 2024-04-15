@@ -40,6 +40,7 @@ def write_results_to_csv(data, config):
 
     # Now you can access the values in the config file like this:
     mission_name = config.config.get('global', 'MissionName')
+    n_drones = config.config.get('global', 'NumberOfDrones')
 
     results_path = 'path_generation/PlanGeneration/datasets/'+mission_name+'/results.csv'
 
@@ -52,14 +53,14 @@ def write_results_to_csv(data, config):
 
         # Write the header if it doesn't exist
         if not header_exists:
-            writer.writerow(['Strategy', 'Plan', 'Results'])
+            writer.writerow(['Strategy', 'n_drones' 'Plan', 'Results'])
         
         # Write the data
         for strategy, plans in data['plans'].items():
             results = data['results'][strategy]
             # Join the plans into a single string
             plans_str = ', '.join(map(str, plans))
-            writer.writerow([strategy, plans_str, results])
+            writer.writerow([strategy, n_drones, plans_str, results])
         
         # Add a blank line for readability
         writer.writerow([])
@@ -83,7 +84,8 @@ def create_new_random_sensing_mission(size_n, size_m):
         for row in rows:
             file.write(row)
 
-def experiment_iteration():
+            
+def experiment_iteration(n_drones):
     raw = False
     #  Hello :)  There are two steps to running the path generator (once the config is set up)
     #  First, instantiate the PathGenerator object
@@ -96,9 +98,12 @@ def experiment_iteration():
        
 
     else:
+        print("PLANS: ",plans)
+
         for plan, path in plans.items():
             print(f"plan: {plan}, path: {path}")
-
+        if n_drones == 1:
+            plans = [plans]
         input_p = Input_Parser(plans)
         parsed_plans = input_p.parsed_input
         
@@ -108,18 +113,21 @@ def experiment_iteration():
         print("")
 
 
-        swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance())
+        swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance(visualise=True))
+        swarm_controller.visualise_swarm()
         result = swarm_controller.get_offline_collision_stats()
         plans = swarm_controller.plans
 
         swarm_controller.detect_potential_collisions()
         plans2 = swarm_controller.plans
         result2 = swarm_controller.get_offline_collision_stats()
+        swarm_controller.visualise_swarm()
 
         swarm_controller2 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
         swarm_controller2.detect_potential_collisions()
         plans3 = swarm_controller2.plans
         result3 = swarm_controller2.get_offline_collision_stats()
+        swarm_controller2.visualise_swarm()
 
         return {
         'plans': {
@@ -136,22 +144,28 @@ def experiment_iteration():
 
 if __name__ == '__main__':
 
-    # a list of n m for each experiment
+    # a list of n m for each experiment grid
     experiment_sizes = [[2,3], [4,4]]
 
     config = Config('drone_sense.properties')
 
     n_iterations = 5
+    drones = [1,2,3,4]
+
     for i in range(len(experiment_sizes)):
         abs_path = os.path.abspath('.')
         config.config.set('global', 'MissionName', f"random_{experiment_sizes[i][0]}x{experiment_sizes[i][1]}")
 
         config.config.set('global', 'MissionFile', f"{abs_path}/examples/{experiment_sizes[i][0]}x{experiment_sizes[i][1]}_random.csv")
-        with open(config.config_file_path, 'w') as configfile:
-            config.config.write(configfile)
+        
 
         for _ in range(n_iterations):
-            create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
+            for n_drones in drones:
+                config.config.set('global', 'NumberOfDrones', f"{n_drones}")
 
-            data = experiment_iteration()
-            write_results_to_csv(data, config)
+                with open(config.config_file_path, 'w') as configfile:
+                    config.config.write(configfile)
+                create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
+
+                data = experiment_iteration(n_drones)
+                write_results_to_csv(data, config)

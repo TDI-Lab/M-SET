@@ -8,7 +8,7 @@ DISTANCE_STEP = SPEED * TIME_STEP
 
 TIME_DELAY = 2
 
-MINIMUM_DISTANCE = 0.75 # Must be >= to DISTANCE_STEP to ensure accuracy
+MINIMUM_DISTANCE = 0.5 # Must be >= to DISTANCE_STEP to ensure accuracy
 
 COLLISION_AVOIDANCE_LIMIT = 20
 
