@@ -4,7 +4,7 @@ from .Drone import Drone
 from .Collision_Strategy import Collision_Strategy
 from .Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from .Offline_Collision_Stats import Offline_Collision_Stats
-from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
+from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, MAX_GRID_OFFSET, MIN_GRID_OFFSET, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
@@ -134,9 +134,9 @@ class Swarm_Control:
     ax.set_zlabel('Z')
     ax.legend()
 
-    ax.set_xlim([-GRID_SIZE, GRID_SIZE])  
-    ax.set_ylim([-GRID_SIZE, GRID_SIZE])  
-    ax.set_zlim([-GRID_SIZE, GRID_SIZE])  
+    ax.set_xlim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
+    ax.set_ylim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
+    ax.set_zlim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
 
     ax.set_title(title)
 

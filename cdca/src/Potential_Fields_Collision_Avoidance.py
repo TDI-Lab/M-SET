@@ -2,36 +2,60 @@
 import math
 
 from matplotlib import animation, pyplot as plt
-from src.Drone import Drone
-from src.Flight import Flight
-from src.Collision_Strategy import Collision_Strategy
+from cdca.src.Drone import Drone
+from cdca.src.Flight import Flight
+from cdca.src.Collision_Strategy import Collision_Strategy
 import numpy as np
-from src.Swarm_Constants import *
+from cdca.src.Swarm_Constants import *
 from mpl_toolkits.mplot3d import Axes3D
 
 class PF_Drone(Drone):
-    def __init__(self, drone_id, drone, resolution_factor):
+    def __init__(self, drone_id, drone, resolution_factor,  min_grid_offset=MIN_GRID_OFFSET, max_grid_offset=MAX_GRID_OFFSET):
         self.original_drone = drone
         super().__init__( drone.plan)
         self.drone_id = drone_id
-
         self.resolution_factor = resolution_factor
-        self.goals = [self.drone_to_grid(flight.flight_path[-1]) for flight in self.flights]
+        self.min_grid_offset = min_grid_offset
+        self.max_grid_offset = max_grid_offset
+        self.grid_width = self.max_grid_offset - self.min_grid_offset
+        self.cell_size = self.grid_width / (2 * self.resolution_factor)
+
         self.position = np.array(self.drone_to_grid(self.plan[0][0])) 
-        self.direction = np.subtract(self.position, self.goals[0])
-        self.goal = np.array(self.goals[0])
         self.positions = []
         self.positions.append(self.position.tolist())
         self.goals_reached = 0 # The first goal is reached by default
         self.current_wait_time = self.plan[0][1]
-        self.finished = False
 
+
+        if not self.original_drone.flights: # Some drones dont move
+            self.finished = True
+            self.flights_duration = self.plan[0][1]
+            self.goal = np.array(self.plan[0][0])
+
+        else:
+
+            self.goals = [self.drone_to_grid(flight.flight_path[-1]) for flight in self.flights]
+            self.goal = np.array(self.goals[0])
+            self.direction = np.subtract(self.position, self.goals[0])
+            self.finished = False
+
+    # Map coordinates from drone space to grid space
     def drone_to_grid(self, drone_position):
-        return (drone_position[0] * self.resolution_factor), (drone_position[1] * self.resolution_factor)
+       
+        grid_position = [((coord - self.min_grid_offset) * self.resolution_factor) + self.cell_size for coord in drone_position]
 
+        return grid_position
+    
+    # Map coordinates from grid space to drone space
     def grid_to_drone(self, grid_position):
-        return (grid_position[0] / self.resolution_factor), (grid_position[1] / self.resolution_factor)
+        drone_position = [((coord - self.cell_size) / self.resolution_factor) + self.min_grid_offset for coord in grid_position]
 
+        return drone_position
+    
+    def grid_distance(self, drone_distance):
+        # Scale the input grid distance according to the resolution factor
+        return drone_distance * self.cell_size
+    
     def convert_to_flights(self):
         # Convert the positions of the drones to flights
         new_plan = []
@@ -82,9 +106,14 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     - adjust_drone_path(drones, drone, potential_field): Adjusts the drone's path based on the potential field.
     """
 
-    def __init__(self, resolution_factor=2, grid_size=GRID_SIZE, visualise=False):
+    def __init__(self, resolution_factor=3, min_grid_offset=MIN_GRID_OFFSET, max_grid_offset=MAX_GRID_OFFSET, visualise=False):
         self.resolution_factor = resolution_factor
-        self.grid_size = grid_size * self.resolution_factor
+        self.min_grid_offset = min_grid_offset
+        self.max_grid_offset = max_grid_offset
+    
+        # grid size based on min and max grid offset
+        self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * 2 * self.resolution_factor)
+        self.grid_size_original = self.grid_size
         self.visualise = visualise
 
     def detect_potential_collisions(self, drones):
@@ -118,7 +147,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         - drones (list): A list of drones.
         """
         # Initialise PF_Drone objects
-        drones = [PF_Drone(i, drone, self.resolution_factor) for i, drone in enumerate(drones)]
+        drones = [PF_Drone(i, drone, self.resolution_factor, self.min_grid_offset, self.max_grid_offset) for i, drone in enumerate(drones)]
         self.number_of_drones = len(drones)
 
         drones_not_done = len(drones)
@@ -171,11 +200,14 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if other_drone != drone:
                 # Calculate the potential of the other drone and add it to the potential field
                 obstacle_vectors = self.calculate_repulsion_from_drone(other_drone)
-
+                # self.visualize_vector_field(obstacle_vectors, "Obstacle Vectors")
                 potential_field += obstacle_vectors
 
         goal_potential = self.calculate_attraction_to_goal(drone)
+        # self.visualize_vector_field(goal_potential, "Goal Potential")
         potential_field += goal_potential
+
+        # self.visualize_vector_field(potential_field, "Combined Potential")
         return potential_field
 
     def calculate_repulsion_from_drone(self, drone):
@@ -196,22 +228,16 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-        maximum = MINIMUM_DISTANCE * self.resolution_factor * 20
+        maximum = drone.grid_distance(MINIMUM_DISTANCE * 3)  # 3 times the minimum distance to give the drone change to move away
         mask = (distances >= minimum) & (distances <= maximum)
 
-        # Apply the mask to the vectors and divide by the square of the distances
-        vectors[0] = vectors[0] * mask / (distances ** 2 + 1e-9)
-        vectors[1] = vectors[1] * mask / (distances ** 2 + 1e-9)
+        # Apply the mask to the vectors
+        vectors[0] = vectors[0] * mask
+        vectors[1] = vectors[1] * mask
 
-        # Scale the vectors by a factor that is inversely proportional to the distance
-        scale_factor = maximum / (distances + 1e-9)
-        vectors[0] *= scale_factor
-        vectors[1] *= scale_factor
-
-        # Cap the magnitudes of the vectors
-        clip_range = np.clip(self.number_of_drones - drone.drone_id, 0.5, 1)
-        vectors[0] = np.clip(vectors[0], -clip_range, clip_range)
-        vectors[1] = np.clip(vectors[1], -clip_range, clip_range)
+        # scale_factor = self.resolution_factor/2
+        # vectors[0] *= scale_factor
+        # vectors[1] *= scale_factor
 
         return vectors
 
@@ -237,17 +263,38 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
 
         # Set the vectors at positions a specified distance away from the goal to zero
-        distance_threshold = (DISTANCE_STEP) * self.resolution_factor
+        distance_threshold = drone.grid_distance(DISTANCE_STEP) 
         goal_position = drone.goal.astype(int)
+
         for i in range(self.grid_size):
             for j in range(self.grid_size):
-                distance_to_goal = np.linalg.norm(np.array([i, j]) - goal_position)
+                grid_position = np.array([i, j])
+                distance_to_goal = np.linalg.norm(goal_position - grid_position)
                 if distance_to_goal <= distance_threshold:
                     unit_vectors[0][j, i] = 0
                     unit_vectors[1][j, i] = 0
 
-        return unit_vectors
 
+        return unit_vectors
+    def visualize_vector_field(self, vector_field, title):
+        """
+        Visualizes a 2D vector field.
+
+        Parameters:
+        - vector_field (np.ndarray): The 2D vector field to visualize.
+        """
+        # Create a grid of coordinates
+        y, x = np.mgrid[0:vector_field[0].shape[0], 0:vector_field[0].shape[1]]
+
+        # Create a quiver plot
+        fig, ax = plt.subplots(figsize=(7, 7))
+        ax.quiver(x, y, vector_field[0], vector_field[1])
+
+        # Add a title
+        ax.set_title(title)
+
+        # Show the plot
+        plt.show()
     def animate_vector_fields(self, vector_fields, drone):
         """
         Animates the vector fields for visualization.
@@ -258,6 +305,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         """
         fig = plt.figure(figsize=(7, 7))
         ax = fig.add_subplot(1, 1, 1)
+        grid_size = vector_fields[0][0].shape[0] // 2
         y, x = np.mgrid[0:vector_fields[0][0].shape[0], 0:vector_fields[0][0].shape[1]]
 
         quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])
@@ -292,7 +340,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
 
         direction = vector_at_drone
-        random_vector = np.random.normal(scale=0.1, size=direction.shape)  # Add some noise to the direction to reduce local minima
+        random_vector = np.random.normal(scale=0.1 , size=direction.shape)  # Add some noise to the direction to reduce local minima
         direction += random_vector
 
         # Check if goal is already occupied by other drone
@@ -308,12 +356,6 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         if distance_to_goal <= (DISTANCE_STEP * self.resolution_factor):
             old_position = drone.position
 
-            # Final precaution - check if position is already occupied
-            for other_drone in drones:
-                if drone != other_drone:
-                    if np.array_equal(other_drone.position, drone.goal):
-                        return
-
             drone.positions.append(drone.goal.tolist())
             drone.position = (drone.goal)
 
@@ -326,7 +368,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             # Set the goal to the next flight's starting position
             drone.goal = np.array(drone.goals[drone.goals_reached])
             drone.current_wait_time = drone.plan[drone.goals_reached][1]
-            self.direction = np.subtract(drone.goal, drone.position)
+            drone.direction = np.subtract(drone.goal, drone.position)
 
         else:
             old_direction = drone.direction
@@ -339,70 +381,66 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             # Move the drone a fixed distance in that direction if not out of bounds
             potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
 
-            # Check if the drone is moving out of bounds
+            # Check if the drone is moving out of bounds, stay if so
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
 
             else:
-                old_position = drone.position
                 drone.position = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
-
-                # Final precaution - check if position is already occupied
-                for other_drone in drones:
-                    if drone != other_drone:
-                        if np.array_equal(other_drone.position, drone.position):
-                            drone.position = old_position
-                            drone.direction = old_direction
-                            return
                 drone.positions.append(drone.position.tolist())
+
     def discretise_flight_paths(self, drones, from_time=None, to_time=None):
         drone_positions = []
-
         if to_time is None:
-            to_time = max(drone.flights[-1].finish_time for drone in drones)
+            to_time = max(drone.flights[-1].finish_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
         if from_time is None:
-            from_time = min(drone.flights[0].start_time for drone in drones)
+            from_time = min(drone.flights[0].start_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
 
         num_positions = int(math.ceil((to_time - from_time) / TIME_STEP)) + 1
 
-        for drone in drones:
-            positions_for_drone = [None] * num_positions
+        drones_with_no_flights = [i for i, drone in enumerate(drones) if not drone.flights]
 
-            flight_i = 0
-            for flight in drone.flights:
-                if flight.finish_time < from_time or flight.start_time > to_time:
-                    continue  # Skip flights outside the time range
+        for i, drone in enumerate(drones):
+            if i in drones_with_no_flights:
+                drone_positions.append([drone.plan[0][0]] * num_positions)
+            else:
+                positions_for_drone = [None] * num_positions
 
-                start_index = max(0, int((flight.start_time - from_time) / TIME_STEP))
-                end_index = min(num_positions, start_index + len(flight.flight_path))
+                flight_i = 0
+                for flight in drone.flights:
+                    if flight.finish_time < from_time or flight.start_time > to_time:
+                        continue  # Skip flights outside the time range
 
-                for i in range(start_index, end_index):
-                    if positions_for_drone[i] is None:  # Avoid duplicate positions
-                        positions_for_drone[i] = flight.flight_path[i - start_index]
+                    start_index = max(0, int((flight.start_time - from_time) / TIME_STEP))
+                    end_index = min(num_positions, start_index + len(flight.flight_path))
 
-            # Fill in gaps with the last known position
-            last_known_position = None
-            for i in range(num_positions):
-                if positions_for_drone[i] is not None:
-                    last_known_position = positions_for_drone[i]
-                elif last_known_position is not None:
-                    positions_for_drone[i] = last_known_position
+                    for i in range(start_index, end_index):
+                        if positions_for_drone[i] is None:  # Avoid duplicate positions
+                            positions_for_drone[i] = flight.flight_path[i - start_index]
 
-            # If the drone's first flight starts after from_time, prepend positions with the first known position
-            if flight_i == 0 and flight.start_time > from_time:
-                first_known_position = drone.flights[0].flight_path[0]
+                # Fill in gaps with the last known position
+                last_known_position = None
                 for i in range(num_positions):
-                    if positions_for_drone[i] is None:
-                        positions_for_drone[i] = first_known_position
-                    else:
-                        break
-            flight_i += 1
-            # If the drone's last flight finishes before to_time, extend positions with the last known position
-            if drone.flights[-1].finish_time < to_time:
-                positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
+                    if positions_for_drone[i] is not None:
+                        last_known_position = positions_for_drone[i]
+                    elif last_known_position is not None:
+                        positions_for_drone[i] = last_known_position
 
-            drone_positions.append(positions_for_drone)
+                # If the drone's first flight starts after from_time, prepend positions with the first known position
+                if flight_i == 0 and flight.start_time > from_time:
+                    first_known_position = drone.flights[0].flight_path[0]
+                    for i in range(num_positions):
+                        if positions_for_drone[i] is None:
+                            positions_for_drone[i] = first_known_position
+                        else:
+                            break
+                flight_i += 1
+                # If the drone's last flight finishes before to_time, extend positions with the last known position
+                if drone.flights[-1].finish_time < to_time:
+                    positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
+
+                drone_positions.append(positions_for_drone)
         for drone in drone_positions:
             for pos in drone:
                 if pos is None:
