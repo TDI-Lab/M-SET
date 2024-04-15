@@ -50,12 +50,15 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         if self.visualise_dependencies: 
             self.visualize_dependency_tree(dependency_tree)
 
-        result = self.augment_plans(drones, hierachy)
-
-        if result:
-            print("Plans augemented successfully. No collisions remaining.")
+        if hierachy is None:
+            result = self.augment_plans_without_dependency(drones)
         else:
-            print("Collision avoidance failed. Collisions still detected")
+            result = self.augment_plans_with_dependency(drones, hierachy)
+
+        # if result:
+        #     print("Plans augemented successfully. No collisions remaining.")
+        # else:
+        #     print("Collision avoidance failed. Collisions still detected")
        
         if self.visualise_dependencies: 
             dependency_tree = self.build_dependency_tree(drones)
@@ -180,7 +183,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         while remaining_nodes:
             current_row = [node for node in remaining_nodes if not any(dependency [0] in remaining_nodes for dependency in dependency_tree[node])]
             if not current_row:
-                print("Error. Cycles in dependency tree. Cannot resolve execution order.")
+                # print("Error. Cycles in dependency tree. Cannot resolve execution order.")
                 # There are cycles in the dependency tree
                 return None
             
@@ -231,7 +234,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
 
    
 
-    def augment_plans(self, drones, execution_hierarchy):
+    def augment_plans_with_dependency(self, drones, execution_hierarchy):
         """
         Augments the flight plans of the drones based on the execution hierarchy.
 
@@ -261,16 +264,16 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                             elif flag == DEST_OCCUPIED_COLLISION:
                                 drones[other_flight_node.drone_index].augment_plan(other_flight_node.flight_index, -1)
 
-                                print(f"Destination occupied. ... Drone {self.flight_nodes[node].drone_index} cannot reach destination\n")
-                                print(f"Augmenting plan for drone {other_flight_node.drone_index} to move for 1 second earlier\n")
+                                # print(f"Destination occupied. ... Drone {self.flight_nodes[node].drone_index} cannot reach destination\n")
+                                # print(f"Augmenting plan for drone {other_flight_node.drone_index} to move for 1 second earlier\n")
                                 
                                 
                             elif flag == CROSS_COLLISION:
                                 drones[self.flight_nodes[node].drone_index].augment_plan(self.flight_nodes[node].flight_index, 1)
-                                print(f"Cross collision detected. Augmenting plan for drone {self.flight_nodes[node].drone_index} to wait for 1 more second\n")
+                                # print(f"Cross collision detected. Augmenting plan for drone {self.flight_nodes[node].drone_index} to wait for 1 more second\n")
 
                             elif flag == SAME_FINAL_POSITIONS_COLLISION:
-                                print(f"Same final positions collision detected.\n")
+                                # print(f"Same final positions collision detected.\n")
                                 # get plan that finishes last to go to different position (one already on its path)
                                 if self.flight_nodes[node].flight.finish_time <= other_flight_node.flight.finish_time:
                                     self.adjust_plan_same_final_position(drones, self.flight_nodes[node])
@@ -288,7 +291,65 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                                  
         return not result
 
-              
+    def augment_plans_without_dependency(self, drones):
+        """
+        Augments the flight plans of the drones based on time they start.
+
+        Args:
+            drones (list): List of Drone objects.
+            execution_hierarchy (list): Execution hierarchy where each element represents a row of flights that can be executed in parallel, along with their dependencies and collision flags.
+
+        Returns:
+            bool: True if the plans are successfully augmented (no collisions remaining), False otherwise.
+        """
+
+        # make a copy of self.flight_nodes and sort it based on start time
+        sorted_flight_nodes = sorted(self.flight_nodes, key=lambda x: x.flight.start_time)
+        
+        row_index = 0
+        for node in sorted_flight_nodes:
+
+            wait = 0
+            while (wait < COLLISION_AVOIDANCE_LIMIT):
+
+                collision, flag, other_flight_node = self.does_flight_collide(drones, node.flight_node_index)
+                if collision:
+                    if flag == PARALLEL_COLLISION:
+
+                        new_position = self.get_new_position( node, other_flight_node)
+                        # print("new position: ", new_position)
+                        drones[other_flight_node.drone_index].plan.insert(other_flight_node.flight_index + 1, [new_position, 0])
+                        drones[other_flight_node.drone_index].augment_plan(other_flight_node.flight_index, 0)
+
+                    elif flag == DEST_OCCUPIED_COLLISION:
+                        drones[other_flight_node.drone_index].augment_plan(other_flight_node.flight_index, -1)
+
+                        # print(f"Destination occupied. ... Drone {self.flight_nodes[node].drone_index} cannot reach destination\n")
+                        # print(f"Augmenting plan for drone {other_flight_node.drone_index} to move for 1 second earlier\n")
+                        
+                        
+                    elif flag == CROSS_COLLISION:
+                        drones[node.drone_index].augment_plan(node.flight_index, 1)
+                        # print(f"Cross collision detected. Augmenting plan for drone {node.drone_index} to wait for 1 more second\n")
+
+                    elif flag == SAME_FINAL_POSITIONS_COLLISION:
+                        # print(f"Same final positions collision detected.\n")
+                        # get plan that finishes last to go to different position (one already on its path)
+                        if node.flight.finish_time <= other_flight_node.flight.finish_time:
+                            self.adjust_plan_same_final_position(drones, node)
+                        else:
+                            self.adjust_plan_same_final_position(drones, other_flight_node)
+                                   
+
+                                
+                self.update_flight_nodes(drones)
+                wait += 1
+                   
+            row_index += 1
+
+        result = self.collisions(self.discretise_flight_paths(drones))
+                                 
+        return not result
 
 
     def visualize_dependency_tree(self, dependency_tree):
@@ -343,55 +404,60 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                   
         """
         drone_positions = []
-
         if to_time is None:
-            to_time = max(drone.flights[-1].finish_time for drone in drones)
+            to_time = max(drone.flights[-1].finish_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
         if from_time is None:
-            from_time = min(drone.flights[0].start_time for drone in drones)
+            from_time = min(drone.flights[0].start_time for drone in drones if drone.flights) if any(drone.flights for drone in drones) else 0
 
         num_positions = int(math.ceil((to_time - from_time) / TIME_STEP)) + 1
 
-        for drone in drones:
-            positions_for_drone = [None] * num_positions
+        drones_with_no_flights = [i for i, drone in enumerate(drones) if not drone.flights]
 
-            flight_i = 0
-            for flight in drone.flights:
-                if flight.finish_time < from_time or flight.start_time > to_time:
-                    continue  # Skip flights outside the time range
+        for i, drone in enumerate(drones):
+            if i in drones_with_no_flights:
+                drone_positions.append([drone.plan[0][0]] * num_positions)
+            else:
+                positions_for_drone = [None] * num_positions
 
-                start_index = max(0, int((flight.start_time - from_time) / TIME_STEP))
-                end_index = min(num_positions, start_index + len(flight.flight_path))
+                flight_i = 0
+                for flight in drone.flights:
+                    if flight.finish_time < from_time or flight.start_time > to_time:
+                        continue  # Skip flights outside the time range
 
-                for i in range(start_index, end_index):
-                    if positions_for_drone[i] is None:  # Avoid duplicate positions
-                        positions_for_drone[i] = flight.flight_path[i - start_index]
+                    start_index = max(0, int((flight.start_time - from_time) / TIME_STEP))
+                    end_index = min(num_positions, start_index + len(flight.flight_path))
 
-            # Fill in gaps with the last known position
-            last_known_position = None
-            for i in range(num_positions):
-                if positions_for_drone[i] is not None:
-                    last_known_position = positions_for_drone[i]
-                elif last_known_position is not None:
-                    positions_for_drone[i] = last_known_position
+                    for i in range(start_index, end_index):
+                        if positions_for_drone[i] is None:  # Avoid duplicate positions
+                            positions_for_drone[i] = flight.flight_path[i - start_index]
 
-            # If the drone's first flight starts after from_time, prepend positions with the first known position
-            if flight_i == 0 and flight.start_time > from_time:
-                first_known_position = drone.flights[0].flight_path[0]
+                # Fill in gaps with the last known position
+                last_known_position = None
                 for i in range(num_positions):
-                    if positions_for_drone[i] is None:
-                        positions_for_drone[i] = first_known_position
-                    else:
-                        break
-            flight_i += 1
-            # If the drone's last flight finishes before to_time, extend positions with the last known position
-            if drone.flights[-1].finish_time < to_time:
-                positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
+                    if positions_for_drone[i] is not None:
+                        last_known_position = positions_for_drone[i]
+                    elif last_known_position is not None:
+                        positions_for_drone[i] = last_known_position
 
-            drone_positions.append(positions_for_drone)
+                # If the drone's first flight starts after from_time, prepend positions with the first known position
+                if flight_i == 0 and flight.start_time > from_time:
+                    first_known_position = drone.flights[0].flight_path[0]
+                    for i in range(num_positions):
+                        if positions_for_drone[i] is None:
+                            positions_for_drone[i] = first_known_position
+                        else:
+                            break
+                flight_i += 1
+                # If the drone's last flight finishes before to_time, extend positions with the last known position
+                if drone.flights[-1].finish_time < to_time:
+                    positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
+
+                drone_positions.append(positions_for_drone)
         for drone in drone_positions:
             for pos in drone:
                 if pos is None:
-                    print("None position detected")
+                    print("Error: None position detected. Flights not proerly discretised. Exiting...")
+                    return
         return drone_positions
 
 
@@ -414,7 +480,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
                 if i == j:
                     continue
                 for k in range(len(drone_positions[i])):
-                    print("Distance: ", math.dist(drone_positions[i][k], drone_positions[j][k]))
+                    # print("Distance: ", math.dist(drone_positions[i][k], drone_positions[j][k]))
 
                     if math.dist(drone_positions[i][k], drone_positions[j][k]) <= MINIMUM_DISTANCE * 1.5:
                         return True
@@ -474,7 +540,7 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
         if collision_index is not None:
             if self.parallel_flights(flight_node_1.flight, flight_node_2.flight):
                 if flight_node_1.flight.flight_path[0] != flight_node_2.flight.flight_path[0]:
-                    print("Parallel Collision Detected")
+                    # print("Parallel Collision Detected")
                     return True, PARALLEL_COLLISION
             
             # If both drones have no future positions, they will collide at the same final position
@@ -485,11 +551,11 @@ class Dependency_Collision_Avoidance(Collision_Strategy):
             
             # Check if final collision point is end of flight path, as this distinguishes it from cross collision
             if (flight_node_2.flight.flight_path[0] == flight_node_1.flight.flight_path[-1]):
-                print("Destination Occupied Collision Detected")
+                # print("Destination Occupied Collision Detected")
                 return True, DEST_OCCUPIED_COLLISION
             
             
-            print("Cross Collision Detected") #assumed if not other collision type
+            # print("Cross Collision Detected") #assumed if not other collision type
             return True, CROSS_COLLISION
             
 

@@ -31,6 +31,8 @@ class PF_Drone(Drone):
             self.finished = True
             self.flights_duration = self.plan[0][1]
             self.goal = np.array(self.plan[0][0])
+            self.direction = np.array([0, 0])
+
 
         else:
 
@@ -226,7 +228,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-        maximum = drone.grid_distance(MINIMUM_DISTANCE * 3)  # 3 times the minimum distance to give the drone change to move away
+        maximum = drone.grid_distance(MINIMUM_DISTANCE * 5)  # 3 times the minimum distance to give the drone change to move away
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
@@ -240,25 +242,25 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         vectors[1] /= norms
 
         # Scale the vectors to the desired magnitude
-        desired_magnitude = 1  # Adjust this value as needed
+        desired_magnitude = 2  # Adjust this value as needed
         vectors[0] *= desired_magnitude
         vectors[1] *= desired_magnitude
 
-        if drone.direction.any():
-            # Calculate the angles of the vectors
-            angles = np.arctan2(vectors[1], vectors[0])
+        # if drone.direction.all() != 0:
+        #     # Calculate the angles of the vectors
+        #     angles = np.arctan2(vectors[1], vectors[0])
 
-            # Calculate the angle of the drone's heading
-            drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
+        #     # Calculate the angle of the drone's heading
+        #     drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
 
-            # Create a mask for angles within n degrees of the drone's heading
-            n_degrees = np.radians(20)  # Convert n from degrees to radians
-            angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
+        #     # Create a mask for angles within n degrees of the drone's heading
+        #     n_degrees = np.radians(20)  # Convert n from degrees to radians
+        #     angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
 
-            # Scale the vectors within n degrees of the drone's heading
-            scale_factor = 2  # Adjust this value as needed
-            vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
-            vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
+        #     # Scale the vectors within n degrees of the drone's heading
+        #     scale_factor = 2  # Adjust this value as needed
+        #     vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
+        #     vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
 
         return vectors
 
