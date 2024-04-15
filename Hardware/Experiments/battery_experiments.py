@@ -3,6 +3,7 @@ import os
 import sys
 import rospy
 from std_msgs.msg import String
+import time
 
 CRAZYSWARM_SCRIPTS_FILE_PATH = "/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/scripts"
 HOVER_HEIGHT = 0.5
@@ -17,16 +18,31 @@ os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
 swarm = Crazyswarm()
 timeHelper = swarm.timeHelper
 allcfs = swarm.allcfs
+pub = None
 
-IDs = [cf.id for cf in allcfs]
+IDs = [cf.id for cf in allcfs.crazyflies]
+print(len(IDs))
 
-pub = rospy.Publisher('status_logger', String, queue_size=10)
+def create_node():
+    global pub
+
+    try:
+        rospy.init_node('chatter', anonymous=True)
+    except:
+        pass
+
+    pub = rospy.Publisher('status_logger', String, queue_size=10)
+
+    input("Logging setup complete\nPress any key to continue")
 
 def log(id=None, msg=""):
     if id != None:
+        print("Publishing %s with message %s" % (id, msg))
         pub.publish("Drone %s: %s." % (id, msg))
+        rospy.loginfo("Drone %s: %s." % (id, msg))
     else:
         pub.publish("All drones: %s." % (msg))
+        rospy.loginfo("All drones: %s." % (msg))
 
 def log_all(ids, msg=""):
     for id in ids:
@@ -51,12 +67,15 @@ def exp_takeOffLand(dur):
 def exp_Hover(dur):
     setUp(dur)
 
-    # Hover until program killed with CTRL-C
-    try:
-        while timeHelper.isShutdown() == False:
-            timeHelper.sleepForRate(RATE)
-    except:
-        tearDown(dur)
+    # Hover until program killed
+    inp = None
+    while inp != "":
+        inp = input("Press any key to end the experiment")
+    #     log(1,msg="hovering")
+
+    # while True:
+    #     log(1,msg="hovering")
+    #     time.sleep(1)
 
     tearDown(dur)
 
@@ -77,3 +96,12 @@ def move_x(setup_dur, speed):
     timeHelper.sleep(movement_duration)
 
     tearDown(setup_dur)
+
+#log_all(IDs)
+#for i in range(0,10):
+# while True:
+#     log(1, msg="test")
+#     time.sleep(0.5)
+
+create_node()
+exp_Hover(3)
