@@ -2,7 +2,7 @@ import configparser
 import shutil
 from distutils.dir_util import copy_tree
 from distutils.util import strtobool
-from os import listdir
+from os import listdir, mkdir
 from pathlib import Path
 from shutil import copy2
 from typing import List, Tuple
@@ -122,16 +122,32 @@ class PathGenerationController:
         epos_dir = f'{self.parent_path}/EPOS/datasets/{dataset_name}'
         copy_tree(plan_gen_dir, epos_dir)
 
+    def __select_for_single_drone_system(self, results_dir):
+        with open(f"{results_dir}/termination.csv", "x") as file:
+            file.write("Run,Terminal Iteration\n")
+            file.write("0,1")
+        with open(f"{results_dir}/selected-plans.csv", "x") as file:
+            file.write("Run,Iteration,agent-0\n")
+            file.write("0,0,0")
+
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
         self._epos_controller = EPOSWrapper()
         self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
         epos_properties = self.__construct_epos_properties()
-        self.config_generator.write_config_file(epos_properties)
-        show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
-        show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
-        result_code = self._epos_controller.run(out=show_out, err=show_err)
-        return result_code
+        if epos_properties["numAgents"] == "1":
+            output_dir = f"{self.parent_path}/EPOS/output"
+            self._epos_controller.clean_output(output_dir)
+            results_dir = f"{output_dir}/{self.config.get('global', 'MissionName')}_result"
+            mkdir(results_dir)
+            self.__select_for_single_drone_system(results_dir)
+            return 0
+        else:
+            self.config_generator.write_config_file(epos_properties)
+            show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
+            show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
+            result_code = self._epos_controller.run(out=show_out, err=show_err)
+            return result_code
 
     def __get_plan_indexes(self):
         # read selected-plan.csv from the first directory within the output directory
@@ -164,7 +180,7 @@ class PathGenerationController:
         for i, index in enumerate(indexes):
             with open(f"{self.parent_path}/EPOS/datasets/{data_dir}/agent_{i}.plans") as file:
                 plans = file.readlines()
-                selected_plan = plans[index - 1].strip("\n")
+                selected_plan = plans[index].strip("\n")
                 cost, plan = selected_plan.split(":")
                 cost = float(cost)
                 plan = [float(i) for i in plan.split(",")]
