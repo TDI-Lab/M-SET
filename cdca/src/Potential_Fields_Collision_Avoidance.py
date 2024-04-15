@@ -232,25 +232,33 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Apply the mask to the vectors
         vectors[0] = vectors[0] * mask
         vectors[1] = vectors[1] * mask
+        
+        # Normalize the vectors
+        norms = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
+        norms[norms == 0] = 1  # Avoid division by zero
+        vectors[0] /= norms
+        vectors[1] /= norms
 
-        # scale_factor = self.resolution_factor/2
-        # vectors[0] *= scale_factor
-        # vectors[1] *= scale_factor
+        # Scale the vectors to the desired magnitude
+        desired_magnitude = 1  # Adjust this value as needed
+        vectors[0] *= desired_magnitude
+        vectors[1] *= desired_magnitude
 
-        # Calculate the angles of the vectors
-        angles = np.arctan2(vectors[1], vectors[0])
+        if drone.direction.any():
+            # Calculate the angles of the vectors
+            angles = np.arctan2(vectors[1], vectors[0])
 
-        # Calculate the angle of the drone's heading
-        drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
+            # Calculate the angle of the drone's heading
+            drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
 
-        # Create a mask for angles within n degrees of the drone's heading
-        n_degrees = np.radians(20)  # Convert n from degrees to radians
-        angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
+            # Create a mask for angles within n degrees of the drone's heading
+            n_degrees = np.radians(20)  # Convert n from degrees to radians
+            angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
 
-        # Scale the vectors within n degrees of the drone's heading
-        scale_factor = 2  # Adjust this value as needed
-        vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
-        vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
+            # Scale the vectors within n degrees of the drone's heading
+            scale_factor = 2  # Adjust this value as needed
+            vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
+            vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
 
         return vectors
 
