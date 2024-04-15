@@ -2,11 +2,11 @@
 import math
 
 from matplotlib import animation, pyplot as plt
-from cdca.src.Drone import Drone
-from cdca.src.Flight import Flight
-from cdca.src.Collision_Strategy import Collision_Strategy
+from .Drone import Drone
+from .Flight import Flight
+from .Collision_Strategy import Collision_Strategy
 import numpy as np
-from cdca.src.Swarm_Constants import *
+from .Swarm_Constants import *
 from mpl_toolkits.mplot3d import Axes3D
 
 class PF_Drone(Drone):
@@ -166,8 +166,9 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
                 potential_field = self.calculate_potential_field(drone, drones)
 
-                # Add potential field to list for visualisation
-                pfs_per_drone[i].append(potential_field)
+                if self.visualise:
+                    # Add potential field to list for visualisation
+                    pfs_per_drone[i].append(potential_field)
 
                 self.adjust_drone_path(drones, drone, potential_field)
 
@@ -200,14 +201,11 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if other_drone != drone:
                 # Calculate the potential of the other drone and add it to the potential field
                 obstacle_vectors = self.calculate_repulsion_from_drone(other_drone)
-                # self.visualize_vector_field(obstacle_vectors, "Obstacle Vectors")
                 potential_field += obstacle_vectors
 
         goal_potential = self.calculate_attraction_to_goal(drone)
-        # self.visualize_vector_field(goal_potential, "Goal Potential")
         potential_field += goal_potential
 
-        # self.visualize_vector_field(potential_field, "Combined Potential")
         return potential_field
 
     def calculate_repulsion_from_drone(self, drone):
@@ -238,6 +236,21 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # scale_factor = self.resolution_factor/2
         # vectors[0] *= scale_factor
         # vectors[1] *= scale_factor
+
+        # Calculate the angles of the vectors
+        angles = np.arctan2(vectors[1], vectors[0])
+
+        # Calculate the angle of the drone's heading
+        drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
+
+        # Create a mask for angles within n degrees of the drone's heading
+        n_degrees = np.radians(20)  # Convert n from degrees to radians
+        angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
+
+        # Scale the vectors within n degrees of the drone's heading
+        scale_factor = 2  # Adjust this value as needed
+        vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
+        vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
 
         return vectors
 
