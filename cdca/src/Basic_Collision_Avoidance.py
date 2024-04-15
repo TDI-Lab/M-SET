@@ -111,12 +111,15 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     # Check if two flights that are airborne at the same time get too close at any point of time.
     comparison_from = max(subject_flight.start_time, flight.start_time)
     comparison_until = min(subject_flight.finish_time, flight.finish_time)
-
-    num_timesteps = int(math.ceil((comparison_until - comparison_from) / TIME_STEP)) + 1
+    comparison_iterations = int((comparison_until - comparison_from) / TIME_STEP)
     
-    for i in range(num_timesteps):
-        subjet_flight_index = i# - subject_flight.start_time
-        flight_index = i# - flight.start_time
+    comparison_range = []
+    for i in range(comparison_iterations + 1):
+        comparison_range.append(comparison_from + (i * TIME_STEP))
+
+    for i in comparison_range:
+        subjet_flight_index = int((i - subject_flight.start_time) / TIME_STEP)
+        flight_index = int((i - flight.start_time) / TIME_STEP)
 
         point_A = subject_flight.flight_path[subjet_flight_index]
         point_B = flight.flight_path[flight_index]
