@@ -2,26 +2,38 @@
 import rospy
 import sys
 import time
+import os
 from std_msgs.msg import String
 from crazyswarm.msg import GenericLogData
 from geometry_msgs.msg import Pose
-#from pycrazyswarm import Crazyswarm
+import numpy as np
 try:
    from Hardware_constants import *
 except:
    from Hardware.Hardware_constants import *
 
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
+from pycrazyswarm import Crazyswarm
 
 output_file = LOG_OUTPUT_FILE
-file = open('Results/%s' % output_file, 'w')
+print(os.getcwd())
+file = open("Results/%s" % output_file, "w")
 start = time.time()
+
+#current = os.getcwd()
+os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
+
+ndrones=len(Crazyswarm().allcfs.crazyflies)
+status = np.full((1,ndrones),"idle")
+
+#os.chdir(current)
 
 count=1
 c=1
 def callback(data,args):
    global c
    global count
+   global status
    topic = args[0]
    ndrones = args[1]
    id = args[2]
@@ -29,15 +41,22 @@ def callback(data,args):
    #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.values)
    #print("topic=%s" % topic)
 
+   print(topic)
+
    if topic=="status":
       rospy.loginfo(data.data)
       file.write(str(data.data))
+      if id != None:
+         status[id] = data.data
+      else:
+         for s in status:
+            s = data.data
    else:
       rospy.loginfo("%s: Drone %s: Data: %s" % (count, id, data.values))
       file.write("\n")
       #file.write(str(count)+"/?/"+str(id)+"/?/"+str(data.values))
       #file.write(str(time.time()-start)+"/?/"+str(count)+"/?/"+str(id)+"/?/"+str(data.values))
-      file.write("/?/".join(str(time.time()-start),str(count),str(id),str(data.values)))
+      file.write(str("/?/".join((str(time.time()-start),str(count),str(id),str(data.values),str(status[int(id)-1])))))
       #file.write(str(data.values))
    
    if c % ndrones == 0:
