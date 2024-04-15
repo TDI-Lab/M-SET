@@ -45,9 +45,9 @@ def callback(data,args):
 
    if topic=="status":
       rospy.loginfo(data.data)
-      file.write(str(data.data))
+      #file.write(str(data.data))
       if id != None:
-         status[id] = data.data
+         status[id] = data.data.split(':')[1]
       else:
          for s in status:
             s = data.data
@@ -97,7 +97,7 @@ def listener(ids=[1]):
    create_node()
 
    for id in ids:
-      rospy.Subscriber("/cf%s/log1" %id, GenericLogData, callback, ["log1", len(ids), id]) # # MAKE SURE RIGHT CHANNEL IS SET
+      #rospy.Subscriber("/cf%s/log1" %id, GenericLogData, callback, ["log1", len(ids), id]) # # MAKE SURE RIGHT CHANNEL IS SET
       rospy.Subscriber("status_logger", String, callback, ["status", len(ids), id])
       #rospy.Subscriber("chatter", String, callback, ["status", len(ids), id])
       
