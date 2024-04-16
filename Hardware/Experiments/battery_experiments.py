@@ -87,10 +87,20 @@ def move_x(setup_dur, speed, run=True):
 
     movement_duration = X_DISTANCE / speed # get speed from cdca code
 
-    pos1 = [(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT)]
+    pos1 = [(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,1*Y_DISTANCE,HOVER_HEIGHT),(0,0*Y_DISTANCE,HOVER_HEIGHT),(0,-1*Y_DISTANCE,HOVER_HEIGHT)]
     pos2 = [(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT)]
 
+    rel_pos1 = (X_DISTANCE,0,0)
+    rel_pos2 = (-X_DISTANCE,0,0)
+
     setUp(setup_dur,run=run)
+
+    for i in range(0,len(allcfs.crazyflies)):
+        if run == True:
+            print("moving to initial positions")
+            print(pos1[:len(IDs)][i])
+            allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration)
+            timeHelper.sleep(movement_duration)
 
     # REPEAT
     try:
@@ -99,7 +109,8 @@ def move_x(setup_dur, speed, run=True):
             # All drones move one cell in the positive x direction
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
-                    allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+                    #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+                    allcfs.crazyflies[i].goTo(rel_pos2,0,movement_duration, relative=True)
             log(msg="Moving to position 2")
             timeHelper.sleep(movement_duration)
 
@@ -110,7 +121,8 @@ def move_x(setup_dur, speed, run=True):
             # All drones move back to their original positions
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
-                    allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+                    #allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+                    allcfs.crazyflies[i].goTo(rel_pos1,0,movement_duration, relative=True)
             log(msg="Moving to position 1")
             timeHelper.sleep(movement_duration)
 
