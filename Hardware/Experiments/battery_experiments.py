@@ -69,6 +69,7 @@ def exp_takeOffLand(dur):
     tearDown(dur)
 
 def exp_Hover(dur, run=True):
+    print(run)
     setUp(dur, run=run)
 
     # Hover until program killed
@@ -110,7 +111,7 @@ def move_x(setup_dur, speed, run=True):
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
                     #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
-                    allcfs.crazyflies[i].goTo(rel_pos2,0,movement_duration, relative=True)
+                    allcfs.crazyflies[i].goTo(rel_pos2,0,5, relative=True)
             log(msg="Moving to position 2")
             timeHelper.sleep(movement_duration)
 
@@ -140,6 +141,28 @@ def move_x(setup_dur, speed, run=True):
 #     log(1, msg="test")
 #     time.sleep(0.5)
 
-create_node()
-#exp_Hover(3,run=False)
-move_x(3,0.1,run=True)
+def main(run, experiments):
+    create_node()
+
+    print(run)
+
+    if "hover" in experiments:
+        exp_Hover(3,run=run)
+    
+    if "move_x" in experiments:
+        move_x(3,0.1,run=run)
+
+if __name__ == '__main__':
+    # [--sim], experiment1, [experiment2] ...
+    args = sys.argv
+
+    if '--sim' in args:
+        #IN_SIMULATION = True
+        offset = 1
+
+    run = (args[1+offset] == "True")
+    experiments=[]
+    for arg in args[2+offset:]:
+        experiments.append(arg)
+
+    main(run, experiments)
