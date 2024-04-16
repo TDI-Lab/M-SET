@@ -38,11 +38,11 @@ def create_node():
 def log(id=None, msg=""):
     if id != None:
         print("Publishing %s with message %s" % (id, msg))
-        pub.publish("Drone %s: %s." % (id, msg))
-        rospy.loginfo("Drone %s: %s." % (id, msg))
+        pub.publish("Drone %s:%s" % (id, msg))
+        rospy.loginfo("Drone %s:%s" % (id, msg))
     else:
-        pub.publish("All drones: %s." % (msg))
-        rospy.loginfo("All drones: %s." % (msg))
+        pub.publish("All drones:%s" % (msg))
+        rospy.loginfo("All drones:%s" % (msg))
 
 def log_all(ids, msg=""):
     for id in ids:
@@ -52,13 +52,15 @@ def setUp(dur, run=True):
     log(msg="Experiment start")
     if run == True:
         allcfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
+    log(msg="Taking off")
     timeHelper.sleep(dur)
-    log(msg="All drones taken off")
+    log(msg="Hovering")
 
 def tearDown(dur, run=True):
-    log(msg="All drones preparing to land")
+    log(msg="Preparing to land")
     if run == True:
         allcfs.land(targetHeight=0.05, duration=dur)
+    log(msg="Landing")
     timeHelper.sleep(dur)
     log(msg="Experiment end")
 
@@ -67,7 +69,7 @@ def exp_takeOffLand(dur):
     tearDown(dur)
 
 def exp_Hover(dur, run=True):
-    setUp(dur)
+    setUp(dur, run=run)
 
     # Hover until program killed
     inp = None
@@ -79,7 +81,7 @@ def exp_Hover(dur, run=True):
     #     log(1,msg="hovering")
     #     time.sleep(1)
 
-    tearDown(dur)
+    tearDown(dur, run=run)
 
 def move_x(setup_dur, speed):
     #setUp(setup_dur)
@@ -90,6 +92,8 @@ def move_x(setup_dur, speed):
     pos1 = [(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT)]
     pos2 = [(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT)]
 
+    # REPEAT
+
     # All drones move one cell in the positive x direction
     #allcfs.goTo(pos2[0:2],0,3,1)
     #timeHelper.sleep(movement_duration)
@@ -98,9 +102,13 @@ def move_x(setup_dur, speed):
     allcfs.goTo(pos2[:len(IDs)],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
     timeHelper.sleep(movement_duration)
 
+    # LOG
+
     # All drones move one cell in the positive x direction
-    #allcfs.goTo(pos1[:len(IDs)],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+    allcfs.goTo(pos1[:len(IDs)],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
     timeHelper.sleep(movement_duration)
+
+    # LOG
 
     #tearDown(setup_dur)
 
@@ -110,6 +118,6 @@ def move_x(setup_dur, speed):
 #     log(1, msg="test")
 #     time.sleep(0.5)
 
-#create_node()
-#exp_Hover(3,run=False)
-move_x(3,0.1)
+create_node()
+exp_Hover(3,run=True)
+#move_x(3,0.1)
