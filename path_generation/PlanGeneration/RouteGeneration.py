@@ -70,7 +70,6 @@ class RouteGeneration:
 
         # 3. find the shortest path via visited cells using Dijkstra's algorithm based on TSP problem
         tsp_solution, distance_total = self.greedy_tsp(station)
-        shortest_route_indexes = [int(x) for x in tsp_solution[1: -1]]
         self.distance_total = distance_total
 
         #  Compute parameters for energy calculations
@@ -79,7 +78,7 @@ class RouteGeneration:
         flight_energy = self.flight_power * distance_total / self.ground_speed
 
         #  Compute battery usage for path
-        energy_utilisation = 1 - (plan_id / ((1./self.energy_efficiency) * self.total_plans))
+        energy_utilisation = 1 - (plan_id / (self.energy_efficiency * self.total_plans))
         max_usage = self.battery_capacity * energy_utilisation
         while max_usage - flight_energy <= 0:
             max_usage = self.battery_capacity * random.random()

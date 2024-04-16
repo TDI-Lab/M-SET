@@ -67,7 +67,7 @@ parameters = OrderedDict({
         "RotorDiameter": 0.03,
         "ProjectedBodyArea": 0.0599,
         "ProjectedBatteryArea": 0.0037,
-        "PowerEfficiency": 1.25,
+        "PowerEfficiency": 0.8,
         "GroundSpeed": 6.94,
         "AirSpeed": 8.5
     },
