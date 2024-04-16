@@ -83,34 +83,44 @@ def exp_Hover(dur, run=True):
 
     tearDown(dur, run=run)
 
-def move_x(setup_dur, speed):
-    #setUp(setup_dur)
-    allcfs.takeoff(targetHeight=HOVER_HEIGHT, duration=setup_dur)
+def move_x(setup_dur, speed, run=True):
 
     movement_duration = X_DISTANCE / speed # get speed from cdca code
 
     pos1 = [(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,2*Y_DISTANCE,HOVER_HEIGHT)]
     pos2 = [(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT)]
 
+    setUp(setup_dur,run=run)
+
     # REPEAT
+    try:
+        while True:
 
-    # All drones move one cell in the positive x direction
-    #allcfs.goTo(pos2[0:2],0,3,1)
-    #timeHelper.sleep(movement_duration)
-    print(pos2[:len(IDs)])
-    print([pos for pos in pos2[:len(IDs)]])
-    allcfs.goTo(pos2[:len(IDs)],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
-    timeHelper.sleep(movement_duration)
+            # All drones move one cell in the positive x direction
+            for i in range(0,len(allcfs.crazyflies)):
+                if run == True:
+                    allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+            log(msg="Moving to position 2")
+            timeHelper.sleep(movement_duration)
 
-    # LOG
+            # LOG
+            log(msg="Position 2")
+            timeHelper.sleep(movement_duration)
 
-    # All drones move one cell in the positive x direction
-    allcfs.goTo(pos1[:len(IDs)],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
-    timeHelper.sleep(movement_duration)
+            # All drones move back to their original positions
+            for i in range(0,len(allcfs.crazyflies)):
+                if run == True:
+                    allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+            log(msg="Moving to position 1")
+            timeHelper.sleep(movement_duration)
 
-    # LOG
+            # LOG
+            log(msg="Position 1")
+            timeHelper.sleep(movement_duration)
 
-    #tearDown(setup_dur)
+    except KeyboardInterrupt:
+        print("landing")
+        tearDown(setup_dur, run=run)
 
 #log_all(IDs)
 #for i in range(0,10):
@@ -119,5 +129,5 @@ def move_x(setup_dur, speed):
 #     time.sleep(0.5)
 
 create_node()
-exp_Hover(3,run=True)
-#move_x(3,0.1)
+#exp_Hover(3,run=False)
+move_x(3,0.1,run=True)
