@@ -11,6 +11,7 @@ from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from path_generation.ConfigManager import ConfigManager
+from MeasureSensing import MeasureSensing
 # from path_generation.experiments.generate_missions import create_random_sensing_missions
 # from cdca.src import *
 from path_generation.PathGenerator import PathGenerator
@@ -18,8 +19,6 @@ import csv
 import json
 import os
 import os.path
-
-
 
 class Config:
     def __init__(self, config_file_path='drone_sense.properties'):
@@ -53,14 +52,15 @@ def write_results_to_csv(data, config):
 
         # Write the header if it doesn't exist
         if not header_exists:
-            writer.writerow(['Strategy', 'n_drones' 'Plan', 'Results'])
+            writer.writerow(['Strategy', 'n_drones', 'Plan', 'Collisions', 'Sensing Mismatch %'])
         
         # Write the data
-        for strategy, plans in data['plans'].items():
+        for strategy, _ in data['plans'].items():
             results = data['results'][strategy]
+            sensing_accuracy = data['sensing accuracy'][strategy]
+            plans = data['plans'][strategy]
             # Join the plans into a single string
-            plans_str = ', '.join(map(str, plans))
-            writer.writerow([strategy, n_drones, plans_str, results])
+            writer.writerow([strategy, n_drones, plans, results, sensing_accuracy])
         
         # Add a blank line for readability
         writer.writerow([])
@@ -72,7 +72,7 @@ def create_new_random_sensing_mission(size_n, size_m):
     cell_id = 0
     for i in range(1, size_n + 1):
         for j in range(1, size_m + 1):
-            sensing_value = randint(0, 10)
+            sensing_value = randint(1, 10)
             new_row = f"SENSE,{cell_id},{i},{j},1,{sensing_value}\n"
             rows.append(new_row)
             cell_id += 1
@@ -84,63 +84,57 @@ def create_new_random_sensing_mission(size_n, size_m):
         for row in rows:
             file.write(row)
 
+    return mission_name
+
             
-def experiment_iteration(n_drones):
-    raw = False
-    #  Hello :)  There are two steps to running the path generator (once the config is set up)
-    #  First, instantiate the PathGenerator object
+def experiment_1and2_iteration(n_drones, mission_name):
+
     pg = PathGenerator()
-    #  Then, call PathGenerator.generate_paths.  For CD/CA purposes, you want raw=False (so nothing)
-    plans = pg.generate_paths(raw=raw)
-    if raw:
-        for plan in plans:
-            print(plan)
-       
+    plans = pg.generate_paths()
 
-    else:
-        print("PLANS: ",plans)
+    for plan, path in plans.items():
+        print(f"plan: {plan}, path: {path}")
 
-        for plan, path in plans.items():
-            print(f"plan: {plan}, path: {path}")
-        if n_drones == 1:
-            plans = [plans]
-        input_p = Input_Parser(plans)
-        parsed_plans = input_p.parsed_input
-        
-        print("")
-        for plan in parsed_plans:
-            print(plan)
-        print("")
+    # if n_drones == 1:
+    #     plans = [plans]
 
+    input_p = Input_Parser(plans)
+    parsed_plans = input_p.parsed_input
+    
+    print("")
+    for plan in parsed_plans:
+        print(plan)
+    print("")
 
-        swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance(visualise=True))
-        swarm_controller.visualise_swarm()
-        result = swarm_controller.get_offline_collision_stats()
-        plans = swarm_controller.plans
+    sensing = MeasureSensing(f"examples/{mission_name}")
+    swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance()) # No collision avoidance actually being used here
+    swarm_controller2 = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance(visualise=False))
+    swarm_controller3 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
 
-        swarm_controller.detect_potential_collisions()
-        plans2 = swarm_controller.plans
-        result2 = swarm_controller.get_offline_collision_stats()
-        swarm_controller.visualise_swarm()
+    swarm_controller2.detect_potential_collisions()
+    swarm_controller3.detect_potential_collisions()
 
-        swarm_controller2 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
-        swarm_controller2.detect_potential_collisions()
-        plans3 = swarm_controller2.plans
-        result3 = swarm_controller2.get_offline_collision_stats()
-        swarm_controller2.visualise_swarm()
-
-        return {
-        'plans': {
-            'no_ca': plans,
-            'pf_ca': plans2,
-            'basic_ca': plans3,
-        },
-        'results': {
-            'no_ca': result,
-            'pf_ca': result2,
-            'basic_ca': result3,
-        }
+    plans =  [[plan for plan in drone.plan] for drone in swarm_controller.drones]
+    plans2 = [[plan for plan in drone.plan] for drone in swarm_controller2.drones]
+    plans3 =  [[plan for plan in drone.plan] for drone in swarm_controller3.drones]
+    
+    return {
+    'plans': {
+        'no_ca':plans,
+        'pf_ca': plans2,
+        'basic_ca':plans3,
+    },
+    'results': {
+        'no_ca': swarm_controller.get_offline_collision_stats(),
+        'pf_ca': swarm_controller2.get_offline_collision_stats(),
+        'basic_ca': swarm_controller3.get_offline_collision_stats(),
+    },
+    'sensing accuracy': {
+        'no_ca': sensing.measure_sensing(plans),
+        'pf_ca': sensing.measure_sensing(plans2),
+        'basic_ca': sensing.measure_sensing(plans3),
     }
+}
 
 if __name__ == '__main__':
 
@@ -149,7 +143,7 @@ if __name__ == '__main__':
 
     config = Config('drone_sense.properties')
 
-    n_iterations = 5
+    n_iterations = 2
     drones = [1,2,3,4]
 
     for i in range(len(experiment_sizes)):
@@ -165,7 +159,7 @@ if __name__ == '__main__':
 
                 with open(config.config_file_path, 'w') as configfile:
                     config.config.write(configfile)
-                create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
+                mission_name = create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
 
-                data = experiment_iteration(n_drones)
+                data = experiment_1and2_iteration(n_drones, mission_name)
                 write_results_to_csv(data, config)
