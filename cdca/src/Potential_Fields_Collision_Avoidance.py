@@ -108,7 +108,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     - adjust_drone_path(drones, drone, potential_field): Adjusts the drone's path based on the potential field.
     """
 
-    def __init__(self, resolution_factor=3, min_grid_offset=MIN_GRID_OFFSET, max_grid_offset=MAX_GRID_OFFSET, visualise=False):
+    def __init__(self, resolution_factor=2, min_grid_offset=MIN_GRID_OFFSET, max_grid_offset=MAX_GRID_OFFSET, visualise=False):
         self.resolution_factor = resolution_factor
         self.min_grid_offset = min_grid_offset
         self.max_grid_offset = max_grid_offset
@@ -228,7 +228,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-        maximum = drone.grid_distance(MINIMUM_DISTANCE * 5)  # 3 times the minimum distance to give the drone change to move away
+
+        maximum = drone.grid_distance(MINIMUM_DISTANCE * 2)  # 3 times the minimum distance to give the drone change to move away
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
