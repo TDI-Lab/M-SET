@@ -2,23 +2,22 @@
 Workflow executed from here.
 """
 
-# from cdca.src import Basic_Collision_Avoidance, Dependency_Collision_Avoidance, Input_Parser, Swarm_Control
-import configparser
-from random import randint
-from cdca.src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
+
 from cdca.src.Input_Parser import Input_Parser
+from cdca.src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
 from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
-from path_generation.ConfigManager import ConfigManager
-from MeasureSensing import MeasureSensing
-# from path_generation.experiments.generate_missions import create_random_sensing_missions
-# from cdca.src import *
+from experiments.MeasureSensing import MeasureSensing
+from experiments.VisualiseData import VisualiseData
+
 from path_generation.PathGenerator import PathGenerator
 import csv
 import json
 import os
 import os.path
+import configparser
+from random import randint
 
 class Config:
     def __init__(self, config_file_path='drone_sense.properties'):
@@ -34,14 +33,15 @@ class Config:
         self.config.read(config_file_path)
 
     
-
-def write_results_to_csv(data, config):
+def write_results_to_csv(data, config, greedy=False):
 
     # Now you can access the values in the config file like this:
     mission_name = config.config.get('global', 'MissionName')
+    if greedy:
+        mission_name += '_greedy'
     n_drones = config.config.get('global', 'NumberOfDrones')
 
-    results_path = 'path_generation/PlanGeneration/datasets/'+mission_name+'/results.csv'
+    results_path = 'experiments/results/'+mission_name+'_results.csv'
 
     header_exists = os.path.isfile(results_path)
     
@@ -52,15 +52,15 @@ def write_results_to_csv(data, config):
 
         # Write the header if it doesn't exist
         if not header_exists:
-            writer.writerow(['Strategy', 'n_drones', 'Plan', 'Collisions', 'Sensing Mismatch %'])
+            writer.writerow(['Strategy', 'n_drones', 'Plan', 'Sensing Mismatch %','Total Collisions', 'Cross Collisions', 'Parallel_Collisions', 'Cell Occupied Collisions'])
         
         # Write the data
         for strategy, _ in data['plans'].items():
-            results = data['results'][strategy]
-            sensing_accuracy = data['sensing accuracy'][strategy]
+            collisions = data['results'][strategy]
+            sensing_accuracy = data['sensing mismatch'][strategy]
             plans = data['plans'][strategy]
             # Join the plans into a single string
-            writer.writerow([strategy, n_drones, plans, results, sensing_accuracy])
+            writer.writerow([strategy, n_drones, plans, sensing_accuracy, collisions['number_of_collisions'], collisions['number_of_cross_collisions'], collisions['number_of_dest_occupied_collisions']])
         
         # Add a blank line for readability
         writer.writerow([])
@@ -107,6 +107,7 @@ def experiment_1and2_iteration(n_drones, mission_name):
     print("")
 
     sensing = MeasureSensing(f"examples/{mission_name}")
+
     swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance()) # No collision avoidance actually being used here
     swarm_controller2 = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance(visualise=False))
     swarm_controller3 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
@@ -116,8 +117,12 @@ def experiment_1and2_iteration(n_drones, mission_name):
 
     plans =  [[plan for plan in drone.plan] for drone in swarm_controller.drones]
     plans2 = [[plan for plan in drone.plan] for drone in swarm_controller2.drones]
-    plans3 =  [[plan for plan in drone.plan] for drone in swarm_controller3.drones]
+    plans3 = [[plan for plan in drone.plan] for drone in swarm_controller3.drones]
     
+    print("Plans: ")
+    print("No CA: ",plans)
+    # print("PF CA: ",plans2)
+    print("Basic CA: ",plans3)
     return {
     'plans': {
         'no_ca':plans,
@@ -129,22 +134,20 @@ def experiment_1and2_iteration(n_drones, mission_name):
         'pf_ca': swarm_controller2.get_offline_collision_stats(),
         'basic_ca': swarm_controller3.get_offline_collision_stats(),
     },
-    'sensing accuracy': {
+    'sensing mismatch': {
         'no_ca': sensing.measure_sensing(plans),
         'pf_ca': sensing.measure_sensing(plans2),
         'basic_ca': sensing.measure_sensing(plans3),
     }
 }
-
-if __name__ == '__main__':
-
-    # a list of n m for each experiment grid
+def run_experiment_1and2():
+     # a list of n m for each experiment grid
     experiment_sizes = [[2,3], [4,4]]
 
     config = Config('drone_sense.properties')
 
-    n_iterations = 2
-    drones = [1,2,3,4]
+    n_iterations = 20
+    drones = [5,2,3,4,5,6,7,8]
 
     for i in range(len(experiment_sizes)):
         abs_path = os.path.abspath('.')
@@ -163,3 +166,15 @@ if __name__ == '__main__':
 
                 data = experiment_1and2_iteration(n_drones, mission_name)
                 write_results_to_csv(data, config)
+
+
+if __name__ == '__main__':
+    # run_experiment_1and2()
+
+
+    # Visualise the data
+    vd = VisualiseData('experiments/results/random_2x3_results.csv', 'experiments/results/')
+    vd.plotNumAgentsVsSensingAccuracy()
+    # vd.plotNumAgentsVsCollisions()
+
+   
