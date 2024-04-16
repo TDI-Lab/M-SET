@@ -53,6 +53,7 @@ class Flight:
   def print_itinerary(self):
     print("Flight start time: ", self.start_time, " seconds")
     print("Flight finish time: ", self.finish_time, " seconds")
+    print("Flight distance: ", self.distance, " units")
     print("Flight duration: ", self.duration, " seconds")
     print("Flight path (list of coordinates): ", *self.flight_path,sep='\n')
 

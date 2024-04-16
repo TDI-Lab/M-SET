@@ -40,10 +40,18 @@ class Swarm_Control:
       'number_of_collisions': offline_collision_stats.get_number_of_collisions(),
       'number_of_cross_collisions': offline_collision_stats.get_number_of_cross_collisions(),
       'number_of_parallel_collisions': offline_collision_stats.get_number_of_parallel_collisions(),
-      'number_of_dest_occupied_collisions': offline_collision_stats.get_number_of_dest_occupied_collisions()
+      'number_of_dest_occupied_collisions': offline_collision_stats.get_number_of_dest_occupied_collisions(),
+      'total_flights_distance': round(offline_collision_stats.get_total_flights_distance(), 3),
+      'total_collision_distance': round(offline_collision_stats.get_total_collision_distance(), 3),
+      'risk_of_collision': round(offline_collision_stats.get_risk_of_collision(), 3),
+      'total_duration_of_flights': offline_collision_stats.get_total_flights_duration(),
+      'number_of_flights': offline_collision_stats.get_number_of_flights(),
+      'average_collisions_per_flight': round(offline_collision_stats.get_average_collisions_per_flight(), 3)
     }
 
-    print(collision_data)
+    print('\nCollision Data: \n')
+    for key, value in collision_data.items():
+      print(f'{key:50}= {value}')
     
     return collision_data
 
