@@ -8,6 +8,7 @@ from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, MAX_GRID_OFFS
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
+from random import randint
 
 class Swarm_Control:
   # Class to control the swarm on the test bed.
@@ -172,3 +173,28 @@ class Swarm_Control:
     ani = FuncAnimation(fig, update, fargs=(scatters, discreet_positions), frames=total_frames, interval=(FRAMES_PER_TIMESTEP/TIME_STEP)/100, blit=False, repeat=False)
 
     plt.show()
+
+  @staticmethod
+  def determine_priority(plans):
+    # Generate priority map with randomly assigned priority to cells.
+    grid = []
+    for drone in plans:
+        for plan in drone:
+            coordinates = plan[0]
+            if coordinates not in grid:
+                grid.append(coordinates)
+
+    priority = set(range(1, len(grid) + 1))
+    used_priorities = []
+    def get_random_priority():
+        reduced_list = list(priority - set(used_priorities))
+        i = randint(0, len(reduced_list) - 1)
+        used_priorities.append(reduced_list[i])
+        return reduced_list[i]
+    
+    priority_map = {} 
+    for i in range(0, len(grid)):
+        next_priority =  get_random_priority()
+        priority_map[next_priority] = grid[i]
+        
+    return priority_map

@@ -19,11 +19,23 @@ class Collision:
     self.drones['drone_B']['drone'] = drone
     self.drones['drone_B']['flight_index'] = flight_index
 
-  def get_drone_to_augment(self):
-      if (self.drones['drone_A']['flight_start_time'] <= self.drones['drone_B']['flight_start_time']):
-          return self.drones['drone_A'], self.drones['drone_B']
+  def get_drone_to_augment(self, priority_map):
+      if priority_map is None or self.collision_type == DEST_OCCUPIED_COLLISION:
+        if (self.drones['drone_A']['flight_start_time'] <= self.drones['drone_B']['flight_start_time']):
+            return self.drones['drone_A'], self.drones['drone_B']
+        else:
+            return self.drones['drone_B'], self.drones['drone_A']
       else:
+        drone_A_dest = self.drones['drone_A']['drone'].flights[self.drones['drone_A']['flight_index']].destination
+        drone_B_dest = self.drones['drone_B']['drone'].flights[self.drones['drone_B']['flight_index']].destination
+        priority_A = list(priority_map.keys())[list(priority_map.values()).index(drone_A_dest)]
+        priority_B = list(priority_map.keys())[list(priority_map.values()).index(drone_B_dest)]
+        
+        if (priority_A < priority_B):
           return self.drones['drone_B'], self.drones['drone_A']
+        else:
+          return self.drones['drone_A'], self.drones['drone_B']
+
 
   def set_collision_distance(self, collision_points = None):
     if collision_points is not None:
@@ -40,10 +52,11 @@ class Collision:
 
 class Basic_Collision_Avoidance(Collision_Strategy):
 # A basic collision avoidance strategy class.
-  def __init__(self, only_collision_detection = False):
+  def __init__(self, only_collision_detection = False, priority_map = None):
     # Initialise the Basic Collection Detction/Avoidance strategy.
     self.only_collision_detection = only_collision_detection
     self.collisions = []
+    self.priority_map = priority_map
 
   def detect_potential_collisions(self, drones):
     # Detect potential collisions by iterating through the drones and their flights.
@@ -168,7 +181,7 @@ class Basic_Collision_Avoidance(Collision_Strategy):
   def augment_plan(self):
     # Augment drone plans based on collision type.
     collision = self.collisions[-1]
-    drone_to_augment, other_drone = collision.get_drone_to_augment()
+    drone_to_augment, other_drone = collision.get_drone_to_augment(self.priority_map)
     delay = 0
 
     if (collision.collision_type == CROSS_COLLISION):
