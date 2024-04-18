@@ -19,7 +19,7 @@ class PF_Drone(Drone):
         self.max_grid_offset = max_grid_offset
         self.grid_width = self.max_grid_offset - self.min_grid_offset
         self.cell_size = self.grid_width / (2 * self.resolution_factor)
-
+        
         self.position = np.array(self.drone_to_grid(self.plan[0][0])) 
         self.positions = []
         self.positions.append(self.position.tolist())
@@ -29,13 +29,14 @@ class PF_Drone(Drone):
 
         if not self.original_drone.flights: # Some drones dont move
             self.finished = True
+            self.at_last_goal = True
             self.flights_duration = self.plan[0][1]
             self.goal = np.array(self.plan[0][0])
             self.direction = np.array([0, 0])
 
 
         else:
-
+            self.at_last_goal = False
             self.goals = [self.drone_to_grid(flight.flight_path[-1]) for flight in self.flights]
             self.goal = np.array(self.goals[0])
             self.direction = np.subtract(self.position, self.goals[0])
@@ -63,6 +64,8 @@ class PF_Drone(Drone):
         new_plan = []
         drone = self
         flight_path = drone.positions
+        if len(flight_path) == 1:
+            return
         duplicate_positions = 0
         pos = list(self.grid_to_drone(flight_path[0]))
         for i in range(len(flight_path) - 1):
@@ -84,7 +87,10 @@ class PF_Drone(Drone):
         new_plan.append( [destination, drone.plan[-1][1]])
 
         drone.original_drone.plan = new_plan
+        drone.plan = new_plan
+
         drone.original_drone.augment_plan(0, 0)
+        drone.augment_plan(0, 0)
 
 
 
@@ -108,14 +114,11 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     - adjust_drone_path(drones, drone, potential_field): Adjusts the drone's path based on the potential field.
     """
 
-    def __init__(self, resolution_factor=2, min_grid_offset=MIN_GRID_OFFSET, max_grid_offset=MAX_GRID_OFFSET, visualise=False):
+    def __init__(self, resolution_factor=2, visualise=False):
         self.resolution_factor = resolution_factor
-        self.min_grid_offset = min_grid_offset
-        self.max_grid_offset = max_grid_offset
+  
     
-        # grid size based on min and max grid offset
-        self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * 2 * self.resolution_factor)
-        self.grid_size_original = self.grid_size
+      
         self.visualise = visualise
 
     def detect_potential_collisions(self, drones):
@@ -141,6 +144,39 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         return False  # Always return false as more iterations of potential fields are not going to help
 
+    def calculate_grid_size(self, drones):
+        """
+        Calculates the grid size based on the drones' positions.
+
+        Parameters:
+        - drones (list): A list of drones.
+        """
+        # Initialize min and max values
+        min_x = float('inf')
+        min_y = float('inf')
+        max_x = float('-inf')
+        max_y = float('-inf')
+
+        # Loop through each drone's plan
+        for drone in drones:
+            for position in drone.plan:
+                x, y = position[0]
+                # Update min and max values
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+
+        self.min_grid_offset = min(min_x, min_y) - 1
+        self.max_grid_offset = max(max_x, max_y) + 1
+        print("Min Grid Offset:", self.min_grid_offset)
+        print("Max Grid Offset:", self.max_grid_offset)
+
+        # grid size based on min and max grid offset
+        self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * 2 * self.resolution_factor)
+        self.grid_size_original = self.grid_size
+
+
     def potential_fields(self, drones):
         """
         Calculates and adjusts the potential fields for drones.
@@ -148,6 +184,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         Parameters:
         - drones (list): A list of drones.
         """
+        self.calculate_grid_size(drones)
+
         # Initialise PF_Drone objects
         drones = [PF_Drone(i, drone, self.resolution_factor, self.min_grid_offset, self.max_grid_offset) for i, drone in enumerate(drones)]
         self.number_of_drones = len(drones)
@@ -157,25 +195,29 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         self.time_step = 0
         pfs_per_drone = [[] for _ in drones]
         count = 0
+        drones_not_done = len(drones)
+
         while drones_not_done > 0 and count < 100:
             count += 1
-            drones_not_done = len(drones)
 
             for i, drone in enumerate(drones):
+                if not drone.finished:
+                    if drone.current_wait_time > 0:
+                        drone.current_wait_time -= TIME_STEP
 
-                if drone.current_wait_time > 0:
-                    drone.current_wait_time -= TIME_STEP
+                    if drone.current_wait_time <= 0 and drone.at_last_goal:
+                        drone.finished = True
+                        drones_not_done -= 1
+                        continue
+                        
 
-                potential_field = self.calculate_potential_field(drone, drones)
+                    potential_field = self.calculate_potential_field(drone, drones)
 
-                if self.visualise:
-                    # Add potential field to list for visualisation
-                    pfs_per_drone[i].append(potential_field)
+                    if self.visualise:
+                        # Add potential field to list for visualisation
+                        pfs_per_drone[i].append(potential_field)
 
-                self.adjust_drone_path(drones, drone, potential_field)
-
-                if drone.finished:
-                    drones_not_done -= 1
+                    self.adjust_drone_path(drones, drone, potential_field)
 
             self.time_step += TIME_STEP
             self.time_step = round(self.time_step, 2)
@@ -201,9 +243,10 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Add the potential of each other drone
         for other_drone in drones:
             if other_drone != drone:
-                # Calculate the potential of the other drone and add it to the potential field
-                obstacle_vectors = self.calculate_repulsion_from_drone(other_drone)
-                potential_field += obstacle_vectors
+                if not drone.finished:
+                    # Calculate the potential of the other drone and add it to the potential field
+                    obstacle_vectors = self.calculate_repulsion_from_drone(other_drone)
+                    potential_field += obstacle_vectors
 
         goal_potential = self.calculate_attraction_to_goal(drone)
         potential_field += goal_potential
@@ -327,6 +370,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         - vector_fields (list): A list of vector fields.
         - drone (PF_Drone): The drone associated with the vector fields.
         """
+        if len(drone.positions) == 1:
+            return
         fig = plt.figure(figsize=(7, 7))
         ax = fig.add_subplot(1, 1, 1)
         grid_size = vector_fields[0][0].shape[0] // 2
@@ -356,10 +401,13 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         - potential_field (np.ndarray): The potential field for the drone.
         """
         # If drone shouldnt move, add its current position to its positions list for timestep consistency
-        if drone.finished or drone.current_wait_time != 0:
-            drone.positions.append(drone.position.tolist())
+        if drone.finished :
             return
+        if drone.current_wait_time != 0:
+            drone.positions.append(drone.position.tolist())
 
+            return
+        
         grid_drone_position = (drone.position).astype(int)  # This can lose information, so we can increase resolution_factor if needed
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
 
@@ -386,7 +434,9 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             drone.goals_reached += 1
 
             if drone.goals_reached == len(drone.flights):
-                drone.finished = True
+                drone.at_last_goal = True
+                drone.current_wait_time = drone.plan[drone.goals_reached][1]
+
                 return
 
             # Set the goal to the next flight's starting position
@@ -404,7 +454,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             # Move the drone a fixed distance in that direction if not out of bounds
             potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
-
+            #round potential position to nearest grid position
+            potential_pos = np.round(potential_pos, 0).astype(int)
             # Check if the drone is moving out of bounds, stay if so
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
@@ -463,6 +514,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 # If the drone's last flight finishes before to_time, extend positions with the last known position
                 if drone.flights[-1].finish_time < to_time:
                     positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
+
 
                 drone_positions.append(positions_for_drone)
         for drone in drone_positions:
