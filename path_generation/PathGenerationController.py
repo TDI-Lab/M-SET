@@ -28,6 +28,13 @@ class PathGenerationController:
         self._epos_controller = None
 
     def __construct_plan_generation_properties(self):
+        num_base_stations = 0
+        with open(self.config.get("global", "MissionFile")) as file:
+            lines = file.readlines()
+        lines = lines[1:]
+        for line in lines:
+            if line[0:4] == "BASE":
+                num_base_stations += 1
         properties = {
             "plan": {
                 "dataset": self.config.get("global", "MissionName"),
@@ -37,7 +44,7 @@ class PathGenerationController:
                 "pathMode": self.config.get("path_generation", "PathMode"),
             },
             "map": {
-                "stationsNum": 4,
+                "stationsNum": num_base_stations,
                 "height": 1,
                 "mapLength": 4
             },
