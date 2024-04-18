@@ -57,8 +57,7 @@ class PF_Drone(Drone):
     
     def grid_distance(self, drone_distance):
         # Scale the input grid distance according to the resolution factor
-        return drone_distance * self.cell_size
-    
+        return drone_distance * self.resolution_factor
     def convert_to_flights(self):
         # Convert the positions of the drones to flights
         new_plan = []
@@ -114,8 +113,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     - adjust_drone_path(drones, drone, potential_field): Adjusts the drone's path based on the potential field.
     """
 
-    def __init__(self, resolution_factor=2, visualise=False):
-        self.resolution_factor = resolution_factor
+    def __init__(self, visualise=False):
+        self.resolution_factor = self.calculate_resolution_factor(MINIMUM_DISTANCE, DISTANCE_STEP)
   
     
       
@@ -143,7 +142,16 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             self.potential_fields(drones)
 
         return False  # Always return false as more iterations of potential fields are not going to help
+    def calculate_resolution_factor(self, min_distance, step_distance):
+        # Choose the minimum of min_distance and step_distance
+        min_val = min(min_distance, step_distance)
+        
+        min_val = max(min_val, 0.3) # prevent division by 0
+        min_val /= 2  # Divide by 2 to get the minimum distance between two drones
+        # Calculate the resolution factor as the reciprocal of min_val
+        resolution_factor = 1 / min_val
 
+        return resolution_factor
     def calculate_grid_size(self, drones):
         """
         Calculates the grid size based on the drones' positions.
@@ -173,7 +181,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         print("Max Grid Offset:", self.max_grid_offset)
 
         # grid size based on min and max grid offset
-        self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * 2 * self.resolution_factor)
+        self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * self.resolution_factor)
         self.grid_size_original = self.grid_size
 
 
@@ -272,7 +280,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
 
-        maximum = drone.grid_distance(MINIMUM_DISTANCE * 2)  # 3 times the minimum distance to give the drone change to move away
+        maximum = drone.grid_distance(MINIMUM_DISTANCE * 2.5)  # 3 times the minimum distance to give the drone change to move away
+        # maximum = max(maximum, drone.cell_size * 2) 
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
@@ -282,29 +291,21 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Normalize the vectors
         norms = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         norms[norms == 0] = 1  # Avoid division by zero
-        vectors[0] /= norms
-        vectors[1] /= norms
 
         # Scale the vectors to the desired magnitude
         desired_magnitude = 2  # Adjust this value as needed
         vectors[0] *= desired_magnitude
         vectors[1] *= desired_magnitude
+        vectors[0] /= distances
+        vectors[1] /= distances
+        vectors[0] *= desired_magnitude
+        vectors[1] *= desired_magnitude
+        vectors[0] /= norms
+        vectors[1] /= norms
 
-        # if drone.direction.all() != 0:
-        #     # Calculate the angles of the vectors
-        #     angles = np.arctan2(vectors[1], vectors[0])
-
-        #     # Calculate the angle of the drone's heading
-        #     drone_angle = np.arctan2(drone.direction[1], drone.direction[0])
-
-        #     # Create a mask for angles within n degrees of the drone's heading
-        #     n_degrees = np.radians(20)  # Convert n from degrees to radians
-        #     angle_mask = (angles >= drone_angle - n_degrees) & (angles <= drone_angle + n_degrees)
-
-        #     # Scale the vectors within n degrees of the drone's heading
-        #     scale_factor = 2  # Adjust this value as needed
-        #     vectors[0] = vectors[0] * (1 + angle_mask * (scale_factor - 1))
-        #     vectors[1] = vectors[1] * (1 + angle_mask * (scale_factor - 1))
+        #clip the vectors
+        vectors[0] = np.clip(vectors[0], -desired_magnitude, desired_magnitude)
+        vectors[1] = np.clip(vectors[1], -desired_magnitude, desired_magnitude)
 
         return vectors
 
@@ -330,7 +331,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
 
         # Set the vectors at positions a specified distance away from the goal to zero
-        distance_threshold = drone.grid_distance(DISTANCE_STEP) 
+        distance_threshold = (drone.cell_size * 2) 
         goal_position = drone.goal.astype(int)
 
         for i in range(self.grid_size):
@@ -377,14 +378,14 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         grid_size = vector_fields[0][0].shape[0] // 2
         y, x = np.mgrid[0:vector_fields[0][0].shape[0], 0:vector_fields[0][0].shape[1]]
 
-        quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])
+        quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])  
         ax.scatter(*(drone.positions[0]), color='b')
 
         def update(i):
             ax.clear()
-            ax.quiver(x, y, vector_fields[i][0], vector_fields[i][1])
+            ax.quiver(x, y, vector_fields[i][0], vector_fields[i][1]) 
             ax.scatter(*drone.positions[i], color='b')
-            ax.set_title('Vector Field for drone')
+            ax.set_title('Vector Field for drone', pad=-40)  # Adjust the pad value to provide more space for the title
 
         ani = animation.FuncAnimation(fig, update, frames=len(vector_fields), repeat=False)
 
@@ -435,13 +436,13 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             if drone.goals_reached == len(drone.flights):
                 drone.at_last_goal = True
-                drone.current_wait_time = drone.plan[drone.goals_reached][1]
+                drone.current_wait_time = drone.plan[drone.goals_reached][1] + TIME_STEP
 
                 return
 
             # Set the goal to the next flight's starting position
             drone.goal = np.array(drone.goals[drone.goals_reached])
-            drone.current_wait_time = drone.plan[drone.goals_reached][1]
+            drone.current_wait_time = drone.plan[drone.goals_reached][1] + TIME_STEP
             drone.direction = np.subtract(drone.goal, drone.position)
 
         else:

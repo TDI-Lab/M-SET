@@ -77,10 +77,19 @@ def create_new_random_sensing_mission(size_n, size_m):
             new_row = f"SENSE,{cell_id},{i},{j},1,{sensing_value}\n"
             rows.append(new_row)
             cell_id += 1
-    rows.append(f"BASE,0,0,0,0,0\n")
-    rows.append(f"BASE,1,{size_n + 1},0,0,0\n")
-    rows.append(f"BASE,2,0,{size_m + 1},0,0\n")
-    rows.append(f"BASE,3,{size_n + 1},{size_m + 1},0,0\n")
+
+
+    
+    rows.append(f"BASE,0,{(size_n + 1) / 2},0,0,0\n")
+    rows.append(f"BASE,1,0,{(size_m + 1) / 2},0,0\n")
+    rows.append(f"BASE,2,{size_n + 1},{(size_m + 1) / 2},0,0\n")
+    rows.append(f"BASE,3,{(size_n + 1) / 2},{(size_m + 1) },0,0\n")
+
+    rows.append(f"BASE,4,0,0,0,0\n")
+    rows.append(f"BASE,5,{size_n + 1},0,0,0\n")
+    rows.append(f"BASE,6,0,{size_m + 1},0,0\n")
+    rows.append(f"BASE,7,{size_n + 1},{size_m + 1},0,0\n")
+    
     with open(f"examples/{mission_name}", "w") as file:
         for row in rows:
             file.write(row)
@@ -109,14 +118,15 @@ def experiment_1and2_iteration(n_drones, mission_name):
 
     sensing = MeasureSensing(f"examples/{mission_name}")
 
-    swarm_controller = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance())
-    swarm_controller2 = Swarm_Control(parsed_plans, Potential_Fields_Collision_Avoidance())
-    swarm_controller3 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
-
+    swarm_controller = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
+    swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=False))
+    swarm_controller3 = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
+    swarm_controller.visualise_swarm()
     # priority_map = swarm_controller.determine_priority(parsed_plans)
     # swarm_controller4 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance(priority_map=priority_map))
 
     swarm_controller2.detect_potential_collisions()
+    # swarm_controller2.drones_to_plan()
     swarm_controller3.detect_potential_collisions()
     # swarm_controller2.visualise_swarm()
     # swarm_controller4.detect_potential_collisions()
@@ -153,8 +163,8 @@ def run_experiment_1and2():
 
     config = Config('drone_sense.properties')
 
-    n_iterations = 5
-    drones = [1,2,3,4,5,6,7,8]
+    n_iterations = 40
+    drones = [5,6,7,8]
     # drones = [5,6,7,8]
 
     for i in range(len(experiment_sizes)):
@@ -179,20 +189,23 @@ def run_experiment_1and2():
 
 if __name__ == '__main__':
     run_experiment_1and2()
-
+# 
     data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
                   'experiments/results/random_6x6_results.csv', 'experiments/results/random_7x7_results.csv', 'experiments/results/random_8x8_results.csv']
                 #   'experiments/results/random_9x9_results.csv', 'experiments/results/random_10x10_results.csv']
-    data_paths = [ 'experiments/results/random_2x3_results.csv']
-    # map_name = "2x3"
+    
     # Visualise the data
-    # for path in data_paths:
-        # print(path)
-        #extract the 5x5 from the path
-        # map_name = path.split('/')[-1].split('_')[1]
-        # print(map_name)
-    # vd = VisualiseData(data_paths, 'experiments/results/')
-    # vd.plotNumAgentsVsSensingAccuracy(map_name)
+    for path in data_paths:
+        print(path)
+        # extract the 5x5 from the path
+        map_name = path.split('/')[-1].split('_')[1]
+        print(map_name)
+        vd = VisualiseData(path, 'experiments/results/')
+        vd.plotNumAgentsVsSensingAccuracy(map_name)
+    data_path = [ 'experiments/results/random_2x3_results.csv']
+    map_name = "2x3"
+    vd = VisualiseData(data_paths, 'experiments/results/')
+    vd.plotNumAgentsVsSensingAccuracy(map_name)
     # vd.plotNumAgentsVsCollisions()
 
    
