@@ -49,7 +49,8 @@ class Offline_Collision_Stats(Basic_Collision_Avoidance):
   def get_risk_of_collision(self):
     total_dist = self.get_total_flights_distance()
     collision_distance = self.get_total_collision_distance()
-
+    if total_dist == 0:
+      return 0
     risk_of_collision = collision_distance / total_dist 
     return risk_of_collision
 
