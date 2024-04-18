@@ -35,6 +35,7 @@ class Swarm_Control:
   def get_offline_collision_stats(self):
     # Get collision data.
     # TODO: Add more stats.
+    self.initialise_drones()
     offline_collision_stats = Offline_Collision_Stats(self.drones)
 
     collision_data = {
