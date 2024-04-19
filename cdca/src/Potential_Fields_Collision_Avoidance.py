@@ -52,7 +52,8 @@ class PF_Drone(Drone):
     # Map coordinates from grid space to drone space
     def grid_to_drone(self, grid_position):
         drone_position = [((coord - self.cell_size) / self.resolution_factor) + self.min_grid_offset for coord in grid_position]
-
+        #roud positions 3dp
+        drone_position = [round(coord, 3) for coord in drone_position]
         return drone_position
     
     def grid_distance(self, drone_distance):
@@ -455,15 +456,15 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             # Move the drone a fixed distance in that direction if not out of bounds
             potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
-            #round potential position to nearest grid position
-            potential_pos = np.round(potential_pos, 0).astype(int)
+            # Round potential position to nearest grid position
+            potential_pos = np.round(potential_pos, 2).astype(int)
             # Check if the drone is moving out of bounds, stay if so
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
 
             else:
-                drone.position = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
+                drone.position = potential_pos#drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
 
     def discretise_flight_paths(self, drones, from_time=None, to_time=None):
