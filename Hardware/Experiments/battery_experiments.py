@@ -48,7 +48,7 @@ def log_all(ids, msg=""):
     for id in ids:
         log(id)
 
-def setUp(dur, run=True):
+def setUp(dur=3, run=True):
     log(msg="Experiment start")
     if run == True:
         allcfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
@@ -56,7 +56,7 @@ def setUp(dur, run=True):
     timeHelper.sleep(dur)
     log(msg="Hovering")
 
-def tearDown(dur, run=True):
+def tearDown(dur=3, run=True):
     log(msg="Preparing to land")
     if run == True:
         allcfs.land(targetHeight=0.05, duration=dur)
@@ -84,40 +84,58 @@ def exp_Hover(dur, run=True):
 
     tearDown(dur, run=run)
 
-def move_x(setup_dur, speed, run=True):
+def move_x(setup_dur, speed, run=True, factor=1):
 
-    movement_duration = X_DISTANCE / speed # get speed from cdca code
+    movement_duration = factor*X_DISTANCE / speed # get speed from cdca code
 
     pos1 = [(0,2*Y_DISTANCE,HOVER_HEIGHT),(0,1*Y_DISTANCE,HOVER_HEIGHT),(0,0*Y_DISTANCE,HOVER_HEIGHT),(0,-1*Y_DISTANCE,HOVER_HEIGHT)]
     pos2 = [(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT),(X_DISTANCE,2*Y_DISTANCE,HOVER_HEIGHT)]
-
-    rel_pos1 = (X_DISTANCE,0,0)
-    rel_pos2 = (-X_DISTANCE,0,0)
+    
+    origin = (0,0,HOVER_HEIGHT)
+    rel_pos1 = (factor*X_DISTANCE,0,0)
+    rel_pos2 = (factor*-X_DISTANCE,0,0)
 
     setUp(setup_dur,run=run)
 
-    for i in range(0,len(allcfs.crazyflies)):
+    if len(allcfs.crazyflies) == 0:
         if run == True:
-            print("moving to initial positions")
-            print(pos1[:len(IDs)][i])
-            allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration)
+            allcfs.crazyflies[i].goTo(origin,0,5)
             timeHelper.sleep(movement_duration)
+    else:
+        for i in range(0,len(allcfs.crazyflies)):
+            if run == True:
+                print("moving to initial positions")
+                print(pos1[:len(IDs)][i])
+                allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,5)
+                timeHelper.sleep(movement_duration)
+
+    # set up for factor > 1
+    if factor > 1:
+        for i in range(0,len(allcfs.crazyflies)):
+            if run == True:
+                #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
+                allcfs.crazyflies[i].goTo((rel_pos1[0]/factor,rel_pos1[1],rel_pos1[2]),0,5, relative=True)
+        log(msg="Moving to position 2")
+        timeHelper.sleep(movement_duration)
+
+        # LOG
+        log(msg="Position 2")
+        timeHelper.sleep(1)
 
     # REPEAT
     try:
         while True:
-
             # All drones move one cell in the positive x direction
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
                     #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
-                    allcfs.crazyflies[i].goTo(rel_pos2,0,5, relative=True)
+                    allcfs.crazyflies[i].goTo(rel_pos2,0,movement_duration, relative=True)
             log(msg="Moving to position 2")
             timeHelper.sleep(movement_duration)
 
             # LOG
             log(msg="Position 2")
-            timeHelper.sleep(movement_duration)
+            timeHelper.sleep(1)
 
             # All drones move back to their original positions
             for i in range(0,len(allcfs.crazyflies)):
@@ -129,32 +147,43 @@ def move_x(setup_dur, speed, run=True):
 
             # LOG
             log(msg="Position 1")
-            timeHelper.sleep(movement_duration)
+            timeHelper.sleep(1)
 
-    except KeyboardInterrupt:
+    except:# rospy.service.ServiceException:
         print("landing")
         tearDown(setup_dur, run=run)
 
-#log_all(IDs)
-#for i in range(0,10):
-# while True:
-#     log(1, msg="test")
-#     time.sleep(0.5)
+def land_at_origin(run=True):
+    setUp(run=run)
+    allcfs.crazyflies[0].goTo((0,0,HOVER_HEIGHT),0,5)
+    timeHelper.sleep(5)
+    tearDown(run=run)
+
+def log_test():
+    setUp(run=False)
+    tearDown(run=False)
 
 def main(run, experiments):
     create_node()
 
     print(run)
 
+    if "log_test" in experiments:
+        log_test()
+
+    if "land_at_origin" in experiments:
+        land_at_origin(run=run)
+
     if "hover" in experiments:
         exp_Hover(3,run=run)
     
     if "move_x" in experiments:
-        move_x(3,0.1,run=run)
+        move_x(3,0.1,run=run,factor=1)
 
 if __name__ == '__main__':
     # [--sim], experiment1, [experiment2] ...
     args = sys.argv
+    offset=0
 
     if '--sim' in args:
         #IN_SIMULATION = True
