@@ -175,7 +175,7 @@ class Drone():
             print(msg)
         
         if ENABLE_LOGGING == True:
-            pub.publish("Drone %s: %s. %s" % self.id, self.status, msg)
+            pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -245,7 +245,7 @@ def return_uris(channels,numbers):
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
-        drone.cf.log_status(msg=msg)
+        drone.log_status(msg=msg)
 
 def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
@@ -467,7 +467,8 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        print("Executing default path")
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=False)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
