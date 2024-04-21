@@ -10,6 +10,7 @@ results
 
 path_generation/PlanGeneration/conf/
 path_generation/PlanGeneration/datasets/
+path_generation/EPOS/datasets
 __pycache__/
 
 !path_generation/EPOS/conf/log4j.properties

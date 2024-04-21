@@ -2,10 +2,11 @@ import configparser
 import shutil
 from distutils.dir_util import copy_tree
 from distutils.util import strtobool
-from os import listdir
+from os import listdir, mkdir
 from pathlib import Path
 from shutil import copy2
 from typing import List, Tuple
+from itertools import groupby
 
 from path_generation.ConfigManager import ConfigManager
 from path_generation.EPOS.EPOSWrapper import EPOSWrapper
@@ -23,20 +24,27 @@ class PathGenerationController:
         self.config.read(f"{self.parent_path}/../drone_sense.properties")
         self.config_generator = ConfigManager()
 
-        self._pg_controller = None
-        self._epos_controller = None
+        self.pg_controller = None
+        self.epos_controller = None
 
     def __construct_plan_generation_properties(self):
+        num_base_stations = 0
+        with open(self.config.get("global", "MissionFile")) as file:
+            lines = file.readlines()
+        lines = lines[1:]
+        for line in lines:
+            if line[0:4] == "BASE":
+                num_base_stations += 1
         properties = {
             "plan": {
                 "dataset": self.config.get("global", "MissionName"),
                 "planNum": self.config.get("path_generation", "NumberOfPlans"),
                 "agentsNum": self.config.get("global", "NumberOfDrones"),
                 "timeSlots": 0,
-                "maxVisitedCells": self.config.get("path_generation", "MaximumNumberOfVisitedCells")
+                "pathMode": self.config.get("path_generation", "PathMode"),
             },
             "map": {
-                "stationsNum": 4,
+                "stationsNum": num_base_stations,
                 "height": 1,
                 "mapLength": 4
             },
@@ -106,17 +114,12 @@ class PathGenerationController:
         self.config_generator.set_target_path(f"{self.parent_path}/PlanGeneration/conf/generation.properties")
         plan_gen_properties = self.__construct_plan_generation_properties()
         self.config_generator.write_config_file(plan_gen_properties)
-        # Generate plans for each agent, where num is the number of agents
-        self._pg_controller = PlanGenerator()
-        self._pg_controller.clean_datasets()
+        # Generate plans for each agent
+        self.pg_controller = PlanGenerator()
+        self.pg_controller.clean_datasets()
         #  Move mission to datasets folder
-        src_path = self.config.get("global", "MissionFile")
-        dest_path = f"{self.parent_path}/PlanGeneration/datasets/{plan_gen_properties['plan']['dataset']}/"
-        try:
-            copy2(src_path, dest_path)
-        except shutil.SameFileError:
-            pass
-        result_code = self._pg_controller.generate_plans(False)
+        mission_file = self.config.get("global", "MissionFile")
+        result_code = self.pg_controller.generate_plans(mission_file=mission_file)
         return result_code
 
     # Move the generated plans to the EPOS directory
@@ -126,26 +129,55 @@ class PathGenerationController:
         epos_dir = f'{self.parent_path}/EPOS/datasets/{dataset_name}'
         copy_tree(plan_gen_dir, epos_dir)
 
+    def __select_for_single_drone_system(self, results_dir):
+        with open(f"{results_dir}/termination.csv", "x") as file:
+            file.write("Run,Terminal Iteration\n")
+            file.write("0,1")
+        with open(f"{results_dir}/selected-plans.csv", "x") as file:
+            file.write("Run,Iteration,agent-0\n")
+            file.write("0,0,0")
+
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
-        self._epos_controller = EPOSWrapper()
+        self.epos_controller = EPOSWrapper()
         self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
         epos_properties = self.__construct_epos_properties()
-        self.config_generator.write_config_file(epos_properties)
-        show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
-        show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
-        result_code = self._epos_controller.run(out=show_out, err=show_err)
-        self.move_plans()
-        return result_code
+        if epos_properties["numAgents"] == "1":
+            output_dir = f"{self.parent_path}/EPOS/output"
+            self.epos_controller.clean_output(output_dir)
+            results_dir = f"{output_dir}/{self.config.get('global', 'MissionName')}_result"
+            mkdir(results_dir)
+            self.__select_for_single_drone_system(results_dir)
+            return 0
+        else:
+            self.config_generator.write_config_file(epos_properties)
+            show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
+            show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
+            result_code = self.epos_controller.run(out=show_out, err=show_err)
+            return result_code
 
     def __get_plan_indexes(self):
         # read selected-plan.csv from the first directory within the output directory
         results_dir = listdir(f"{self.parent_path}/EPOS/output")[0]
+        termination_iters = f"{self.parent_path}/EPOS/output/{results_dir}/termination.csv"
+        with open(termination_iters) as file:
+            lines = file.readlines()
+        termination_indexes = [int(i.strip("\n").split(",")[1]) for i in lines[1:]]
         selected_plans_file = f"{self.parent_path}/EPOS/output/{results_dir}/selected-plans.csv"
         with open(selected_plans_file) as file:
             lines = file.readlines()
-        # extract plan indexes from the last line of the file, converting them from strings to integers
-        plan_indexes = [int(index) for index in lines[-1].strip("\n").split(",")[2:]]
+        #  extract plans from each simulation, and select the "best" index
+        lines = [list(map(int, line.strip("\n").split(","))) for line in lines[1:]]
+        seperated_simulations = [list(group) for k, group in groupby(lines, lambda x: x[0])]
+        indexes = {}
+        for termination_index, simulation in zip(termination_indexes, seperated_simulations):
+            termination_indexes = tuple(simulation[termination_index-1][2:])
+            if termination_indexes not in indexes:
+                indexes[termination_indexes] = 1
+            else:
+                indexes[termination_indexes] += 1
+        indexes = list(indexes.items())
+        plan_indexes = list(max(indexes, key=lambda x: x[1])[0])
         return plan_indexes
 
     def __extract_sensing_values_from_indexes(self, indexes):
@@ -155,7 +187,7 @@ class PathGenerationController:
         for i, index in enumerate(indexes):
             with open(f"{self.parent_path}/EPOS/datasets/{data_dir}/agent_{i}.plans") as file:
                 plans = file.readlines()
-                selected_plan = plans[index - 1].strip("\n")
+                selected_plan = plans[index].strip("\n")
                 cost, plan = selected_plan.split(":")
                 cost = float(cost)
                 plan = [float(i) for i in plan.split(",")]

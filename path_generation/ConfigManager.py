@@ -25,7 +25,7 @@ class ConfigManager:
         if len(args) > 0:
             config_path = args[0]
             parent_path = Path(__file__).parent.resolve()
-            config_file = parent_path / config_path
+            config_file = f"{parent_path}/{config_path}"
             self.config_path = config_file
             self.config = configparser.ConfigParser()
             self.read_global_config()
@@ -104,8 +104,3 @@ class ConfigManager:
             f.close()
         except Exception as e:
             print(f"An error occurred while writing the config file: {str(e)}")
-
-# Example
-# config = configManager("generation.properties")
-# config.write_pathgen_config_file()
-# config.write_epos_config_file()
