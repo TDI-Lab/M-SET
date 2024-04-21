@@ -55,7 +55,7 @@ class PathGenerator:
                     x = float(parts[2])
                     y = float(parts[3])
                     z = float(parts[4])
-                    mapping[object_type].append({'id': loc_id, 'x': x, 'y': y, 'z': z})
+                    mapping[object_type].append({'id': loc_id, 'x': x, 'y': y, 'z': z, "value": float(parts[5])})
 
         if debug:
             for object_type in mapping:

@@ -59,6 +59,8 @@ class PathGenerationController:
 
     def __construct_epos_properties(self):
         mission_name = self.config.get('global', 'MissionName')
+        with open(f"{self.parent_path}/EPOS/datasets/{mission_name}/{mission_name}.target", "r") as file:
+            target_vector_length = len(file.readlines()[0].split(","))
         properties = {
             "dataset": mission_name,
             "numSimulations": self.config.get("epos", "NumberOfSimulations"),
@@ -66,7 +68,7 @@ class PathGenerationController:
             "numAgents": self.config.get("global", "NumberOfDrones"),
             "numPlans": self.config.get("path_generation", "NumberOfPlans"),
             "numChildren": self.config.get("epos", "NumberOfChildren"),
-            "planDim": self.config.get("epos", "PlanDimension"),
+            "planDim": target_vector_length,
             "shuffle": self.config.get("epos", "Shuffle"),
             "shuffle_file": self.config.get("epos", "ShuffleFile"),
             "numberOfWeights": self.config.get("epos", "NumberOfWeights"),

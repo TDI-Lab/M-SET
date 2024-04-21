@@ -23,8 +23,6 @@ parameters = OrderedDict({
         "NumberOfSimulations": {"value": 1, "comment": "The number of runs done by EPOS"},
         "IterationsPerSimulation": 32,
         "NumberOfChildren": 2,
-        "PlanDimension": {"value": 6, "comment": "Planning to remove, but the plan dimension "
-                                                 "should be set to the number of sensing cells."},
         "Shuffle": 0,
         "ShuffleFile": "permuation.csv",
         "NumberOfWeights": 2,
