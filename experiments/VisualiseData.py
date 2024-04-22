@@ -50,8 +50,31 @@ class VisualiseData:
         plt.savefig(self.path_to_save + 'num_agents_vs_sensing_accuracy_'+map_name+'.png')
         plt.show()
 
-        
+    def plotTotalDurationVsAgents(self):
 
+        #group the data by strategy and number of agents
+        grouped = self.df.groupby(['Strategy', 'n_drones'])
+
+        #get mean of sensing accuracy for each num of agents per strategy
+        means = grouped['Total Duration of Flights'].mean().reset_index()
+
+        #get different strategies
+        strategies = means['Strategy'].unique()
+
+        # plot the mean sensing accuracy for each num of agents, per strategy
+        for strategy in strategies:
+            strategy_data = means[means['Strategy'] == strategy]
+            plt.plot(strategy_data['n_drones'], strategy_data['Total Duration of Flights'], label=strategy)
+
+        plt.xlabel('Number of Agents')
+        plt.ylabel('Total Duration of Flights')
+        plt.title('Number of Agents vs Total Duration of Flights')
+        plt.legend()
+
+        #save the plot
+        plt.savefig(self.path_to_save + 'num_agents_vs_total_duration.png')
+        plt.show()
+        
     def plotNumAgentsVsCollisions(self):
         #plot a line graph where one axis is the number of agents and the other is the number of collisions
         # for each strategy
@@ -80,9 +103,89 @@ class VisualiseData:
         plt.savefig(self.path_to_save + 'num_agents_vs_collisions.png')
         plt.show()
 
-    def plotSensingMismatchVsCollisions():
+    def plotSensingMismatchVsCollisions(self):
+         #group the data by strategy and number of agents
+        grouped = self.df.groupby(['Strategy', 'Sensing Mismatch %'])
+
+        #get mean of sensing accuracy for each num of agents per strategy
+        means = grouped['Total Collisions'].mean().reset_index()
+
+        #get different strategies
+        strategies = means['Strategy'].unique()
+
+        # plot the mean sensing accuracy for each num of agents, per strategy
+        for strategy in strategies:
+            strategy_data = means[means['Strategy'] == strategy]
+            plt.plot(strategy_data['Sensing Mismatch %'], strategy_data['Total Collisions'], label=strategy)
+
+
+        plt.xlabel('% Sensing Mismatch')
+        plt.ylabel('Number of Collisions')
+        plt.title('Sensing Mismatch vs Number of Collisions')
+        plt.legend()
+
+        #save the plot
+        plt.savefig(self.path_to_save + 'num_agents_vs_collisions.png')
+        plt.show()
+
+    def plotNumAgentsVsRiskOfCollision(self):
+        #plot a line graph where one axis is the number of agents and the other is the risk of collision
+        # for each strategy
+
+        #group the data by strategy and number of agents
+        grouped = self.df.groupby(['Strategy', 'n_drones'])
+
+        #get mean of sensing accuracy for each num of agents per strategy
+        means = grouped['Risk of Collision'].mean().reset_index()
+
+        #get different strategies
+        strategies = means['Strategy'].unique()
+
+        # plot the mean sensing accuracy for each num of agents, per strategy
+        for strategy in strategies:
+            strategy_data = means[means['Strategy'] == strategy]
+            plt.plot(strategy_data['n_drones'], strategy_data['Risk of Collision'], label=strategy)
+
+        plt.xlabel('Number of Agents')
+        plt.ylabel('Risk of Collision')
+        plt.title('Number of Agents vs Risk of Collision')
+        plt.legend()
+
+        #save the plot
+        plt.savefig(self.path_to_save + 'num_agents_vs_risk_of_collision.png')
+        plt.show()
+
+    def plotSensingMismatchAndDistanceTradeOff():
         pass
-    
+
+    def plottypesOfCollisions(self):
+        #plot the number of each type of collision for each strategy
+
+        #group the data by strategy and number of agents
+        grouped = self.df.groupby(['Strategy'])
+
+        #get mean of sensing accuracy for each num of agents per strategy
+        means = grouped['Cross Collisions', 'Parallel_Collisions', 'Cell Occupied Collisions'].mean().reset_index()
+
+        #get different strategies
+        strategies = means['Strategy'].unique()
+
+        # plot the mean sensing accuracy for each num of agents, per strategy
+        for strategy in strategies:
+            strategy_data = means[means['Strategy'] == strategy]
+            plt.plot(strategy_data['Cross Collisions'], label='Cross Collisions')
+            plt.plot(strategy_data['Parallel Collisions'], label='Parallel Collisions')
+            plt.plot(strategy_data['Cell Occupied Collisions'], label='Cell Occupied Collisions')
+
+        plt.xlabel('Strategy')
+        plt.ylabel('Number of Collisions')
+        plt.title('Types of Collisions')
+        plt.legend()
+
+        #save the plot
+        plt.savefig(self.path_to_save + 'types_of_collisions.png')
+        plt.show()
+        
 # Path: experiments/MeasureSensing.py
     
 

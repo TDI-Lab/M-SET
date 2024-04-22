@@ -7,7 +7,7 @@ import copy
 from cdca.src.Input_Parser import Input_Parser
 from cdca.src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
 from cdca.src.Swarm_Control import Swarm_Control
-from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
+# from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from experiments.MeasureSensing import MeasureSensing
 from experiments.VisualiseData import VisualiseData
@@ -121,7 +121,7 @@ def experiment_1and2_iteration(n_drones, mission_name):
     swarm_controller = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
     swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=False))
     swarm_controller3 = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
-    swarm_controller.visualise_swarm()
+    # swarm_controller.visualise_swarm()
     # priority_map = swarm_controller.determine_priority(parsed_plans)
     # swarm_controller4 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance(priority_map=priority_map))
 
@@ -132,9 +132,13 @@ def experiment_1and2_iteration(n_drones, mission_name):
     # swarm_controller4.detect_potential_collisions()
 
 
-    no_ca_plans =  [[plan1 for plan1 in drone.plan] for drone in swarm_controller.drones]
-    pf_plans = [[plan2 for plan2 in drone.plan] for drone in swarm_controller2.drones]
-    basic_plans = [[plan3 for plan3 in drone.plan] for drone in swarm_controller3.drones]
+    no_ca_plans =  swarm_controller.plans
+    pf_plans = swarm_controller2.plans
+    basic_plans = swarm_controller3.plans
+    #  no_ca_plans =  [[plan1 for plan1 in drone.plan] for drone in swarm_controller.drones]
+    # pf_plans = [[plan2 for plan2 in drone.plan] for drone in swarm_controller2.drones]
+    # basic_plans = [[plan3 for plan3 in drone.plan] for drone in swarm_controller3.drones]
+
     # priority_plans = [[plan4 for plan4 in drone.plan] for drone in swarm_controller4.drones]
 
     return {
@@ -159,12 +163,12 @@ def experiment_1and2_iteration(n_drones, mission_name):
 }
 def run_experiment_1and2():
      # a list of n m for each experiment grid
-    experiment_sizes = [[2,3],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[10,10]]
+    experiment_sizes = [[10,10],[12,12]]
 
     config = Config('drone_sense.properties')
 
     n_iterations = 40
-    drones = [5,6,7,8]
+    drones = [1,2,3,4,5,6,7,8]
     # drones = [5,6,7,8]
 
     for i in range(len(experiment_sizes)):
@@ -188,24 +192,25 @@ def run_experiment_1and2():
 
 
 if __name__ == '__main__':
-    run_experiment_1and2()
+    # run_experiment_1and2()
 # 
     data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
-                  'experiments/results/random_6x6_results.csv', 'experiments/results/random_7x7_results.csv', 'experiments/results/random_8x8_results.csv']
-                #   'experiments/results/random_9x9_results.csv', 'experiments/results/random_10x10_results.csv']
+                  'experiments/results/random_6x6_results.csv',  'experiments/results/random_8x8_results.csv',
+                  'experiments/results/random_10x10_results.csv',  'experiments/results/random_12x12_results.csv']
     
     # Visualise the data
-    for path in data_paths:
-        print(path)
-        # extract the 5x5 from the path
-        map_name = path.split('/')[-1].split('_')[1]
-        print(map_name)
-        vd = VisualiseData(path, 'experiments/results/')
-        vd.plotNumAgentsVsSensingAccuracy(map_name)
-    data_path = [ 'experiments/results/random_2x3_results.csv']
-    map_name = "2x3"
+    # for path in data_paths:
+    #     print(path)
+    #     # extract the 5x5 from the path
+    #     map_name = path.split('/')[-1].split('_')[1]
+    #     print(map_name)
+    #     vd = VisualiseData(path, 'experiments/results/')
+    #     vd.plotNumAgentsVsSensingAccuracy(map_name)
+    # data_path = [ 'experiments/results/random_2x3_results.csv']
+    map_name = "All Maps"
     vd = VisualiseData(data_paths, 'experiments/results/')
-    vd.plotNumAgentsVsSensingAccuracy(map_name)
-    # vd.plotNumAgentsVsCollisions()
+    vd.plotTotalDurationVsAgents()
 
+    # vd.plotNumAgentsVsSensingAccuracy(map_name)
+    # vd.plotNumAgentsVsCollisions()
    
