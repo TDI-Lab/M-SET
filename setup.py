@@ -42,19 +42,6 @@ parameters = OrderedDict({
                                           "It should be noted that this is a custom function"},
         "scaling": "STD",
         "localCostFunction": "INDEX",
-        "logger.GlobalCostLogger": "true",
-        "logger.LocalCostMultiObjectiveLogger": "true",
-        "logger.TerminationLogger": "true",
-        "logger.SelectedPlanLogger": "true",
-        "logger.GlobalResponseVectorLogger": "true",
-        "logger.PlanFrequencyLogger": "true",
-        "logger.UnfairnessLogger": "true",
-        "logger.GlobalComplexCostLogger": "false",
-        "logger.WeightsLogger": "false",
-        "logger.ReorganizationLogger": "true",
-        "logger.VisualizerLogger": "false",
-        "logger.PositionLogger": "true",
-        "logger.HardConstraintLogger": "false"
     },
 
     "drone": {

@@ -78,6 +78,6 @@ if __name__ == "__main__":
     # num = 12
     vehicle_types = ["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"]
     desired_title = "Taxi"
-    visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/pneuma_grid_{desired_title}.csv")
+    visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/6x6_gaussian.csv")
     visualise_sensing()
     plt.show()

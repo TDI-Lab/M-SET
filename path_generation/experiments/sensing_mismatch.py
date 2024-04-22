@@ -23,7 +23,7 @@ def sensing_mismatch():
         x_points.append(float(cell["x"]))
         y_points.append(float(cell["y"]))
         cs.append(float(sensing))
-    scats = plt.scatter(x_points, y_points, c=cs, s=100., marker="s", cmap="seismic")
+    scats = plt.scatter(x_points, y_points, c=cs, s=100., marker="s", cmap="bone")
     #  Plot base stations
     x_points = []
     y_points = []
