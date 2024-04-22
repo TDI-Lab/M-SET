@@ -24,7 +24,7 @@ except:
 start = time.time()
 
 #current = os.getcwd()
-os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
+#os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
 
 #ndrones=len(Crazyswarm().allcfs.crazyflies)
 #status = np.full((1,ndrones),"idle")
