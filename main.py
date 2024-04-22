@@ -18,6 +18,7 @@ def main():
     else:
         for plan, path in plans.items():
             print(plan, path)
+    print(pg.get_coordinate_position_results())
 
 
 if __name__ == '__main__':

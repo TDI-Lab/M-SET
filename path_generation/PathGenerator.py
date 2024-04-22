@@ -7,6 +7,8 @@ class PathGenerator:
 
     def __init__(self):
         self.generation_manager = PathGenerationController()
+        self.__raw_results = None
+        self.__converted_results = None
 
     def generate_paths(self, raw=False) -> \
             [List[Tuple[float, List[float], List[str]]], Dict[int, List[Tuple[float, float, float]]], None]:
@@ -25,10 +27,25 @@ class PathGenerator:
         if result_code != 0:
             return None
 
-        result = self.generation_manager.extract_results()
+        self.__raw_results = self.generation_manager.extract_results()
+        self.__converted_results = self.convert_data_to_table(self.__raw_results)
         if raw:
-            return result
-        return self.convert_data_to_table(result)
+            return self.__raw_results
+        return self.__converted_results
+
+    def get_plan_and_path_results(self) -> List[Tuple[float, List[float], List[str]]]:
+        """
+        Get the results of the most recent run in path and plan format.
+        :return: A list of paths and plans for each drone/ agent.
+        """
+        return self.__raw_results
+
+    def get_coordinate_position_results(self) -> Dict[int, List[Tuple[float, float, float]]]:
+        """
+        Get the results of the most recent run in coordinate position format.
+        :return: A dictionary of lists, each of which shows the movements of each drone/ agent at each time step.
+        """
+        return self.__converted_results
 
     # Read the testbed mapping from a csv file
     # Extract the coordinate of the testbed from the file
@@ -55,7 +72,7 @@ class PathGenerator:
                     x = float(parts[2])
                     y = float(parts[3])
                     z = float(parts[4])
-                    mapping[object_type].append({'id': loc_id, 'x': x, 'y': y, 'z': z})
+                    mapping[object_type].append({'id': loc_id, 'x': x, 'y': y, 'z': z, "value": float(parts[5])})
 
         if debug:
             for object_type in mapping:
