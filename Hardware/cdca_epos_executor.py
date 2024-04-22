@@ -3,14 +3,25 @@ import os
 import sys
 import math
 from decimal import Decimal
+import rospy
+from std_msgs.msg import String
 
-from Hardware_constants import *
+try:
+    from Hardware_constants import *
+except:
+    from Hardware.Hardware_constants import * 
+
 #from aSync import aSync
+from ROSListener import *
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
 from pycrazyswarm import Crazyswarm
 Z=HOVER_HEIGHT
+
+pub = rospy.Publisher('status_logger', String, queue_size=10)
+#rospy.init_node('status', anonymous=True)
+#rate = rospy.Rate(10) # 10hz
 
 def get_coords(position, use_cell_coords):
     if use_cell_coords == True:
@@ -99,16 +110,17 @@ def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest
         return max(base * (round(number/base) + 1), base)
 
 class Drone():
-    def __init__(self, drone, speed):
+    def __init__(self, cf, speed):
         self.positions = []
         self.times = [] 
-        self.status = "idle" # idle -> (sensing, waiting, moving)
+        self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
         self.speed = speed
-        self.drone = drone
+        self.cf = cf
+        self.id = self.cf.id # DEPRECATED
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
-        print(i,"moving to",self.positions[self.move_count])
+        self.log_status(msg="%s moving to %s" % (i, self.positions[self.move_count]))
         pos = get_coords(self.positions[self.move_count],use_cell_coords)
         if TRAVEL_TIME_MODE == 0:
             travel_time = GLOBAL_TRAVEL_TIME # use the constant travel duration mode
@@ -118,7 +130,7 @@ class Drone():
             print("ERROR: Invalid value for TRAVEL_TIME_MODE.")
             return -1
 
-        self.drone.goTo(pos, 0, travel_time)
+        self.cf.goTo(pos, 0, travel_time)
         self.move_count += 1
         #self.positions.pop(0)
 
@@ -150,12 +162,20 @@ class Drone():
         if IN_SIMULATION == False:
             # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
             #   Therefore, this can only be done when not in simulation
-            self.drone.land(0.05, 2.5)
+            self.cf.land(0.05, 2.5)
         else: 
             # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
             land_pos = get_coords(self.positions[self.move_count-1],USE_CELL_COORDS)
-            self.drone.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
+            self.cf.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
+
+    def log_status(self, msg=""):
+        #rospy.loginfo(self.status)
+        if msg != "" and PRINT_LOG_MESSAGES==True:
+            print(msg)
+        
+        if ENABLE_LOGGING == True:
+            pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -180,26 +200,42 @@ def parse_input(input_path, allcfs, speed, next_moves):
 
     return all_drones, next_moves
 
-def take_off_all(d, timeHelper,all_drones):
-# Tell the drones to take off
-    for cf in all_drones:
-        cf.drone.takeoff(targetHeight=HOVER_HEIGHT, duration=d)
+def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
+    if sequential == True:
+        if all_cfs == None:
+            all_cfs = [drone.cf for drone in all_drones]
+        all_cfs.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
         timeHelper.sleep(2.5)
+
+        for drone in all_drones:
+            drone.status = "hovering"
+        log_all_drones(all_drones)
+    
+    else:
+        # Tell the drones to take off one at a time
+        for drone in all_drones:
+            drone.cf.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
+            timeHelper.sleep(2.5)
+            drone.cf.status = "hovering"
+            drone.cf.log_status(msg="Drone %s taken off" % drone.cf.id)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
-    for cf in all_drones:
-        cf.drone.land(0.05, 2.5)
+    for drone in all_drones:
+        drone.cf.land(0.05, 2.5)
         timeHelper.sleep(2.5)
 
-def set_initial_positions(timeHelper, all_drones):
+def set_initial_positions(timeHelper, all_drones, duration):
     # Set the initial positions of the drones in the simulation
     # For some reason this only works if it's after the takeoff
-    for cf in all_drones:
-        pos = get_coords(cf.positions[cf.move_count], USE_CELL_COORDS)
-        print("moving to", pos)
-        cf.drone.goTo(pos,0,10)
-        timeHelper.sleep(10)
+    for drone in all_drones:
+        pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
+        drone.status="moving"
+        drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
+        drone.cf.goTo(pos,0,duration)
+        timeHelper.sleep(duration)
+        drone.status="hovering"
+        drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
 
 def return_uris(channels,numbers):
     uris = []
@@ -207,12 +243,18 @@ def return_uris(channels,numbers):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
 
-# DEPRACATED
-def log_all_drones(drone_uris, vars):
+def log_all_status(all_drones,msg=""):
+    for drone in all_drones:
+        drone.log_status(msg=msg)
+
+def log_all_drones(ids, vars):
+    if IN_SIMULATION == False:
+        if ENABLE_LOGGING == True:
+            call_once(ids)
+            #listener(ids)
     """
-    if ENABLE_LOGGING == True:
-        logger = aSync(drone_uris)
-        logger.runCallback()
+            logger = aSync(drone_uris)
+            logger.runCallback()
     """
     pass
         
@@ -234,6 +276,8 @@ def adjust_moves(next_moves):
     return next_moves
 
 def follow_plans(timeHelper, all_drones, next_moves):
+    log_all_status(all_drones, msg="Starting to follow plans")
+
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
@@ -253,13 +297,25 @@ def follow_plans(timeHelper, all_drones, next_moves):
             # if it's time for the drone to change status (i.e. it has finished its current task)
             if round_nearest(next_moves[i], TIMESTEP_LENGTH) == 0: # IS THIS ROUNDING CORRECT?  
 
+                # LOG FINISHED ACTION
+                cf.log_status()
+                #log_all_drones([1],["battery"])
+
                 # CHECK IF DRONE REACHED END OF PATH
                 if cf.move_count >= len(cf.times): 
                     # if that was the last position, mark the drone as finished
                     next_moves[i] = -1
-                    cf.status = "idle"
-                    print(i, "reached end of path")
+                    
+                    cf.status = "hovering"
+                    cf.log_status(msg="Drone %s reached end of path" % i)
+                    
                     cf.land_drone(timeHelper)
+                    cf.status = "idle"
+                    cf.log_status(msg="Drone %s landed" % i)
+
+                    # LOG FINISHED ACTION
+                    cf.log_status()
+                    #log_all_drones([1],["battery"])
 
                 # OTHERWISE, CONTINUE
                 else:
@@ -296,11 +352,11 @@ def follow_plans(timeHelper, all_drones, next_moves):
 
                     # PERFORM ACTIONS OF (new) CURRENT PHASE                
                     if cf.status == "sensing":
-                        print(i, "sensing")
+                        cf.log_status(msg="Drone %s sensing" % i)
                         next_moves[i] = SENSING_TIME + TIMESTEP_LENGTH
 
                     elif cf.status == "waiting":
-                        print(i,"waiting for",cf.times[cf.move_count - 1])
+                        cf.log_status(msg="%s waiting for %s" % (i, cf.times[cf.move_count - 1]))
                         next_moves[i] = cf.times[cf.move_count - 1] + TIMESTEP_LENGTH
 
                     elif cf.status == "moving":
@@ -317,7 +373,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    print("End of simulation")
+    cf.log_all_status(all_drones, msg="End of simulation")
     timeHelper.sleep(3)
 
 
@@ -332,6 +388,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     global INPUT_MODE
     INPUT_MODE = input_mode
 
+    print("PARSING INPUT")
     if raw == True:
         input_path = plan
     else:
@@ -345,6 +402,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the scripts folder
     os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
 
+    print("INITIALISING CRAZYSWARM")
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
@@ -353,13 +411,19 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     all_drones, next_moves = parse_input(input_path, allcfs, SPEED, next_moves)
 
-    drone_uris = return_uris([80,90],[2,3])
+    #drone_uris = return_uris([80,90],[2,3])
 
-    log_all_drones(drone_uris, ["battery"])
-
+    print("INITIALISING LOGGING")
+    log_all_status(all_drones, msg="Initialising logging")
+    """
+    ids = [1,2]
+    log_all_drones(ids, ["battery"])
+    """
+    
     if run == True:
+        print("EXECUTING PATH")
         try:
-            take_off_all(2.5, timeHelper, all_drones)
+            take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
             set_initial_positions(timeHelper,all_drones)
 
@@ -371,7 +435,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     #land_all(0.05, timeHelper, all_drones)
 
-    log_all_drones(drone_uris, ["battery"])
+    #log_all_drones(drone_uris, ["battery"])
 
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
@@ -402,7 +466,9 @@ if __name__ == '__main__':
         #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
         #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False)
+        #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
+        print("Executing default path")
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=False)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)

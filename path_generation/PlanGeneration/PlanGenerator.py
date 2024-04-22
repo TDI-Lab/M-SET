@@ -32,6 +32,8 @@ class PlanGenerator:
             battery_capacity=float(config.get('power', 'batteryCapacity'))
         )
 
+        self.drone_route = None
+
     def clean_datasets(self):
         target = f"{self.parent_path}/datasets"
         if not isdir(target):
@@ -80,19 +82,19 @@ class PlanGenerator:
             for plan_id in range(self.properties.plans_num):
                 # (1) initialize and calculate the shortest route for the drone
                 # initialization
-                drone_route = RouteGeneration()
+                self.drone_route = RouteGeneration()
                 # the departure and destination (charging station)
                 station_idx = agent_id % self.properties.stations_num
                 # to find a route
-                drone_route.find_route(station_idx, self.properties.path_mode, map_setting, plan_id)
+                self.drone_route.find_route(station_idx, self.properties.path_mode, map_setting, plan_id)
 
                 # (2) output the list of visited cells and normalized energy consumption for the drone
-                plan_cost = float(drone_route.energy_consumption / self.properties.battery_capacity)
+                plan_cost = float(self.drone_route.energy_consumption / self.properties.battery_capacity)
 
-                path_taken = drone_route.path_taken
+                path_taken = self.drone_route.path_taken
 
                 # (3) transform into a plan format.
-                plan = np.array(drone_route.hover_time_arr)
+                plan = np.array(self.drone_route.hover_time_arr)
 
                 plan_dict = {'plan': plan, 'cost': plan_cost, "path": path_taken}
                 agent_plans.append(plan_dict)
