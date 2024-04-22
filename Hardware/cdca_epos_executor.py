@@ -175,7 +175,10 @@ class Drone():
             print(msg)
         
         if ENABLE_LOGGING == True:
-            pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            try:
+                pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            except rospy.ROSException:
+                print("WARNING: Log failed with ROSException error. Check that ROS is running.")
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -242,6 +245,12 @@ def return_uris(channels,numbers):
     for i in range(0,len(channels)):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
+
+def init_logging():
+   try:
+      rospy.init_node('listener', anonymous=True)
+   except:
+      pass
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
@@ -373,7 +382,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    cf.log_all_status(all_drones, msg="End of simulation")
+    log_all_status(all_drones, msg="End of simulation")
     timeHelper.sleep(3)
 
 
@@ -425,7 +434,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones)
+            set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
@@ -439,7 +448,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
-    
     args = sys.argv
     offset = 0
     filepath = None
@@ -468,7 +476,7 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=False)
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
