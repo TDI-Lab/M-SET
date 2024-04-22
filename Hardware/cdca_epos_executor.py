@@ -219,8 +219,8 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
         for drone in all_drones:
             drone.cf.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
             timeHelper.sleep(2.5)
-            drone.cf.status = "hovering"
-            drone.cf.log_status(msg="Drone %s taken off" % drone.cf.id)
+            drone.status = "hovering"
+            drone.log_status(msg="Drone %s taken off" % drone.id)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
@@ -234,11 +234,11 @@ def set_initial_positions(timeHelper, all_drones, duration):
     for drone in all_drones:
         pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
         drone.status="moving"
-        drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s moving to %s" % (drone.id, pos))
         drone.cf.goTo(pos,0,duration)
         timeHelper.sleep(duration)
         drone.status="hovering"
-        drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s reached initial position %s" % (drone.id, pos))
 
 def return_uris(channels,numbers):
     uris = []
@@ -438,7 +438,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
             follow_plans(timeHelper, all_drones, next_moves)
 
-        except Exception as error:
+        except KeyboardInterrupt as error:
             print("Error:",error)
             land_all(0.05, timeHelper, all_drones)
 
