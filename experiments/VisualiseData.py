@@ -50,6 +50,7 @@ class VisualiseData:
         plt.savefig(self.path_to_save + 'num_agents_vs_sensing_accuracy_'+map_name+'.png')
         plt.show()
 
+  
     def plotTotalDurationVsAgents(self):
 
         #group the data by strategy and number of agents
@@ -67,14 +68,14 @@ class VisualiseData:
             plt.plot(strategy_data['n_drones'], strategy_data['Total Duration of Flights'], label=strategy)
 
         plt.xlabel('Number of Agents')
-        plt.ylabel('Total Duration of Flights')
-        plt.title('Number of Agents vs Total Duration of Flights')
+        plt.ylabel('Total Duration of Flights (s)')
+        plt.title('Number of Agents vs Total Duration of Flights (s)')
         plt.legend()
 
         #save the plot
         plt.savefig(self.path_to_save + 'num_agents_vs_total_duration.png')
         plt.show()
-        
+
     def plotNumAgentsVsCollisions(self):
         #plot a line graph where one axis is the number of agents and the other is the number of collisions
         # for each strategy
@@ -119,9 +120,9 @@ class VisualiseData:
             plt.plot(strategy_data['Sensing Mismatch %'], strategy_data['Total Collisions'], label=strategy)
 
 
-        plt.xlabel('% Sensing Mismatch')
+        plt.xlabel('% Sensing Mismatch (%)')
         plt.ylabel('Number of Collisions')
-        plt.title('Sensing Mismatch vs Number of Collisions')
+        plt.title('Sensing Mismatch % vs Number of Collisions')
         plt.legend()
 
         #save the plot
@@ -147,7 +148,7 @@ class VisualiseData:
             plt.plot(strategy_data['n_drones'], strategy_data['Risk of Collision'], label=strategy)
 
         plt.xlabel('Number of Agents')
-        plt.ylabel('Risk of Collision')
+        plt.ylabel('Risk of Collision (%)')
         plt.title('Number of Agents vs Risk of Collision')
         plt.legend()
 
