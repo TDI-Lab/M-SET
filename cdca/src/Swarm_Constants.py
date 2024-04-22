@@ -1,14 +1,14 @@
 # Swarm constants definition.
 
 
-SPEED = 1
+SPEED = 0.1
 TIME_STEP = 1
 
 DISTANCE_STEP = SPEED * TIME_STEP
 
 TIME_DELAY = 2
 
-MINIMUM_DISTANCE = 1 # Must be >= to DISTANCE_STEP to ensure accuracy
+MINIMUM_DISTANCE = 0.15 # Must be >= to DISTANCE_STEP to ensure accuracy
 
 COLLISION_AVOIDANCE_LIMIT = 20
 
