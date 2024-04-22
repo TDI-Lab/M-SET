@@ -8,11 +8,12 @@ from std_msgs.msg import String
 
 try:
     from Hardware_constants import *
+    from ROSListener import *
 except:
-    from Hardware.Hardware_constants import * 
+    from Hardware.Hardware_constants import *
+    from Hardware.ROSListener import * 
 
 #from aSync import aSync
-from ROSListener import *
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
