@@ -5,7 +5,7 @@ INPUT_MODE = "cdca" # CAN BE OVERWITTEN AT COMMAND LINE # "cdca" or "default"
 ENABLE_LOGGING = True
 PRINT_LOG_MESSAGES= True
 LOG_OUTPUT_FILE = "1hover"
-IN_SIMULATION = False # Should be set automatically by --sim in command line
+IN_SIMULATION = True # Should be set automatically by --sim in command line
 TRAVEL_TIME_MODE = 2 # REMOVE
 USE_CELL_COORDS = True # True=path uses testbed grid coords, False=path uses the actual positions from the physical testing environment
 TIMESTEP_LENGTH = 0.015625 # Should always be a value that can be represented by 2^{x}, where x is an integer

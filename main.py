@@ -11,6 +11,7 @@ from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from experiments.MeasureSensing import MeasureSensing
 from experiments.VisualiseData import VisualiseData
+from Hardware.cdca_epos_executor import main as hardware_main
 
 from path_generation.PathGenerator import PathGenerator
 import csv
@@ -189,7 +190,74 @@ def run_experiment_1and2():
                 data = experiment_1and2_iteration(n_drones, mission_name)
                 write_results_to_csv(data, config)
                 
+def ExecuteTestbedPlans(n_drones):
+     # a list of n m for each experiment grid
+    experiment_sizes = [[3,2]]
 
+    config = Config('drone_sense.properties')
+
+    n_iterations = 1
+    drones = [4]
+    # drones = [5,6,7,8]
+
+    for i in range(len(experiment_sizes)):
+        abs_path = os.path.abspath('.')
+        config.config.set('global', 'MissionName', f"random_{experiment_sizes[i][0]}x{experiment_sizes[i][1]}")
+        config.config.set('global', 'MissionFile', f"{abs_path}/examples/{experiment_sizes[i][0]}x{experiment_sizes[i][1]}_random.csv")
+        
+
+        for _ in range(n_iterations):
+            for n_drones in drones:
+                config.config.set('global', 'NumberOfDrones', f"{n_drones}")
+
+                with open(config.config_file_path, 'w') as configfile:
+                    config.config.write(configfile)
+                mission_name = create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
+
+                # data = experiment_1and2_iteration(n_drones, mission_name)
+                # write_results_to_csv(data, config)
+
+    
+    pg = PathGenerator()
+    plans = pg.generate_paths()
+
+    for plant, path in plans.items():
+        print(f"plan: {plant}, path: {path}")
+
+    # if n_drones == 1:
+    #     plans = [plans]
+
+    input_p = Input_Parser(plans)
+    parsed_plans = input_p.parsed_input
+    
+    print("")
+    for planx in parsed_plans:
+        print(planx)
+    print("")
+
+    sensing = MeasureSensing(f"examples/{mission_name}")
+
+    swarm_controller = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
+    swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=False))
+    swarm_controller3 = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
+    # swarm_controller.visualise_swarm()
+    # priority_map = swarm_controller.determine_priority(parsed_plans)
+    # swarm_controller4 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance(priority_map=priority_map))
+
+    swarm_controller2.detect_potential_collisions()
+    # swarm_controller2.drones_to_plan()
+    swarm_controller3.detect_potential_collisions()
+    # swarm_controller2.visualise_swarm()
+    # swarm_controller4.detect_potential_collisions()
+
+
+    no_ca_plans =  swarm_controller.plans
+    pf_plans = swarm_controller2.plans
+    basic_plans = swarm_controller3.plans
+
+    hardware_main(no_ca_plans, raw=True, input_mode="cdca")
+    hardware_main(pf_plans, raw=True, input_mode="cdca")
+    hardware_main(basic_plans, raw=True, input_mode="cdca")
 
 if __name__ == '__main__':
     # run_experiment_1and2()
@@ -207,10 +275,13 @@ if __name__ == '__main__':
     #     vd = VisualiseData(path, 'experiments/results/')
     #     vd.plotNumAgentsVsSensingAccuracy(map_name)
     # data_path = [ 'experiments/results/random_2x3_results.csv']
+    """
     map_name = "All Maps"
     vd = VisualiseData(data_paths, 'experiments/results/')
     vd.plotTotalDurationVsAgents()
-
+    """
+    ExecuteTestbedPlans(4,)
+    
     # vd.plotNumAgentsVsSensingAccuracy(map_name)
     # vd.plotNumAgentsVsCollisions()
    

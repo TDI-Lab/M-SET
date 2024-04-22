@@ -8,11 +8,12 @@ from std_msgs.msg import String
 
 try:
     from Hardware_constants import *
+    from ROSListener import *
 except:
-    from Hardware.Hardware_constants import * 
+    from Hardware.Hardware_constants import *
+    from Hardware.ROSListener import * 
 
 #from aSync import aSync
-from ROSListener import *
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
@@ -216,8 +217,8 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
         for drone in all_drones:
             drone.cf.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
             timeHelper.sleep(2.5)
-            drone.cf.status = "hovering"
-            drone.cf.log_status(msg="Drone %s taken off" % drone.cf.id)
+            drone.status = "hovering"
+            drone.log_status(msg="Drone %s taken off" % drone.id)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
@@ -231,17 +232,24 @@ def set_initial_positions(timeHelper, all_drones, duration):
     for drone in all_drones:
         pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
         drone.status="moving"
-        drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s moving to %s" % (drone.id, pos))
         drone.cf.goTo(pos,0,duration)
         timeHelper.sleep(duration)
         drone.status="hovering"
-        drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s reached initial position %s" % (drone.id, pos))
 
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
+
+def init_logging():
+    if ENABLE_LOGGING == True:
+        try:
+            rospy.init_node('listener', anonymous=True)
+        except:
+            pass
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
@@ -321,7 +329,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
                 else:
 
                     # ASSIGN STATUS CHANGES
-                    if cf.status == "moving" or cf.status == "idle":
+                    if cf.status == "moving" or cf.status == "idle" or cf.status=="hovering":
                         if (in_position == True) or (TRAVEL_TIME_MODE != 3):
                             if INPUT_MODE == "cdca":
                                 # if input_move is cdca, then waiting phase follows movement phase
@@ -373,7 +381,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    cf.log_all_status(all_drones, msg="End of simulation")
+    log_all_status(all_drones, msg="End of simulation")
     timeHelper.sleep(3)
 
 
@@ -414,6 +422,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     #drone_uris = return_uris([80,90],[2,3])
 
     print("INITIALISING LOGGING")
+    init_logging()
     log_all_status(all_drones, msg="Initialising logging")
     """
     ids = [1,2]
@@ -425,7 +434,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones)
+            set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
