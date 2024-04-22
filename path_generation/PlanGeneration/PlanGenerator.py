@@ -97,6 +97,8 @@ class PlanGenerator:
                 plan_dict = {'plan': plan, 'cost': plan_cost, "path": path_taken}
                 agent_plans.append(plan_dict)
 
+            #  sort agent plans
+            agent_plans.sort(key=lambda x: x["cost"], reverse=True)
             # 4b. Output the plans of the drone into the datasets dir
             agent_plans_path = f"{dataset_path}/agent_{agent_id}.plans"
             agent_paths = f"{dataset_path}/agent_{agent_id}.paths"
