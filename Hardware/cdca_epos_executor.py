@@ -330,7 +330,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
                 else:
 
                     # ASSIGN STATUS CHANGES
-                    if cf.status == "moving" or cf.status == "idle":
+                    if cf.status == "moving" or cf.status == "idle" or cf.status == "hovering":
                         if (in_position == True) or (TRAVEL_TIME_MODE != 3):
                             if INPUT_MODE == "cdca":
                                 # if input_move is cdca, then waiting phase follows movement phase
