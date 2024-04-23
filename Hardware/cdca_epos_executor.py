@@ -246,10 +246,16 @@ def return_uris(channels,numbers):
 
 def init_logging():
     if ENABLE_LOGGING == True:
+        global pub
+
         try:
-            rospy.init_node('listener', anonymous=True)
+            rospy.init_node('chatter', anonymous=True)
         except:
             pass
+
+        pub = rospy.Publisher('status_logger', String, queue_size=10)
+
+        input("Logging setup complete\nPress any key to continue")
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
