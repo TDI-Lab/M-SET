@@ -190,6 +190,7 @@ def parse_input(input_path, allcfs, speed, next_moves):
         if c < len(allcfs.crazyflies):
             d = Drone(allcfs.crazyflies[c],speed)
             all_drones.append(d)
+            print(drone)
             for position in drone:
                 if INPUT_MODE == "cdca":
                     d.positions.append(position[0])
@@ -248,10 +249,16 @@ def return_uris(channels,numbers):
     return uris
 
 def init_logging():
-   try:
-      rospy.init_node('listener', anonymous=True)
-   except:
-      pass
+    global pub
+
+    try:
+        rospy.init_node('chatter', anonymous=True)
+    except:
+        pass
+
+    pub = rospy.Publisher('status_logger', String, queue_size=10)
+
+    input("Logging setup complete\nPress any key to continue")
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
@@ -426,6 +433,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     #drone_uris = return_uris([80,90],[2,3])
 
     print("INITIALISING LOGGING")
+    init_logging()
     log_all_status(all_drones, msg="Initialising logging")
     """
     ids = [1,2]
@@ -437,7 +445,8 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones,5)
+            if IN_SIMULATION == False:
+                set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
@@ -479,7 +488,7 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)

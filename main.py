@@ -25,7 +25,7 @@ def main():
             print(plan, path)
     print(pg.get_coordinate_position_results())
     
-    hardware_main([path for plan, path in plans.items()], raw=True, input_mode="default")
+    #hardware_main([path for plan, path in plans.items()], raw=True, input_mode="default")
 
     input_p = Input_Parser(plans)
     parsed_plans = input_p.parsed_input
@@ -37,7 +37,6 @@ def main():
 
     swarm_controller = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
     swarm_controller.detect_potential_collisions()
-    print("final plan: \n", parsed_plans)
     
     #swarm_controller.plans =  execute these plans with hardware/simulation
     hardware_main(swarm_controller.plans, raw=True, input_mode="cdca")
