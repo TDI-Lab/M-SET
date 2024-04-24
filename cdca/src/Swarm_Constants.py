@@ -6,7 +6,7 @@ TIME_STEP = 1
 
 DISTANCE_STEP = SPEED * TIME_STEP 
 
-MINIMUM_DISTANCE = 0.2 # Must be >= to DISTANCE_STEP to ensure accuracy
+MINIMUM_DISTANCE = 0.4 # Must be >= to DISTANCE_STEP to ensure accuracy
 
 TIME_DELAY = (MINIMUM_DISTANCE / SPEED) + TIME_STEP
 

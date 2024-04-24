@@ -226,6 +226,27 @@ def ExecuteTestbedPlans(n_drones):
 
     # if n_drones == 1:
     #     plans = [plans]
+from path_generation.PathGenerator import PathGenerator
+from cdca.src.Input_Parser import Input_Parser
+from cdca.src.Swarm_Control import Swarm_Control
+from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
+from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
+from Hardware.cdca_epos_executor import main as hardware_main
+
+def main():
+    raw = False
+    #  Hello :)  There are two steps to running the path generator (once the config is set up)
+    #  First, instantiate the PathGenerator object
+    pg = PathGenerator()
+    #  Then, call PathGenerator.generate_paths.  For CD/CA purposes, you want raw=False (so nothing)
+    plans = pg.generate_paths(raw=raw)
+    if raw:
+        for plan in plans:
+            print(plan)
+    else:
+        for plan, path in plans.items():
+            print(plan, path)
+    print(pg.get_coordinate_position_results())
 
     input_p = Input_Parser(plans)
     parsed_plans = input_p.parsed_input
@@ -258,6 +279,16 @@ def ExecuteTestbedPlans(n_drones):
     hardware_main(no_ca_plans, raw=True, input_mode="cdca")
     hardware_main(pf_plans, raw=True, input_mode="cdca")
     hardware_main(basic_plans, raw=True, input_mode="cdca")
+    for plan in parsed_plans:
+        print(plan)
+    print("")
+
+    swarm_controller = Swarm_Control(parsed_plans, Basic_Collision_Avoidance())
+    swarm_controller.detect_potential_collisions()
+    print("final plan: \n", parsed_plans)
+    
+    #swarm_controller.plans =  execute these plans with hardware/simulation
+    hardware_main(swarm_controller.plans, raw=True)
 
 if __name__ == '__main__':
     # run_experiment_1and2()

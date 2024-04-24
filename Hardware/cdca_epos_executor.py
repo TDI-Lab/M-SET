@@ -176,7 +176,10 @@ class Drone():
             print(msg)
         
         if ENABLE_LOGGING == True:
-            pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            try:
+                pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            except rospy.ROSException:
+                print("WARNING: Log failed with ROSException error. Check that ROS is running.")
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -444,7 +447,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
             follow_plans(timeHelper, all_drones, next_moves)
 
-        except Exception as error:
+        except KeyboardInterrupt as error:
             print("Error:",error)
             land_all(0.05, timeHelper, all_drones)
 
@@ -454,7 +457,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
-    
     args = sys.argv
     offset = 0
     filepath = None
@@ -483,7 +485,7 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=False)
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)

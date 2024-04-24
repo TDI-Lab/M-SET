@@ -23,8 +23,6 @@ parameters = OrderedDict({
         "NumberOfSimulations": {"value": 1, "comment": "The number of runs done by EPOS"},
         "IterationsPerSimulation": 32,
         "NumberOfChildren": 2,
-        "PlanDimension": {"value": 6, "comment": "Planning to remove, but the plan dimension "
-                                                 "should be set to the number of sensing cells."},
         "Shuffle": 0,
         "ShuffleFile": "permuation.csv",
         "NumberOfWeights": 2,
@@ -44,19 +42,6 @@ parameters = OrderedDict({
                                           "It should be noted that this is a custom function"},
         "scaling": "STD",
         "localCostFunction": "INDEX",
-        "logger.GlobalCostLogger": "true",
-        "logger.LocalCostMultiObjectiveLogger": "true",
-        "logger.TerminationLogger": "true",
-        "logger.SelectedPlanLogger": "true",
-        "logger.GlobalResponseVectorLogger": "true",
-        "logger.PlanFrequencyLogger": "true",
-        "logger.UnfairnessLogger": "true",
-        "logger.GlobalComplexCostLogger": "false",
-        "logger.WeightsLogger": "false",
-        "logger.ReorganizationLogger": "true",
-        "logger.VisualizerLogger": "false",
-        "logger.PositionLogger": "true",
-        "logger.HardConstraintLogger": "false"
     },
 
     "drone": {
@@ -67,7 +52,7 @@ parameters = OrderedDict({
         "RotorDiameter": 0.03,
         "ProjectedBodyArea": 0.0599,
         "ProjectedBatteryArea": 0.0037,
-        "PowerEfficiency": 1.25,
+        "PowerEfficiency": 0.8,
         "GroundSpeed": 6.94,
         "AirSpeed": 8.5
     },
