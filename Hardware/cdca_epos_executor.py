@@ -175,7 +175,10 @@ class Drone():
             print(msg)
         
         if ENABLE_LOGGING == True:
-            pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            try:
+                pub.publish("Drone %s: %s. %s" % (self.id, self.status, msg))
+            except rospy.ROSException:
+                print("WARNING: Log failed with ROSException error. Check that ROS is running.")
 
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
@@ -216,8 +219,8 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
         for drone in all_drones:
             drone.cf.takeoff(targetHeight=HOVER_HEIGHT, duration=dur)
             timeHelper.sleep(2.5)
-            drone.cf.status = "hovering"
-            drone.cf.log_status(msg="Drone %s taken off" % drone.cf.id)
+            drone.status = "hovering"
+            drone.log_status(msg="Drone %s taken off" % drone.id)
 
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
@@ -231,17 +234,23 @@ def set_initial_positions(timeHelper, all_drones, duration):
     for drone in all_drones:
         pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
         drone.status="moving"
-        drone.cf.log_status("Drone %s moving to %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s moving to %s" % (drone.id, pos))
         drone.cf.goTo(pos,0,duration)
         timeHelper.sleep(duration)
         drone.status="hovering"
-        drone.cf.log_status("Drone %s reached initial position %s" % (drone.cf.id, pos))
+        drone.log_status("Drone %s reached initial position %s" % (drone.id, pos))
 
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
         uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
     return uris
+
+def init_logging():
+   try:
+      rospy.init_node('listener', anonymous=True)
+   except:
+      pass
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
@@ -321,7 +330,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
                 else:
 
                     # ASSIGN STATUS CHANGES
-                    if cf.status == "moving" or cf.status == "idle":
+                    if cf.status == "moving" or cf.status == "idle" or cf.status == "hovering":
                         if (in_position == True) or (TRAVEL_TIME_MODE != 3):
                             if INPUT_MODE == "cdca":
                                 # if input_move is cdca, then waiting phase follows movement phase
@@ -373,7 +382,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
-    cf.log_all_status(all_drones, msg="End of simulation")
+    log_all_status(all_drones, msg="End of simulation")
     timeHelper.sleep(3)
 
 
@@ -425,11 +434,11 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones)
+            set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
-        except Exception as error:
+        except KeyboardInterrupt as error:
             print("Error:",error)
             land_all(0.05, timeHelper, all_drones)
 
@@ -439,7 +448,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
-    
     args = sys.argv
     offset = 0
     filepath = None
@@ -468,7 +476,7 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=False)
+        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
