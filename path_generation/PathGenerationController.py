@@ -24,10 +24,17 @@ class PathGenerationController:
         self.config.read(f"{self.parent_path}/../drone_sense.properties")
         self.config_generator = ConfigManager()
 
-        self._pg_controller = None
-        self._epos_controller = None
+        self.pg_controller = None
+        self.epos_controller = None
 
     def __construct_plan_generation_properties(self):
+        num_base_stations = 0
+        with open(self.config.get("global", "MissionFile")) as file:
+            lines = file.readlines()
+        lines = lines[1:]
+        for line in lines:
+            if line[0:4] == "BASE":
+                num_base_stations += 1
         properties = {
             "plan": {
                 "dataset": self.config.get("global", "MissionName"),
@@ -37,7 +44,7 @@ class PathGenerationController:
                 "pathMode": self.config.get("path_generation", "PathMode"),
             },
             "map": {
-                "stationsNum": 4,
+                "stationsNum": num_base_stations,
                 "height": 1,
                 "mapLength": 4
             },
@@ -108,11 +115,11 @@ class PathGenerationController:
         plan_gen_properties = self.__construct_plan_generation_properties()
         self.config_generator.write_config_file(plan_gen_properties)
         # Generate plans for each agent
-        self._pg_controller = PlanGenerator()
-        self._pg_controller.clean_datasets()
+        self.pg_controller = PlanGenerator()
+        self.pg_controller.clean_datasets()
         #  Move mission to datasets folder
         mission_file = self.config.get("global", "MissionFile")
-        result_code = self._pg_controller.generate_plans(mission_file=mission_file)
+        result_code = self.pg_controller.generate_plans(mission_file=mission_file)
         return result_code
 
     # Move the generated plans to the EPOS directory
@@ -132,12 +139,12 @@ class PathGenerationController:
 
     # Execute the EPOS Algorithm for plan selection
     def select_plan(self) -> int:
-        self._epos_controller = EPOSWrapper()
+        self.epos_controller = EPOSWrapper()
         self.config_generator.set_target_path(f"{self.parent_path}/EPOS/conf/epos.properties")
         epos_properties = self.__construct_epos_properties()
         if epos_properties["numAgents"] == "1":
             output_dir = f"{self.parent_path}/EPOS/output"
-            self._epos_controller.clean_output(output_dir)
+            self.epos_controller.clean_output(output_dir)
             results_dir = f"{output_dir}/{self.config.get('global', 'MissionName')}_result"
             mkdir(results_dir)
             self.__select_for_single_drone_system(results_dir)
@@ -146,7 +153,7 @@ class PathGenerationController:
             self.config_generator.write_config_file(epos_properties)
             show_out = bool(strtobool(self.config.get("epos", "EPOSstdout")))
             show_err = bool(strtobool(self.config.get("epos", "EPOSstderr")))
-            result_code = self._epos_controller.run(out=show_out, err=show_err)
+            result_code = self.epos_controller.run(out=show_out, err=show_err)
             return result_code
 
     def __get_plan_indexes(self):

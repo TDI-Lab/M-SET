@@ -49,7 +49,8 @@ class Offline_Collision_Stats(Basic_Collision_Avoidance):
   def get_risk_of_collision(self):
     total_dist = self.get_total_flights_distance()
     collision_distance = self.get_total_collision_distance()
-
+    if total_dist == 0:
+      return 0
     risk_of_collision = collision_distance / total_dist 
     return risk_of_collision
 
@@ -66,7 +67,10 @@ class Offline_Collision_Stats(Basic_Collision_Avoidance):
     return no_of_flights
 
   def get_average_collisions_per_flight(self):
-    return self.get_number_of_collisions() / self.get_number_of_flights()
+    num_flights = self.get_number_of_flights()
+    if num_flights == 0:
+      return 0
+    return self.get_number_of_collisions() / num_flights
 
 
     

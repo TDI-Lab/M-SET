@@ -26,10 +26,15 @@ class Swarm_Control:
       new_drone = Drone(plan)
       self.drones.append(new_drone)
 
+  def drones_to_plan(self):
+    # Get the plans of the drones.
+    self.plans = [drone.plan for drone in self.drones]
   def detect_potential_collisions(self):
     # Detect and fix potential collisions between drones.
     for i in range(COLLISION_AVOIDANCE_LIMIT):
       if (not self.collision_strategy.detect_potential_collisions(self.drones)):
+        self.drones_to_plan()
+
         return
   
   def get_offline_collision_stats(self):

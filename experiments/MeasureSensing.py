@@ -28,6 +28,8 @@ class MeasureSensing:
             for row in reader:
                 self.sensing_mission.append(row)
                 type, id, x, y, z, value = row
+                if (type == 'BASE'):
+                    continue
                 self.cells.append(cell(type, id, [x, y, z], value))
 
     def get_total_sensing_value(self):
@@ -38,7 +40,7 @@ class MeasureSensing:
     
     def add_sensed_value(self, pos, duration):
         for cell in self.cells:
-            if [float(pos[0]), float(pos[1])] == [float(cell.x), float(cell.y)]: # Convert coordinates to floats before comparing
+            if abs(float(pos[0]) - float(cell.x)) < 0.01 and abs(float(pos[1]) - float(cell.y)) < 0.01: # Check if positions are within a small distance
                 cell.measured_value += duration
 
     def reset_measured_values(self):
@@ -47,14 +49,14 @@ class MeasureSensing:
 
     def get_sensing_percentage(self):
         total_value = self.get_total_sensing_value()
-        total_measured_value = 0
+        total_mismatch = 0
         for cell in self.cells:
-            total_measured_value += abs(cell.measured_value - cell.value)
-        sensing_percentage = round((abs(total_value - total_measured_value) / total_value * 100), 2)
+            total_mismatch += abs(cell.measured_value - cell.value)
+        sensing_percentage = round(total_mismatch / total_value * 100, 2)
 
         print(f"Total value: {total_value}")
-        print(f"Total measured value: {total_measured_value}")
-        print(f"Sensing percentage: {sensing_percentage}%")
+        print(f"Total mismatch: {total_mismatch}")
+        print(f"Sensing mismatch percentage: {sensing_percentage}%")
         return sensing_percentage
 
     def measure_sensing(self, paths):
