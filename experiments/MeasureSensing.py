@@ -40,7 +40,7 @@ class MeasureSensing:
     
     def add_sensed_value(self, pos, duration):
         for cell in self.cells:
-            if [float(pos[0]), float(pos[1])] == [float(cell.x), float(cell.y)]: # Convert coordinates to floats before comparing
+            if abs(float(pos[0]) - float(cell.x)) < 0.01 and abs(float(pos[1]) - float(cell.y)) < 0.01: # Check if positions are within a small distance
                 cell.measured_value += duration
 
     def reset_measured_values(self):

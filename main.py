@@ -34,13 +34,16 @@ class Config:
         self.config.read(config_file_path)
 
     
-def write_results_to_csv(data, config, greedy=False):
+def write_results_to_csv(data, config, greedy=False, testbed=False):
 
     # Now you can access the values in the config file like this:
     mission_name = config.config.get('global', 'MissionName')
     if greedy:
         mission_name += '_greedy'
     n_drones = config.config.get('global', 'NumberOfDrones')
+
+    if testbed:
+        mission_name += '_testbed'
 
     results_path = 'experiments/results/'+mission_name+'_results.csv'
 
@@ -96,7 +99,32 @@ def create_new_random_sensing_mission(size_n, size_m):
 
     return mission_name
 
-            
+def create_new_testbed_sensing_mission():
+    mission_name = f"2x3_random_testbed.csv"
+    rows = ["type,id,x,y,z,value\n"]
+    #  Create sensing cells
+   
+    rows.append(f"SENSE,0,-0.5533,-0.235,1,{randint(1, 10)}\n")
+    rows.append(f"SENSE,1,0,-0.235,1,{randint(1, 10)}\n")
+    rows.append(f"SENSE,2.0,5533,-0.235,1,{randint(1, 10)}\n")
+    rows.append(f"SENSE,3,-0.5533,0.235,1,{randint(1, 10)}\n")
+    rows.append(f"SENSE,4,0,0.235,1,{randint(1, 10)}\n")
+    rows.append(f"SENSE,5,0.5533,0.235,1,{randint(1, 10)}\n")
+
+    
+    rows.append(f"BASE,0,-0.8299,-0.47,0,0\n")
+    rows.append(f"BASE,1,0.8299,-0.47,0,0\n")
+    rows.append(f"BASE,2,0.8299,0.47,0,0\n")
+    rows.append(f"BASE,3,-0.8299,0.47,0,0\n")
+
+
+    
+    with open(f"examples/{mission_name}", "w") as file:
+        for row in rows:
+            file.write(row)
+
+    return mission_name
+
 def experiment_1and2_iteration(n_drones, mission_name):
 
     pg = PathGenerator()
@@ -161,14 +189,38 @@ def experiment_1and2_iteration(n_drones, mission_name):
         # 'priority_ca': sensing.measure_sensing(priority_plans),
     }
 }
-def run_experiment_1and2():
+def experiment_testbed():
+    config = Config('drone_sense.properties')
+
+    n_iterations = 40
+    drones = [1,2,3,4]
+    # drones = [5,6,7,8]
+
+    abs_path = os.path.abspath('.')
+    config.config.set('global', 'MissionName', f"2x3_random_testbed")
+
+    config.config.set('global', 'MissionFile', f"{abs_path}/examples/2x3_random_testbed.csv")
+    
+
+    for _ in range(n_iterations):
+        for n_drones in drones:
+            config.config.set('global', 'NumberOfDrones', f"{n_drones}")
+
+            with open(config.config_file_path, 'w') as configfile:
+                config.config.write(configfile)
+            mission_name = create_new_testbed_sensing_mission()
+
+            data = experiment_1and2_iteration(n_drones, mission_name)
+            write_results_to_csv(data, config, testbed=True)
+                
+def run_experiment_1and2(greedy):
      # a list of n m for each experiment grid
-    experiment_sizes = [[10,10],[12,12]]
+    experiment_sizes = [[2,3],[3,3],[4,4],[5,5],[6,6],[8,8],[10,10],[12,12]]
 
     config = Config('drone_sense.properties')
 
     n_iterations = 40
-    drones = [1,2,3,4,5,6,7,8]
+    drones = [1,2,3,4,5,6,8,10,12,16]
     # drones = [5,6,7,8]
 
     for i in range(len(experiment_sizes)):
@@ -187,30 +239,37 @@ def run_experiment_1and2():
                 mission_name = create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
 
                 data = experiment_1and2_iteration(n_drones, mission_name)
-                write_results_to_csv(data, config)
+                write_results_to_csv(data, config, greedy=greedy)
                 
 
 
 if __name__ == '__main__':
-    # run_experiment_1and2()
-# 
-    data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
-                  'experiments/results/random_6x6_results.csv',  'experiments/results/random_8x8_results.csv',
-                  'experiments/results/random_10x10_results.csv',  'experiments/results/random_12x12_results.csv']
+    # run_experiment_1and2(greedy=True)
+    # experiment_testbed()
+    # data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
+    #               'experiments/results/random_6x6_results.csv',  'experiments/results/random_8x8_results.csv',
+    #               'experiments/results/random_10x10_results.csv',  'experiments/results/random_12x12_results.csv']
     
-    # Visualise the data
+    testbed_data_path = ['experiments/results/2x3_random_testbed_testbed_results.csv']
+    ## greedy_paths = []
     # for path in data_paths:
+    #     #append replace _results to _greedy_results
+    #     new_path = path.replace('_results', '_greedy_results')
+    #     greedy_paths.append(new_path)
+
+    # # Visualise the data
+    # for path in greedy_paths:
     #     print(path)
     #     # extract the 5x5 from the path
-    #     map_name = path.split('/')[-1].split('_')[1]
+    #     map_name = path.split('/')[-1].split('_')[1] + " greedy"
     #     print(map_name)
     #     vd = VisualiseData(path, 'experiments/results/')
     #     vd.plotNumAgentsVsSensingAccuracy(map_name)
-    # data_path = [ 'experiments/results/random_2x3_results.csv']
-    map_name = "All Maps"
-    vd = VisualiseData(data_paths, 'experiments/results/')
-    vd.plotTotalDurationVsAgents()
-
-    # vd.plotNumAgentsVsSensingAccuracy(map_name)
-    # vd.plotNumAgentsVsCollisions()
+    # # data_path = [ 'experiments/results/random_2x3_results.csv']
+    map_name = "Testbed"
+    vd = VisualiseData(testbed_data_path, 'experiments/results/')
+    vd.plotTotalDurationVsAgents(map_name)
+    vd.plotSensingMismatchVsCollisions(map_name)
+    vd.plotNumAgentsVsSensingAccuracy(map_name)
+    vd.plotNumAgentsVsCollisions(map_name)
    

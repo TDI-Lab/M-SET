@@ -51,7 +51,7 @@ class VisualiseData:
         plt.show()
 
   
-    def plotTotalDurationVsAgents(self):
+    def plotTotalDurationVsAgents(self, map_name):
 
         #group the data by strategy and number of agents
         grouped = self.df.groupby(['Strategy', 'n_drones'])
@@ -69,14 +69,14 @@ class VisualiseData:
 
         plt.xlabel('Number of Agents')
         plt.ylabel('Total Duration of Flights (s)')
-        plt.title('Number of Agents vs Total Duration of Flights (s)')
+        plt.title('Number of Agents vs Total Duration of Flights (s) for ' + map_name)
         plt.legend()
 
         #save the plot
-        plt.savefig(self.path_to_save + 'num_agents_vs_total_duration.png')
+        plt.savefig(self.path_to_save + 'num_agents_vs_total_duration_'+map_name+'.png')
         plt.show()
 
-    def plotNumAgentsVsCollisions(self):
+    def plotNumAgentsVsCollisions(self, map_name):
         #plot a line graph where one axis is the number of agents and the other is the number of collisions
         # for each strategy
 
@@ -97,15 +97,15 @@ class VisualiseData:
 
         plt.xlabel('Number of Agents')
         plt.ylabel('Number of Collisions')
-        plt.title('Number of Agents vs Number of Collisions')
+        plt.title('Number of Agents vs Number of Collisions for ' + map_name)
         plt.legend()
 
         #save the plot
-        plt.savefig(self.path_to_save + 'num_agents_vs_collisions.png')
+        plt.savefig(self.path_to_save + 'num_agents_vs_collisions_'+map_name+'.png')
         plt.show()
 
-    def plotSensingMismatchVsCollisions(self):
-         #group the data by strategy and number of agents
+    def plotSensingMismatchVsCollisions(self, map_name):
+        #group the data by strategy and number of agents
         grouped = self.df.groupby(['Strategy', 'Sensing Mismatch %'])
 
         #get mean of sensing accuracy for each num of agents per strategy
@@ -122,11 +122,11 @@ class VisualiseData:
 
         plt.xlabel('% Sensing Mismatch (%)')
         plt.ylabel('Number of Collisions')
-        plt.title('Sensing Mismatch % vs Number of Collisions')
+        plt.title('Sensing Mismatch % vs Number of Collisions for ' + map_name)
         plt.legend()
 
         #save the plot
-        plt.savefig(self.path_to_save + 'num_agents_vs_collisions.png')
+        plt.savefig(self.path_to_save + 'sensing_mismatch_vs_collisions_'+map_name+'.png')
         plt.show()
 
     def plotNumAgentsVsRiskOfCollision(self):

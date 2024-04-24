@@ -211,7 +211,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         count = 0
         drones_not_done = len(drones)
 
-        while drones_not_done > 0 and count < 450:
+        while drones_not_done > 0 and count < 600:
             count += 1
 
             for i, drone in enumerate(drones):
