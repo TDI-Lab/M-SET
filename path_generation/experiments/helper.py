@@ -1,8 +1,13 @@
+from itertools import groupby
 from os import listdir
 from pathlib import Path
+from statistics import mean
+from time import perf_counter
 
 import numpy as np
 from numpy import std
+
+from path_generation.PathGenerator import PathGenerator
 
 PLAN_GENERATION_STANDARD_PROPERTIES = {
     "plan": {
@@ -82,7 +87,7 @@ STANDARD_SYSTEM_CONF = {
 
     "path_generation": {
         "NumberOfPlans": 8,
-        "MaximumNumberOfVisitedCells": 6
+        "PathMode": "normal"
     },
 
     "epos": {
@@ -91,7 +96,6 @@ STANDARD_SYSTEM_CONF = {
         "NumberOfSimulations": 1,
         "IterationsPerSimulation": 32,
         "NumberOfChildren": 2,
-        "PlanDimension": 6,
         "Shuffle": 0,
         "ShuffleFile": "permuation.csv",
         "NumberOfWeights": 2,
@@ -107,22 +111,9 @@ STANDARD_SYSTEM_CONF = {
         "globalCost.reductionThreshold": 0.5,
         "strategy.reorganizationSeed": 0,
         "globalSignalPath": "",
-        "globalCostFunction": "VAR",
+        "globalCostFunction": "MIS",
         "scaling": "STD",
         "localCostFunction": "INDEX",
-        "logger.GlobalCostLogger": "true",
-        "logger.LocalCostMultiObjectiveLogger": "true",
-        "logger.TerminationLogger": "true",
-        "logger.SelectedPlanLogger": "true",
-        "logger.GlobalResponseVectorLogger": "true",
-        "logger.PlanFrequencyLogger": "true",
-        "logger.UnfairnessLogger": "true",
-        "logger.GlobalComplexCostLogger": "false",
-        "logger.WeightsLogger": "false",
-        "logger.ReorganizationLogger": "true",
-        "logger.VisualizerLogger": "false",
-        "logger.PositionLogger": "true",
-        "logger.HardConstraintLogger": "false"
     },
 
     "drone": {
@@ -130,10 +121,10 @@ STANDARD_SYSTEM_CONF = {
         "BodyMass": 1.07,
         "BatteryMass": 0.31,
         "NumberOfRotors": 4,
-        "RotorDiameter": 0.15,
+        "RotorDiameter": 0.35,
         "ProjectedBodyArea": 0.0599,
         "ProjectedBatteryArea": 0.0037,
-        "PowerEfficiency": 1.25,
+        "PowerEfficiency": 0.8,
         "GroundSpeed": 6.94,
         "AirSpeed": 8.5
     },
@@ -146,6 +137,7 @@ STANDARD_SYSTEM_CONF = {
 
 def get_parent_path():
     return Path(__file__).parent.resolve()
+
 
 def __compute_mean_several_runs(self, data):
     avg_costs = []
@@ -176,13 +168,6 @@ def __load_target(self, target):
         goal = file.readlines()
     goal = np.array([float(i) for i in goal[0].strip("\n").split(",")])
     return goal
-
-
-def perform_experiments(self):
-    funcs = list(filter(lambda x: x[0:10] == "experiment", dir(PathGenerationResultsCollector)))
-    for func in funcs:
-        result_func = getattr(PathGenerationResultsCollector, func)
-        result_func(self)
 
 
 def __retrieve_file_data(self, filename, headers=False):
@@ -275,3 +260,13 @@ def __gaussian_filter(self, kernel_size, sigma=1, muu=0):
     # lower normal part of gaussian
     g = np.exp(-((dst - muu) ** 2 / (2.0 * sigma ** 2)))
     return g
+
+
+def write_results_to_file(result_dir, result_name, headers, results):
+    stamp = str(perf_counter()).replace(".", "")
+    rows = [",".join(headers) + "\n"]
+    for result in results:
+        rows.append(",".join(result) + "\n")
+    with open(f"{result_dir}/{result_name}_{stamp}.csv", "w") as file:
+        file.writelines(rows)
+    print(f"Results saved under {result_dir}/{result_name}_{stamp}.csv")
