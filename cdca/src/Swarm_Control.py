@@ -7,7 +7,7 @@ from .Offline_Collision_Stats import Offline_Collision_Stats
 from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, MAX_GRID_OFFSET, MIN_GRID_OFFSET, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 from random import randint
 
 class Swarm_Control:
@@ -53,7 +53,8 @@ class Swarm_Control:
       'risk_of_collision': round(offline_collision_stats.get_risk_of_collision(), 3),
       'total_duration_of_flights': offline_collision_stats.get_total_flights_duration(),
       'number_of_flights': offline_collision_stats.get_number_of_flights(),
-      'average_collisions_per_flight': round(offline_collision_stats.get_average_collisions_per_flight(), 3)
+      'average_collisions_per_flight': round(offline_collision_stats.get_average_collisions_per_flight(), 3),
+      'total_hover_duration': offline_collision_stats.get_total_hover_time()
     }
 
     print('\nCollision Data: \n')
@@ -133,7 +134,7 @@ class Swarm_Control:
     return drone_positions
 
 
-  def visualise_swarm(self, title=""):
+  def visualise_swarm(self, title="", save=False, filepath=None):
     discreet_positions = self.discretise_flight_paths(self.drones)
 
     fig = plt.figure()
@@ -141,7 +142,7 @@ class Swarm_Control:
 
     scatters = []
     for i in range(len(discreet_positions)):
-        scatter = ax.scatter([], [], [], label=f'Drone {i+1}', s=50)
+        scatter = ax.scatter([], [], [])
         scatters.append(scatter)
 
     ax.set_xlabel('X')
@@ -177,7 +178,8 @@ class Swarm_Control:
     total_frames = int(len(discreet_positions[0])  * FRAMES_PER_TIMESTEP )
 
     ani = FuncAnimation(fig, update, fargs=(scatters, discreet_positions), frames=total_frames, interval=(FRAMES_PER_TIMESTEP/TIME_STEP)/100, blit=False, repeat=False)
-
+     
+  
     plt.show()
 
   @staticmethod

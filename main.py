@@ -7,7 +7,7 @@ import copy
 from cdca.src.Input_Parser import Input_Parser
 from cdca.src.Potential_Fields_Collision_Avoidance import Potential_Fields_Collision_Avoidance
 from cdca.src.Swarm_Control import Swarm_Control
-# from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
+from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidance
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from experiments.MeasureSensing import MeasureSensing
 from experiments.VisualiseData import VisualiseData
@@ -33,8 +33,14 @@ class Config:
 
         self.config.read(config_file_path)
 
-    
-def write_results_to_csv(data, config, greedy=False, testbed=False):
+def sum_hover_times(plans):
+    total_duration = 0
+    for drone in plans:
+        for plan in drone:
+            total_duration += plan[1]
+    return total_duration
+        
+def write_results_to_csv(data, config, experiment_name=None,greedy=False, testbed=False):
 
     # Now you can access the values in the config file like this:
     mission_name = config.config.get('global', 'MissionName')
@@ -45,7 +51,14 @@ def write_results_to_csv(data, config, greedy=False, testbed=False):
     if testbed:
         mission_name += '_testbed'
 
-    results_path = 'experiments/results/'+mission_name+'_results.csv'
+    if experiment_name is not None:
+        #if folder called experiment_name at 'experiments/results/' does not exist, create it
+        if not os.path.exists('experiments/results/'+experiment_name):
+            os.makedirs('experiments/results/'+experiment_name)
+            experiment_name = experiment_name + '/'
+    else:
+        experiment_name = ''
+    results_path = 'experiments/results/'+experiment_name + '/' + mission_name+'_results.csv'
 
     header_exists = os.path.isfile(results_path)
     
@@ -56,15 +69,17 @@ def write_results_to_csv(data, config, greedy=False, testbed=False):
 
         # Write the header if it doesn't exist
         if not header_exists:
-            writer.writerow(['Strategy', 'n_drones', 'Plan', 'Sensing Mismatch %','Total Collisions', 'Cross Collisions', 'Parallel_Collisions', 'Cell Occupied Collisions', 'Total Flights Distance', 'Total Collision Distance', 'Risk of Collision', 'Total Duration of Flights', 'Number of Flights', 'Average Collisions per Flight'])
+            writer.writerow(['Strategy', 'n_drones', 'Plan', 'Sensing Mismatch %','Total Collisions', 'Cross Collisions', 'Parallel_Collisions', 'Cell Occupied Collisions', 'Total Flights Distance', 'Total Collision Distance', 'Risk of Collision', 'Total Duration of Flights', 'Total Hover Duration',  'Number of Flights', 'Average Collisions per Flight'])
         
         # Write the data
         for strategy, _ in data['plans'].items():
             collisions = data['results'][strategy]
             sensing_mismatch = data['sensing mismatch'][strategy]
             plans = data['plans'][strategy]
+            if len(str(plans)) > 32767 - 1:
+                plans = "Too many plans to display"
             # Join the plans into a single string
-            writer.writerow([strategy, n_drones, plans, sensing_mismatch, collisions['number_of_collisions'], collisions['number_of_cross_collisions'],collisions['number_of_parallel_collisions'], collisions['number_of_dest_occupied_collisions'], collisions['total_flights_distance'], collisions['total_collision_distance'], collisions['risk_of_collision'], collisions['total_duration_of_flights'], collisions['number_of_flights'], collisions['average_collisions_per_flight']])
+            writer.writerow([strategy, n_drones, plans, sensing_mismatch, collisions['number_of_collisions'], collisions['number_of_cross_collisions'],collisions['number_of_parallel_collisions'], collisions['number_of_dest_occupied_collisions'], collisions['total_flights_distance'], collisions['total_collision_distance'], collisions['risk_of_collision'], collisions['total_duration_of_flights'],collisions['total_hover_duration'], collisions['number_of_flights'], collisions['average_collisions_per_flight']])
         
         # Add a blank line for readability
         writer.writerow([])
@@ -82,16 +97,25 @@ def create_new_random_sensing_mission(size_n, size_m):
             cell_id += 1
 
 
-    
-    rows.append(f"BASE,0,{(size_n + 1) / 2},0,0,0\n")
-    rows.append(f"BASE,1,0,{(size_m + 1) / 2},0,0\n")
-    rows.append(f"BASE,2,{size_n + 1},{(size_m + 1) / 2},0,0\n")
-    rows.append(f"BASE,3,{(size_n + 1) / 2},{(size_m + 1) },0,0\n")
+    rows.append(f"BASE,1,0,0,0,0\n")
+    rows.append(f"BASE,2,{size_n + 1},0,0,0\n")
+    rows.append(f"BASE,3,0,{size_m + 1},0,0\n")
+    rows.append(f"BASE,4,{size_n + 1},{size_m + 1},0,0\n")
 
-    rows.append(f"BASE,4,0,0,0,0\n")
-    rows.append(f"BASE,5,{size_n + 1},0,0,0\n")
-    rows.append(f"BASE,6,0,{size_m + 1},0,0\n")
-    rows.append(f"BASE,7,{size_n + 1},{size_m + 1},0,0\n")
+    rows.append(f"BASE,5,{(size_n + 1) / 2},0,0,0\n")
+    rows.append(f"BASE,6,0,{(size_m + 1) / 2},0,0\n")
+    rows.append(f"BASE,7,{size_n + 1},{(size_m + 1) / 2},0,0\n")
+    rows.append(f"BASE,8,{(size_n + 1) / 2},{(size_m + 1) },0,0\n")
+
+    rows.append(f"BASE,9,{(size_n + 1) * 0.75},0,0,0\n")
+    rows.append(f"BASE,10,0,{(size_m + 1) * 0.75},0,0\n")
+    rows.append(f"BASE,11,{size_n + 1},{(size_m + 1)* 0.75},0,0\n")
+    rows.append(f"BASE,12,{(size_n + 1) * 0.75},{(size_m + 1) },0,0\n")
+
+    rows.append(f"BASE,13,{(size_n + 1) * 0.25},0,0,0\n")
+    rows.append(f"BASE,14,0,{(size_m + 1) * 0.25},0,0\n")
+    rows.append(f"BASE,15,{size_n + 1},{(size_m + 1)* 0.25},0,0\n")
+    rows.append(f"BASE,16,{(size_n + 1) * 0.25},{(size_m + 1) },0,0\n")
     
     with open(f"examples/{mission_name}", "w") as file:
         for row in rows:
@@ -125,7 +149,7 @@ def create_new_testbed_sensing_mission():
 
     return mission_name
 
-def experiment_1and2_iteration(n_drones, mission_name):
+def experiment_iteration(n_drones, mission_name):
 
     pg = PathGenerator()
     plans = pg.generate_paths()
@@ -150,43 +174,33 @@ def experiment_1and2_iteration(n_drones, mission_name):
     swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=False))
     swarm_controller3 = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
     # swarm_controller.visualise_swarm()
-    # priority_map = swarm_controller.determine_priority(parsed_plans)
-    # swarm_controller4 = Swarm_Control(parsed_plans, Basic_Collision_Avoidance(priority_map=priority_map))
 
     swarm_controller2.detect_potential_collisions()
-    # swarm_controller2.drones_to_plan()
     swarm_controller3.detect_potential_collisions()
-    # swarm_controller2.visualise_swarm()
-    # swarm_controller4.detect_potential_collisions()
+
 
 
     no_ca_plans =  swarm_controller.plans
     pf_plans = swarm_controller2.plans
     basic_plans = swarm_controller3.plans
-    #  no_ca_plans =  [[plan1 for plan1 in drone.plan] for drone in swarm_controller.drones]
-    # pf_plans = [[plan2 for plan2 in drone.plan] for drone in swarm_controller2.drones]
-    # basic_plans = [[plan3 for plan3 in drone.plan] for drone in swarm_controller3.drones]
 
-    # priority_plans = [[plan4 for plan4 in drone.plan] for drone in swarm_controller4.drones]
+
 
     return {
     'plans': {
         'no_ca':no_ca_plans,
         'pf_ca': pf_plans,
         'basic_ca':basic_plans,
-        # 'priority_ca': priority_plans,
     },
     'results': {
         'no_ca': swarm_controller.get_offline_collision_stats(),
         'pf_ca': swarm_controller2.get_offline_collision_stats(),
         'basic_ca': swarm_controller3.get_offline_collision_stats(),
-        # 'priority_ca': swarm_controller4.get_offline_collision_stats(),
     },
     'sensing mismatch': {
         'no_ca': sensing.measure_sensing(no_ca_plans),
         'pf_ca': sensing.measure_sensing(pf_plans),
         'basic_ca': sensing.measure_sensing(basic_plans),
-        # 'priority_ca': sensing.measure_sensing(priority_plans),
     }
 }
 def experiment_testbed():
@@ -210,7 +224,7 @@ def experiment_testbed():
                 config.config.write(configfile)
             mission_name = create_new_testbed_sensing_mission()
 
-            data = experiment_1and2_iteration(n_drones, mission_name)
+            data = experiment_iteration(n_drones, mission_name)
             write_results_to_csv(data, config, testbed=True)
                 
 def run_experiment_1and2(greedy):
@@ -238,13 +252,38 @@ def run_experiment_1and2(greedy):
                     config.config.write(configfile)
                 mission_name = create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
 
-                data = experiment_1and2_iteration(n_drones, mission_name)
-                write_results_to_csv(data, config, greedy=greedy)
-                
+                data = experiment_iteration(n_drones, mission_name)
+                write_results_to_csv(data, config, experiment_name='test',greedy=greedy)
+
+def run_pneuma_experiment():
+
+    config = Config('drone_sense.properties')
+    abs_path = os.path.abspath('.')
+    config.config.set('global', 'MissionName', f"pneuma")
+
+    config.config.set('global', 'MissionFile', f"{abs_path}/examples/pneuma.csv")
+    
+    #set drone properties
+    # config.config.set('drone', 'BatteryCapacity', f"1")
+
+
+    for _ in range(n_iterations):
+        for n_drones in drones:
+            config.config.set('global', 'NumberOfDrones', f"{n_drones}")
+
+            with open(config.config_file_path, 'w') as configfile:
+                config.config.write(configfile)
+            mission_name = "pneuma.csv"
+
+            data = experiment_iteration(n_drones, mission_name)
+            write_results_to_csv(data, config, greedy=greedy)
+            
+
+
 
 
 if __name__ == '__main__':
-    # run_experiment_1and2(greedy=True)
+    run_experiment_1and2(greedy=False)
     # experiment_testbed()
     # data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
     #               'experiments/results/random_6x6_results.csv',  'experiments/results/random_8x8_results.csv',
@@ -266,10 +305,10 @@ if __name__ == '__main__':
     #     vd = VisualiseData(path, 'experiments/results/')
     #     vd.plotNumAgentsVsSensingAccuracy(map_name)
     # # data_path = [ 'experiments/results/random_2x3_results.csv']
-    map_name = "Testbed"
-    vd = VisualiseData(testbed_data_path, 'experiments/results/')
-    vd.plotTotalDurationVsAgents(map_name)
-    vd.plotSensingMismatchVsCollisions(map_name)
-    vd.plotNumAgentsVsSensingAccuracy(map_name)
-    vd.plotNumAgentsVsCollisions(map_name)
+    # map_name = "Testbed"
+    # vd = VisualiseData(testbed_data_path, 'experiments/results/')
+    # vd.plotTotalDurationVsAgents(map_name)
+    # vd.plotSensingMismatchVsCollisions(map_name)
+    # vd.plotNumAgentsVsSensingAccuracy(map_name)
+    # vd.plotNumAgentsVsCollisions(map_name)
    

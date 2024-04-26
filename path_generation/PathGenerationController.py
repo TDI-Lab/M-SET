@@ -66,6 +66,8 @@ class PathGenerationController:
 
     def __construct_epos_properties(self):
         mission_name = self.config.get('global', 'MissionName')
+        with open(f"{self.parent_path}/EPOS/datasets/{mission_name}/{mission_name}.target", "r") as file:
+            target_vector_length = len(file.readlines()[0].split(","))
         properties = {
             "dataset": mission_name,
             "numSimulations": self.config.get("epos", "NumberOfSimulations"),
@@ -73,7 +75,7 @@ class PathGenerationController:
             "numAgents": self.config.get("global", "NumberOfDrones"),
             "numPlans": self.config.get("path_generation", "NumberOfPlans"),
             "numChildren": self.config.get("epos", "NumberOfChildren"),
-            "planDim": self.config.get("epos", "PlanDimension"),
+            "planDim": target_vector_length,
             "shuffle": self.config.get("epos", "Shuffle"),
             "shuffle_file": self.config.get("epos", "ShuffleFile"),
             "numberOfWeights": self.config.get("epos", "NumberOfWeights"),
@@ -93,19 +95,19 @@ class PathGenerationController:
             "globalCostFunction": self.config.get("epos", "globalCostFunction"),
             "scaling": self.config.get("epos", "scaling"),
             "localCostFunction": self.config.get("epos", "localCostFunction"),
-            "logger.GlobalCostLogger": self.config.get("epos", "logger.GlobalCostLogger"),
-            "logger.LocalCostMultiObjectiveLogger": self.config.get("epos", "logger.LocalCostMultiObjectiveLogger"),
-            "logger.TerminationLogger": self.config.get("epos", "logger.TerminationLogger"),
-            "logger.SelectedPlanLogger": self.config.get("epos", "logger.SelectedPlanLogger"),
-            "logger.GlobalResponseVectorLogger": self.config.get("epos", "logger.GlobalResponseVectorLogger"),
-            "logger.PlanFrequencyLogger": self.config.get("epos", "logger.PlanFrequencyLogger"),
-            "logger.UnfairnessLogger": self.config.get("epos", "logger.UnfairnessLogger"),
-            "logger.GlobalComplexCostLogger": self.config.get("epos", "logger.GlobalComplexCostLogger"),
-            "logger.WeightsLogger": self.config.get("epos", "logger.WeightsLogger"),
-            "logger.ReorganizationLogger": self.config.get("epos", "logger.ReorganizationLogger"),
-            "logger.VisualizerLogger": self.config.get("epos", "logger.VisualizerLogger"),
-            "logger.PositionLogger": self.config.get("epos", "logger.PositionLogger"),
-            "logger.HardConstraintLogger": self.config.get("epos", "logger.HardConstraintLogger")
+            "logger.GlobalCostLogger": "true",
+            "logger.LocalCostMultiObjectiveLogger": "true",
+            "logger.TerminationLogger": "true",
+            "logger.SelectedPlanLogger": "true",
+            "logger.GlobalResponseVectorLogger": "true",
+            "logger.PlanFrequencyLogger": "true",
+            "logger.UnfairnessLogger": "true",
+            "logger.GlobalComplexCostLogger": "true",
+            "logger.WeightsLogger": "true",
+            "logger.ReorganizationLogger": "true",
+            "logger.VisualizerLogger": "false",
+            "logger.PositionLogger": "true",
+            "logger.HardConstraintLogger": "true"
         }
         return properties
 
