@@ -105,9 +105,13 @@ def calc_energy_consumption(flight_time,method,voltage_poly_coeff):
 
 
 if __name__ == '__main__':
-    hover_power = 1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
+    os.chdir(original_cwd)
+    hover_power = 1.7583430197900498#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
     flight_power = hover_power # 1.128288294545468 # W
-    voltage_poly_coeff=[-4.60990873e-10, 1.76874340e-07, -1.85072541e-05, -1.00546782e-03, -9.19204536e-03]
+    #voltage_poly_coeff=[-4.60990873e-10, 1.76874340e-07, -1.85072541e-05, -1.00546782e-03, -9.19204536e-03] # moving
+    voltage_poly_coeff = [-3.54280460e-11,  1.14158206e-08,  2.20841775e-06, -2.14997073e-03, -3.66082298e-02] # hovering
+    #voltage_poly_coeff = [-1.77768893e-08,  9.93408521e-06, -2.85530205e-03, -2.22369528e-02] # hovering, deg=3
+    #voltage_poly_coeff = [-5.04951815e-13,  4.84672324e-10, -1.78941756e-07,  3.15654831e-05,-3.86950027e-03, -1.33939207e-02]
 
     os.chdir(original_cwd)
     #path = [[[[0.0, 0.0], 1], [[1.0, 1.0], 4], [[1.0, 2.0], 4], [[2.0, 1.0], 8], [[0.0, 0.0], 1]], [[[4.0, 0.0], 2]], [[[4.0, 3.0], 1], [[3.0, 2.0], 9], [[2.0, 2.0], 4], [[3.0, 1.0], 4], [[4.0, 3.0], 1]], [[[0.0, 3.0], 1], [[1.0, 2.0], 1], [[2.0, 2.0], 0], [[2.0, 1.0], 0], [[1.0, 1.0], 1], [[0.0, 3.0], 1]]]
@@ -119,19 +123,21 @@ if __name__ == '__main__':
     hover_time, flight_time, total_time = calc_total_times(path, input_mode, speed)
     hover_energy, flight_energy, total_energy = calc_total_energy(hover_power,flight_power,hover_time,flight_time)
     
+    """
     print("")
     print("Total air time is %s s" % total_time)
     print("EPOS:  Total energy is %s J" % total_energy)
     
     model_energy = calc_energy_consumption(total_time,"polynomial",voltage_poly_coeff)
     print("Model: Total energy is %s J" % model_energy)
+    """
 
-
-    max_air_time = 420 # 7 minutes
+    max_t = 550 # 7 minutes
+    expected_max_flight_duration = 420 # 7 mins
     battery_capacity = 925
-    X = [i for i in range(0,max_air_time)]
-    epos_E = [calc_total_energy(hover_power,flight_power,t,0)[2] for t in range(0,max_air_time)]
-    model_E = [calc_energy_consumption(t,"polynomial",voltage_poly_coeff) for t in range(0,max_air_time)]
+    X = [i for i in range(0,max_t)]
+    epos_E = [calc_total_energy(hover_power,flight_power,t,0)[2] for t in range(0,max_t)]
+    model_E = [calc_energy_consumption(t,"polynomial",voltage_poly_coeff) for t in range(0,max_t)]
     weights = np.ones_like(X)
     weights[0] = 1000
     a, b = np.polyfit(X,model_E,1,w=weights)
@@ -139,10 +145,10 @@ if __name__ == '__main__':
     trapz = [-np.trapz(poly[:x])*avg_current for x in X]
     plt.plot(X,epos_E,label='epos battery model')
     plt.plot(X,model_E,label='hardware battery model',color='green')
-    #plt.plot(X,trapz, label='trapz')
+    plt.plot(X,trapz, label='trapz')
     plt.plot(X,[a*x+b for x in X], label='line of best fit (weighted to pass through (0,0))', linestyle='dashdot') # Line of best fit for model_E. Issues as it doesn't intersect (0,0)
-    plt.plot(X,[battery_capacity for x in X], label="battery capacity (925J)", color='red', linestyle='dashed')
-    plt.axvline(388.5, label='Expected max. flight duration (388s)', color='red', linestyle='dotted')
+    plt.plot(X,[battery_capacity for x in X], label="battery capacity (%sJ)" % battery_capacity, color='red', linestyle='dashed')
+    plt.axvline(expected_max_flight_duration, label='Expected max. flight duration (388s)', color='red', linestyle='dotted')#388.5
     plt.xlabel("Mission duration (s)")
     plt.ylabel("Energy Expended (J)")
     plt.title("Comparison of battery consumption models")
