@@ -60,7 +60,7 @@ def read_formatted_data(out_filename):
 
     return np.array(vals)
 
-def retrieve_fields(vals):
+def retrieve_fields(vals,avg_current):
     time = vals[:, 0].astype(float)
     val_count = vals[:, 1].astype(float)
     id = vals[:, 2]
@@ -166,7 +166,7 @@ def get_voltages_lost(drones,vals_by_id):
 
     return voltages_lost, counts
 
-def initialise_voltage_metrics():
+def initialise_voltage_metrics(min_count,max_count):
     total_voltages_lost = []
     avg_lost = []
     divisor = []
@@ -179,7 +179,7 @@ def initialise_voltage_metrics():
     
     return V, total_voltages_lost, avg_lost, divisor
 
-def calc_average_vloss():
+def calc_average_vloss(min_count, max_count, avg_lost, total_voltages_lost, divisor):
     for flight_time in range(0, max_count-min_count):
         try:
             avg_lost[flight_time] = total_voltages_lost[flight_time]/min(len(drones),divisor[flight_time])
@@ -188,7 +188,7 @@ def calc_average_vloss():
 
     return avg_lost
 
-def calculate_voltage_metrics():
+def calculate_voltage_metrics(V, total_voltages_lost, avg_lost, divisor, counts, voltages_lost, count_end_times, min_count, max_count):
     for count in range(min_count, max_count):
         flight_time = count-min_count
 
@@ -205,11 +205,11 @@ def calculate_voltage_metrics():
                 print(drone,count)
                 #print(counts[drone-1].index(count)
 
-    avg_lost = calc_average_vloss()
+    avg_lost = calc_average_vloss(min_count, max_count, avg_lost, total_voltages_lost, divisor)
 
     return V, total_voltages_lost, avg_lost, divisor
 
-def plot_flighttime_voltageloss():
+def plot_flighttime_voltageloss(drones,min_count,max_count,avg_lost,V):
     print(drones)
     for drone in drones:
         #voltages_len = len(voltages_lost[drone-1][min_count:max_count]) # check
@@ -229,29 +229,85 @@ def plot_flighttime_voltageloss():
     plt.legend()
     plt.show()
 
+def get_total_power(avg_current, total_voltages_lost):
+    Ps = [v*avg_current for v in total_voltages_lost]
+    return Ps
+
+def get_total_energy(avg_current,total_voltages_lost):
+    Ps = get_total_power(avg_current, total_voltages_lost)
+    Energy = -sum(Ps)
+    return Energy
+
+def batch_cacl_total_energy(filenames, drones_list):
+    total_energy = []
+
+    for i in range(0,len(filenames)):
+        in_filename=filenames[i][0]
+        out_filename=filenames[i][1]
+        drones = drones_list[i]
+
+        format_data(in_filename, out_filename)
+        vals = read_formatted_data(out_filename)
+
+        # Regular vals
+        avg_current = 3.75
+        time, val_count, id, batteryP, voltage, power = retrieve_fields(vals,avg_current)
+
+        # Vals split by id
+        vals_by_id = get_vals_by_id(vals)
+
+        voltages_lost, counts = get_voltages_lost(drones,vals_by_id)
+        counts = make_counts_contiguous(drones,counts) # REMOVE?
+
+        count_start_times, count_end_times, count_flight_times = get_count_flight_times(drones, vals_by_id)
+        min_count = int(max(count_start_times)) # latest flight end
+        max_count = int(max(count_end_times)) # latest flight start
+
+        V, total_voltages_lost, avg_lost, divisor = initialise_voltage_metrics(min_count,max_count)
+        V, total_voltages_lost, avg_lost, divisor = calculate_voltage_metrics(V, total_voltages_lost, avg_lost, divisor, counts, voltages_lost, count_end_times, min_count, max_count)
+
+        #plot_flighttime_voltageloss(drones,min_count,max_count,avg_lost,V)
+
+        total_path_energy = get_total_energy(avg_current, total_voltages_lost)
+
+        total_energy.append(total_path_energy)
+
+    return total_energy
+
 if __name__=="__main__":
-    in_filename = "Hardware/Hardware Results/eval_4dronescdca_manual2"
-    out_filename = "Hardware/Hardware Results/dataReformatted.txt"
-    drones = [1,2,3,4]
+    # in_filename = "Hardware/Hardware Results/eval_4dronescdca_manual2"
+    # out_filename = "Hardware/Hardware Results/dataReformatted.txt"
+    # drones = [1,2,3,4]
 
-    format_data(in_filename, out_filename)
-    vals = read_formatted_data(out_filename)
+    # format_data(in_filename, out_filename)
+    # vals = read_formatted_data(out_filename)
 
-    # Regular vals
-    avg_current = 3.75
-    time, val_count, id, batteryP, voltage, power = retrieve_fields(vals)
+    # # Regular vals
+    # avg_current = 3.75
+    # time, val_count, id, batteryP, voltage, power = retrieve_fields(vals)
 
-    # Vals split by id
-    vals_by_id = get_vals_by_id(vals)
+    # # Vals split by id
+    # vals_by_id = get_vals_by_id(vals)
 
-    voltages_lost, counts = get_voltages_lost(drones,vals_by_id)
-    counts = make_counts_contiguous(drones,counts) # REMOVE?
+    # voltages_lost, counts = get_voltages_lost(drones,vals_by_id)
+    # counts = make_counts_contiguous(drones,counts) # REMOVE?
 
-    count_start_times, count_end_times, count_flight_times = get_count_flight_times(drones, vals_by_id)
-    min_count = int(max(count_start_times)) # latest flight end
-    max_count = int(max(count_end_times)) # latest flight start
+    # count_start_times, count_end_times, count_flight_times = get_count_flight_times(drones, vals_by_id)
+    # min_count = int(max(count_start_times)) # latest flight end
+    # max_count = int(max(count_end_times)) # latest flight start
 
-    V, total_voltages_lost, avg_lost, divisor = initialise_voltage_metrics()
-    V, total_voltages_lost, avg_lost, divisor = calculate_voltage_metrics()
+    # V, total_voltages_lost, avg_lost, divisor = initialise_voltage_metrics()
+    # V, total_voltages_lost, avg_lost, divisor = calculate_voltage_metrics(V, total_voltages_lost, avg_lost, divisor)
 
-    plot_flighttime_voltageloss()
+    # plot_flighttime_voltageloss(drones,min_count,max_count,avg_lost,V)
+
+    # total_path_energy = get_total_energy(avg_current, total_voltages_lost)
+
+    drones = [[1],[1,2],[1,2,3],[1,2,3,4]]
+    filenames = [["Hardware/Hardware Results/eval_1dronescdca_manual","Hardware/Hardware Results/dataReformatted.txt"],["Hardware/Hardware Results/eval_2dronescdca_manual","Hardware/Hardware Results/dataReformatted.txt"],["Hardware/Hardware Results/eval_3dronescdca_manual","Hardware/Hardware Results/dataReformatted.txt"],["Hardware/Hardware Results/eval_4dronescdca_manual2","Hardware/Hardware Results/dataReformatted.txt"]]
+    energy_consumptions = batch_cacl_total_energy(filenames, drones)
+
+    x = [len(d) for d in drones]
+    y = energy_consumptions
+    print(x,y)
+    plt.plot(x,y)
