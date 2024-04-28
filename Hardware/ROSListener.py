@@ -20,7 +20,7 @@ print(os.getcwd())
 try:
    file = open("Hardware Results/%s" % output_file, "w")
 except:
-   print("WARNING: FILE NOT FOUND")
+   print("WARNING: LOG OUTPUT FILE NOT FOUND")
 start = time.time()
 
 #current = os.getcwd()
@@ -33,7 +33,7 @@ status = ["idle", "idle", "idle", "idle"]
 #os.chdir(current)
 
 count=0
-c=1
+c=0
 def callback(data,args):
    global c
    global count
@@ -63,9 +63,9 @@ def callback(data,args):
       #file.write(str(time.time()-start)+"/?/"+str(count)+"/?/"+str(id)+"/?/"+str(data.values))
       file.write(str(",".join((str(time.time()-start),str(count),str(id),str(data.values),"\""+str(status[int(id)-1])+"\""))))
       #file.write(str(data.values))
-   
+      c+=1
+
    count = c // ndrones
-   c+=1
    #print(data.values) # This also works to just print it out to the cmd, but idk if it does different things in the background
 
 #https://forum.bitcraze.io/viewtopic.php?t=5190
