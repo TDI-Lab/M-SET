@@ -112,14 +112,15 @@ def get_count_flight_times(drones, vals_by_id):
         if drone in drones:
             start=vals_by_id[drone-1][0]
             Vs=[float(row[3]) for row in vals_by_id[drone-1]]
-            end=vals_by_id[drone-1][Vs.index(min(Vs))] # NOTE THAT THIS CAN SOMETIMES BE THROWN OFF BY OUTLIERS (e.g. if there is an outlier of low voltage early in the flight)
             # print("")
             # print([v for v in Vs])
             # print([(Vs.index(v)+1) for v in Vs])
             weighted_minimums=[v/(Vs.index(v)+1) for v in Vs]
             #print(weighted_minimums)
             # print(min(weighted_minimums))
-            end=vals_by_id[drone-1][weighted_minimums.index(min(weighted_minimums))] # NOTE THAT THIS OVERRIDES THE EARLIER VALUE OF end IF THAT WAS UNCOMMENTED
+
+            #end=vals_by_id[drone-1][weighted_minimums.index(min(weighted_minimums))] # NOTE THAT THIS OVERRIDES THE EARLIER VALUE OF end IF THAT WAS UNCOMMENTED
+            end=vals_by_id[drone-1][Vs.index(min(Vs))] # NOTE THAT THIS CAN SOMETIMES BE THROWN OFF BY OUTLIERS (e.g. if there is an outlier of low voltage early in the flight)
             print(vals_by_id[drone-1][int(end[1])-5:])
 
             count_start = start[1]
