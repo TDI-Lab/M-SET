@@ -193,10 +193,11 @@ def parse_input(input_path, allcfs, speed, next_moves):
             for position in drone:
                 if INPUT_MODE == "cdca":
                     d.positions.append(position[0])
-                    d.times.append(int(position[1]))
+                    d.times.append(float(position[1]))
                 elif INPUT_MODE == "default":
                     d.positions.append(position)
                     d.times.append(0)
+            print(d.times)
             
             next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
 
@@ -443,7 +444,8 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones,5)
+            if IN_SIMULATION == False:
+                set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
