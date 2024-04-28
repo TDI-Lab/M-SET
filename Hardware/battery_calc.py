@@ -88,18 +88,18 @@ def calc_loss_level(flight_length):
   return max(0,(flight_length/count_per_level))
 """
 
-def calc_power_consumption(flight_length, method, voltage_poly_coeff):
+def calc_power_consumption(flight_length, method, voltage_poly_coeff,avg_current):
   power = avg_current*calc_loss_v(flight_length,method,voltage_poly_coeff)
   return power
 
-def calc_energy_consumption(flight_time,method,voltage_poly_coeff):
+def calc_energy_consumption(flight_time,method,voltage_poly_coeff,avg_current):
     # E = Pt = (IV)t
     total_energy = 0
     for t in range(1,math.ceil(flight_time)+1):
         if t != math.ceil(flight_time):
-            total_energy += calc_power_consumption(t,method,voltage_poly_coeff) * 1 # P*t
+            total_energy += calc_power_consumption(t,method,voltage_poly_coeff,avg_current) * 1 # P*t
         else:
-            total_energy += calc_power_consumption(t,method,voltage_poly_coeff) * (math.ceil(flight_time)-flight_time)
+            total_energy += calc_power_consumption(t,method,voltage_poly_coeff,avg_current) * (math.ceil(flight_time)-flight_time)
     return total_energy
 
 
@@ -112,6 +112,13 @@ if __name__ == '__main__':
     voltage_poly_coeff = [-3.54280460e-11,  1.14158206e-08,  2.20841775e-06, -2.14997073e-03, -3.66082298e-02] # hovering
     #voltage_poly_coeff = [-1.77768893e-08,  9.93408521e-06, -2.85530205e-03, -2.22369528e-02] # hovering, deg=3
     #voltage_poly_coeff = [-5.04951815e-13,  4.84672324e-10, -1.78941756e-07,  3.15654831e-05,-3.86950027e-03, -1.33939207e-02]
+    voltage_poly_coeff = [ -2.59269349e-12, -1.80094258e-08,  -8.52202375e-06, 2.23200514e-03,  -3.57061644e+00]# raw values, as opposed to loss
+    voltage_poly_coeff = [ -2.59269349e-12, 1.80094258e-08,  -8.52202375e-06, 2.23200514e-03, -3.57061644e+00]
+
+    #voltage_poly_coeff = [ 3.63462497e-11, -5.91513731e-08,  2.59456279e-05, -5.26286565e-03, -3.21289123e-01] # hovering (all records)
+    voltage_poly_coeff = [-3.93539944e-11,  1.49469540e-08, 1.17748602e-06, -2.04974506e-03, -3.75124204e-02] # hovering (from after take-off)
+    #voltage_poly_coeff = [-1.74807373e-08,  9.75927102e-06, -2.83323746e-03, -2.15485945e-02]
+    #voltage_poly_coeff = [-0.0014851  -0.05277076]
 
     os.chdir(original_cwd)
     #path = [[[[0.0, 0.0], 1], [[1.0, 1.0], 4], [[1.0, 2.0], 4], [[2.0, 1.0], 8], [[0.0, 0.0], 1]], [[[4.0, 0.0], 2]], [[[4.0, 3.0], 1], [[3.0, 2.0], 9], [[2.0, 2.0], 4], [[3.0, 1.0], 4], [[4.0, 3.0], 1]], [[[0.0, 3.0], 1], [[1.0, 2.0], 1], [[2.0, 2.0], 0], [[2.0, 1.0], 0], [[1.0, 1.0], 1], [[0.0, 3.0], 1]]]
@@ -128,16 +135,16 @@ if __name__ == '__main__':
     print("Total air time is %s s" % total_time)
     print("EPOS:  Total energy is %s J" % total_energy)
     
-    model_energy = calc_energy_consumption(total_time,"polynomial",voltage_poly_coeff)
+    model_energy = calc_energy_consumption(total_time,"polynomial",voltage_poly_coeff,avg_current)
     print("Model: Total energy is %s J" % model_energy)
     """
 
-    max_t = 750 # 550. This is just the max x of the graph
+    max_t = 500 # 550. This is just the max x of the graph
     expected_max_flight_duration = 420 # 7 mins
-    battery_capacity = 925 # I think this should actually be 3330
+    battery_capacity = 3330
     X = [i for i in range(0,max_t)]
     epos_E = [calc_total_energy(hover_power,flight_power,t,0)[2] for t in range(0,max_t)]
-    model_E = [calc_energy_consumption(t,"polynomial",voltage_poly_coeff) for t in range(0,max_t)]
+    model_E = [calc_energy_consumption(t,"polynomial",voltage_poly_coeff,avg_current) for t in range(0,max_t)]
     weights = np.ones_like(X)
     weights[0] = 1000
     a, b = np.polyfit(X,model_E,1,w=weights)
