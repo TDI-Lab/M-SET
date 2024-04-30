@@ -139,7 +139,7 @@ if __name__ == '__main__':
     print("Model: Total energy is %s J" % model_energy)
     """
 
-    max_t = 500 # 550. This is just the max x of the graph
+    max_t = 700 # 550. This is just the max x of the graph
     expected_max_flight_duration = 420 # 7 mins
     battery_capacity = 3330
     X = [i for i in range(0,max_t)]
