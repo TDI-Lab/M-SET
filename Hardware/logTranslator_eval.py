@@ -196,7 +196,7 @@ def calculate_voltage_metrics(drones, V, total_voltages_lost, avg_lost, divisor,
 
         for drone in drones:
             try:
-                #print(count_end_times[drone-1])
+                print(count_end_times[drone-1])
                 if count <= count_end_times[drone-1]:
                     index = counts[drone-1].index(count)
                     total_voltages_lost[flight_time] += voltages_lost[drone-1][index]
@@ -274,6 +274,9 @@ def batch_recorded_total_energy(filenames, drones_list):
 
         total_path_energy = get_total_energy(avg_current, total_voltages_lost)
 
+        if total_path_energy == 0:
+            total_path_energy = np.nan
+
         total_energy.append(total_path_energy)
 
     return total_energy
@@ -301,6 +304,7 @@ def batch_predicted_total_energy(ndrones, path_filenames, input_modes, speeds, a
 
         path = path[:ndrones[i]]
         hover_time, flight_time, total_time = calc_total_times(path, input_modes[i], speeds[i])
+        print(total_time)
 
         # Hardare model
         model_total_path_energy = calc_energy_consumption(total_time,"polynomial",voltage_poly_coeff,avg_current)
@@ -365,7 +369,7 @@ def plot_by_cdca_type():
         ax.set_xticks([1,2,3,4])
         ax.set_ylim(0,1000)
         ax.legend()
-        plt.title(titles[c])
+        ax.set_title(titles[c])
     plt.suptitle("Recorded vs. predicted values for each cdca type")
     plt.show()
 
@@ -392,7 +396,7 @@ def plot_by_value_origin():
         ax.set_xticks([1,2,3,4])
         ax.set_ylim(0,1000)
         ax.legend()
-        plt.title(titles[c])
+        ax.set_title(titles[c])
     plt.suptitle("Predicted values for each cdca method, for each prediction method")
     plt.show()
 
@@ -442,7 +446,7 @@ if __name__=="__main__":
     
     # note that the pf cdca 1 drone is just the same as the basic cdca 1 drone, since no cdca should be applied with only 1 drone
     recorded_basic_energy_consumptions = batch_recorded_total_energy(basic_cdca_filenames, drones)
-    recorded_pf_energy_consumptions = batch_recorded_total_energy(pf_cdca_filenames, drones)
+    recorded_pf_energy_consumptions = batch_recorded_total_energy(pf_cdca_filenames, [[1],[1,2],[1,2,3],[1,2,3,4]])
 
     # note that the pf cdca 1 drone is just the same as the basic cdca 1 drone, since no cdca should be applied with only 1 drone
     basic_path_filenames = ["Hardware/Experiments/Working/manual/eval_1dronecdca.txt", "Hardware/Experiments/Working/manual/eval_2dronecdca.txt", "Hardware/Experiments/Working/manual/eval_3dronecdca.txt", "Hardware/Experiments/Working/manual/eval_4dronecdca.txt"]
@@ -463,6 +467,15 @@ if __name__=="__main__":
     print(x, epos_predicted_basic_energy_consumptions)
     print(x, model_predicted_basic_energy_consumptions)
 
+    # times = []
+    # path = read_cdca_output("Hardware/Experiments/Potential fields/pf_cdca_4drones2.txt") 
+    # for i in range(0,4):
+    #     path = read_cdca_output("Hardware/Experiments/Potential fields/pf_cdca_4drones2.txt") 
+    #     path = path[i:i+1]
+    #     hover_time, flight_time, total_time = calc_total_times(path, "cdca", 0.1)
+    #     times.append(total_time)
+    # print(times)
+        
     plot_all_results()
     plot_by_cdca_type()
     plot_by_value_origin()
