@@ -9,7 +9,7 @@
     "ProjectedBatteryArea": 0.0037,
     "PowerEfficiency": 0.8,
     "GroundSpeed": 0.1, # That's the speed that I'm flying the drones at. Max groundspeed posCtlPid.xyVelMax=1m/s default
-    "AirSpeed": 1.225 # Assuming the same groundspeed:airspeed ratio as the default, this would be 0.1225 if groundspeed=0.1
+    "AirSpeed": 0 # No wind speed in indoor test
 },
 
 # 3 choices for AirSpeed:
@@ -20,12 +20,7 @@
 1.22: 1.6110077015513258
 1.225: 1.6152318136132513 W # Assuming 6.94 is max groundspeed, then with the same GroundSpeed:AirSpeed ratio then this is 1.225
 
-
-# Chose 1.225
-# It's the only one I have an actual reason for in that the original groundspeed was probably the max
-# 4sf. as that's what the other values (non-speeds) were given as. Could change to 2dp. as that's what the other speeds are
-# Also lines up very well with the line of best fit (weighted to pass through 0) of the hardware model
-# Figured it was probably best to overestimate the power, as opposed to underestimate, since higher values have more effect on power (nonlinear increase of power with AirSpeed)
+# AirSpeed is the speed of the air, so 0m/s for indoor test
 
 # Default drone
 "drone": {
