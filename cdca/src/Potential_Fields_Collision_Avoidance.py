@@ -1,5 +1,6 @@
 
 import math
+import re
 
 from matplotlib import animation, pyplot as plt
 from .Drone import Drone
@@ -19,6 +20,7 @@ class PF_Drone(Drone):
         self.max_grid_offset = max_grid_offset
         self.grid_width = self.max_grid_offset - self.min_grid_offset
         self.cell_size = self.grid_width / (2 * self.resolution_factor)
+        print("Cell Size:", self.cell_size)
         self.max_timesteps_per_flight = 50 // TIME_STEP
         self.current_timestep_for_flight = 0
         self.position = np.array(self.drone_to_grid(self.plan[0][0])) 
@@ -144,6 +146,19 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             self.potential_fields(drones)
 
         return False  # Always return false as more iterations of potential fields are not going to help
+    def smart_round(self, number):
+        str_num = str(number)
+        int_part, frac_part = str_num.split('.')
+        
+        # Check for repeating patterns in the fractional part
+        match = re.search(r'(\d+)\1+', frac_part)
+        
+        if match:
+            # If a repeating pattern is found, round to the length of the pattern
+            return round(number, len(match.group(1)))
+        else:
+            # If no repeating pattern is found, return the original number rounded to 2dp
+            return round(number, 2)
     def calculate_resolution_factor(self, min_distance, step_distance):
         # Choose the minimum of min_distance and step_distance
         min_val = min(min_distance, step_distance)
@@ -154,7 +169,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         resolution_factor = 1 / min_val
 
          #round up to nearst 1
-        resolution_factor = round(resolution_factor)
+        resolution_factor = self.smart_round(resolution_factor)
         print("Resolution Factor:", resolution_factor)
         return resolution_factor
     
@@ -203,7 +218,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Initialise PF_Drone objects
         drones = [PF_Drone(i, drone, self.resolution_factor, self.min_grid_offset, self.max_grid_offset) for i, drone in enumerate(drones)]
         self.number_of_drones = len(drones)
-
+        self.drones = drones
         drones_not_done = len(drones)
 
         self.time_step = 0
@@ -223,7 +238,6 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                         drone.finished = True
                         drones_not_done -= 1
                         continue
-                        
 
                     potential_field = self.calculate_potential_field(drone, drones)
 
@@ -285,9 +299,9 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
-
-        maximum = drone.grid_distance(MINIMUM_DISTANCE * 2)  # 3 times the minimum distance to give the drone change to move away
-        maximum = max(maximum, drone.cell_size * 2) 
+        drone_priority = len(self.drones) - drone.drone_id
+        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2))# + math.sqrt(drone_priority)/2)  # 3 times the minimum distance to give the drone change to move away
+        maximum = max(maximum, drone.cell_size * 3) 
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
@@ -299,7 +313,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         norms[norms == 0] = 1  # Avoid division by zero
 
         # Scale the vectors to the desired magnitude
-        desired_magnitude = 3  # Adjust this value as needed
+        desired_magnitude = 2  # Adjust this value as needed
         vectors[0] *= desired_magnitude
         vectors[1] *= desired_magnitude
         vectors[0] /= distances
@@ -337,7 +351,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
 
         # Set the vectors at positions a specified distance away from the goal to zero
-        distance_threshold =  MINIMUM_DISTANCE * self.resolution_factor
+        distance_threshold =  DISTANCE_STEP * self.resolution_factor
         goal_position = drone.goal.astype(int)
 
         for i in range(self.grid_size):
@@ -416,6 +430,12 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             return
         
+
+       
+       
+       
+       
+       
         grid_drone_position = (drone.position).astype(int)  # This can lose information, so we can increase resolution_factor if needed
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
 
@@ -433,7 +453,10 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         distance_to_goal = np.linalg.norm(drone.position - drone.goal)
 
-        if distance_to_goal <= (DISTANCE_STEP * self.resolution_factor):
+        # drone_goal_position = drone.goal.astype(int)
+        # vector_at_goal = potential_field[:, drone_goal_position[1], drone_goal_position[0]]
+        # np.array_equal(vector_at_goal, [0, 0]) and
+        if  distance_to_goal <= (DISTANCE_STEP * self.resolution_factor):
             old_position = drone.position
 
             drone.positions.append(drone.goal.tolist())
@@ -465,14 +488,60 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             # Round potential position to nearest grid position
             potential_pos = np.round(potential_pos, 2).astype(int)
             # Check if the drone is moving out of bounds, stay if so
+
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
+            #elif magnitude of direction is < 0.01, stay in place
+            elif np.linalg.norm(drone.direction) < 0.5:
+                drone.positions.append(drone.position.tolist())
+
 
             else:
                 drone.position = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
+        
+        # self.check_new_position(drone, drones)
 
+    def check_new_position(self, drone, drones):
+        """
+        Checks if the new position is safe for the drone to move to.
+
+        Parameters:
+        - drone (PF_Drone): The drone to check the new position for.
+        - drones (list): A list of drones.
+
+        Returns:
+        - bool: True if the new position is safe, False otherwise.
+        """
+     
+        safety_distance = MINIMUM_DISTANCE * self.resolution_factor  # Adjust this value as needed
+        for other_drone in drones:
+            if drone != other_drone:
+                distance_to_other_drone = np.linalg.norm(drone.position - other_drone.position)
+                if distance_to_other_drone < safety_distance:
+                    # Move away from the other drone
+                    direction = drone.position - other_drone.position
+                    random_vector = np.random.normal(scale=0.1 , size=direction.shape)  # Add some noise to the direction to reduce local minima
+                    direction += random_vector
+                    potential_safe_pos = drone.position + direction * (DISTANCE_STEP * self.resolution_factor)
+                    safe = True
+                    for other_drone in drones:
+                        if drone != other_drone:
+                            distance_to_other_drone = np.linalg.norm(drone.position - other_drone.position)
+                            if distance_to_other_drone < safety_distance:
+                                safe = False
+                                break
+                    if safe:
+                        drone.position = potential_safe_pos
+                        drone.positions.pop()
+                        drone.positions.append(drone.position.tolist())
+                        break
+                    
+                    #No safe position found
+
+                    
+       
     def discretise_flight_paths(self, drones, from_time=None, to_time=None):
         drone_positions = []
         if to_time is None:

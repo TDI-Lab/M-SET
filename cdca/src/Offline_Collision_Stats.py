@@ -71,6 +71,13 @@ class Offline_Collision_Stats(Basic_Collision_Avoidance):
     if num_flights == 0:
       return 0
     return self.get_number_of_collisions() / num_flights
+  
+  def get_total_hover_time(self):
+    total_sensing_time = 0
+    for drone in self.drones:
+      for pos in drone.plan:
+        total_sensing_time += pos[1]
+    return total_sensing_time 
 
 
     
