@@ -11,7 +11,7 @@ desired_title = ""
 color_scheme = "viridis"
 
 
-def visualise_map_by_path(path):
+def visualise_map_by_path(path, graph_name, title):
     global figures
     plt.figure(figures, figsize=(6, 6))
     with open(path, "r", encoding="utf-8-sig") as file:
@@ -43,8 +43,10 @@ def visualise_map_by_path(path):
             x_points.append(x)
             y_points.append(y)
     plt.scatter(x_points, y_points, s=100., marker="^")
-    plt.title(f"Desired Drone Sensing ({desired_title})")
+    plt.title(title)
+    plt.xticks([]), plt.yticks([])
     figures += 1
+    plt.savefig(graph_name)
 
 
 def visualise_sensing():
@@ -71,13 +73,23 @@ def visualise_sensing():
         y_points.append(float(base["y"]))
     plt.scatter(x_points, y_points, s=100., marker="^", c="b")
     plt.title(f"Actual Drone Sensing ({desired_title})")
+    plt.xticks([]), plt.yticks([])
     figures += 1
 
 
 if __name__ == "__main__":
-    # num = 12
-    vehicle_types = ["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"]
-    desired_title = "Taxi"
-    visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/6x6_gaussian.csv")
-    visualise_sensing()
+    visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/pneuma_grid.csv",
+                          f"../results/pneuma_grid.png",
+                          f"pNEUMA Sensing Requirements as Grid")
+    visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/pneuma_points.csv",
+                          f"../results/pneuma_points.png",
+                          f"pNEUMA Sensing Requirements as Points")
     plt.show()
+    vehicles = ["Car", "Bus", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"]
+    # for vehicle in vehicles:
+    #     visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/pneuma_grid_{vehicle}.csv",
+    #                           f"../results/pneuma_grid_{vehicle}.png",
+    #                           f"pNEUMA Sensing Requirements as Grid ({vehicle})")
+    #     visualise_map_by_path(f"/home/c41/Drones-Testbed/examples/pneuma_points_{vehicle}.csv",
+    #                           f"../results/pneuma_points_{vehicle}.png",
+    #                           f"pNEUMA Sensing Requirements as Points ({vehicle})")

@@ -80,8 +80,9 @@ class RouteGeneration:
         #  Compute battery usage for path
         energy_utilisation = 1 - (plan_id / (self.energy_efficiency * self.total_plans))
         max_usage = self.battery_capacity * energy_utilisation
-        while max_usage - flight_energy <= 0:
-            max_usage = self.battery_capacity * random.random()
+        while max_usage - flight_energy < 0:
+            max_usage = random.uniform(flight_energy, self.battery_capacity)
+            # print(max_usage)
 
         # calculate the hover energy consumption
         hover_energy = max_usage - flight_energy
