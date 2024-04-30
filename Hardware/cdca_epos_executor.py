@@ -163,7 +163,7 @@ class Drone():
         if IN_SIMULATION == False:
             # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
             #   Therefore, this can only be done when not in simulation
-            self.cf.land(0.05, 2.5)
+            self.cf.land(0.09, 2.5)
         else: 
             # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
             land_pos = get_coords(self.positions[self.move_count-1],USE_CELL_COORDS)
@@ -227,7 +227,7 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
     for drone in all_drones:
-        drone.cf.land(0.05, 2.5)
+        drone.cf.land(0.09, 2.5)
         timeHelper.sleep(2.5)
 
 def set_initial_positions(timeHelper, all_drones, duration):
@@ -487,7 +487,10 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        #main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
