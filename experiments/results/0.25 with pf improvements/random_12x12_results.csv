@@ -1,4 +1,4 @@
-Strategy,n_drones,Plan,Sensing Mismatch %,Total Collisions,Cross Collisions,Parallel Collisions,Cell Occupied Collisions,Total Flights Distance,Total Collision Distance,Risk of Collision,Total Duration of Flights,Total Hover Duration,Number of Flights,Average Collisions per Flight
+Strategy,n_drones,Plan,Sensing Mismatch %,Total Collisions,Cross Collisions,Parallel Collisions,Dest. Occupied Collisions,Total Flights Distance,Total Collision Distance,Risk of Collision,Total Duration of Flights,Total Hover Duration,Number of Flights,Average Collisions per Flight
 no_ca,1,"[[[[0.0, 0.0], 2]]]",100,0,0,0,0,0,0,0,0,2,0,0
 pf_ca,1,"[[[[0.0, 0.0], 2]]]",100,0,0,0,0,0,0,0,0,2,0,0
 basic_ca,1,"[[[[0.0, 0.0], 2]]]",100,0,0,0,0,0,0,0,0,2,0,0
