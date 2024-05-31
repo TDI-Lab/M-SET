@@ -154,10 +154,10 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     
     def calculate_resolution_factor(self, min_distance, step_distance):
         # Choose the minimum of min_distance and step_distance
-        min_val = min(min_distance, step_distance)
-        
+        # min_val = min(min_distance, step_distance)
+        min_val = min_distance
         min_val = max(min_val, 0.3) # prevent division by 0
-        min_val /= 4  # Divide by 2 to get the minimum distance between two drones
+        min_val /= 4  # Divide by 4 so the resolution gives chance to move away from drones
         # Calculate the resolution factor as the reciprocal of min_val
         resolution_factor = 1 / min_val
 
@@ -312,9 +312,12 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
         drone_priority = len(self.drones) - drone.drone_id
-        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2.5) + (math.sqrt(drone_priority)/2))  # 3 times the minimum distance to give the drone change to move away
+        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2.5) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
         # maximum = drone.grid_distance((MINIMUM_DISTANCE * (math.sqrt(drone_priority)/4)+1))  # 3 times the minimum distance to give the drone change to move away
-
+        
+        # print(f"log {drone_priority}: ", math.log(drone_priority, 20))
+        # print("max: ",maximum)
+        # print("grid dist:" , drone.grid_distance(DISTANCE_STEP) * 2.5, "\n")
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
@@ -326,7 +329,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         magnitudes[magnitudes == 0] = 1  # Avoid division by zero
         
         # # Scale the vectors to the desired magnitude
-        desired_repulsion = 3.5 + (math.sqrt(drone_priority)/4)
+        desired_repulsion = 2.5 + (math.log(drone_priority, 20))
 
         # vectors[0] = vectors[0] * desired_repulsion / distances * desired_repulsion / magnitudes
         # vectors[1] = vectors[1] * desired_repulsion / distances * desired_repulsion / magnitudes
