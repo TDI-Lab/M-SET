@@ -221,7 +221,7 @@ def experiment_iteration(n_drones, mission_name):
     # swarm_controller4 = Swarm_Control(copy.deepcopy(parsed_plans), Dependency_Collision_Avoidance(visualise=True))
     # swarm_controller4.detect_potential_collisions()
     swarm_controller = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
-    swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=True))
+    swarm_controller2 = Swarm_Control(copy.deepcopy(parsed_plans), Potential_Fields_Collision_Avoidance(visualise=False))
     swarm_controller3 = Swarm_Control(copy.deepcopy(parsed_plans), Basic_Collision_Avoidance())
     # swarm_controller.visualise_swarm()
 
@@ -262,19 +262,19 @@ def experiment_iteration(n_drones, mission_name):
 def experiment_testbed():
     config = Config('drone_sense.properties')
 
-    n_iterations = 40
-    drones = [4,2,3,4]
-    # drones = [5,6,7,8]
+    n_iterations = 200
+    drones = [1,2,3,4]
+  
 
     abs_path = os.path.abspath('.')
-    # config.config.set('global', 'MissionName', f"2x3_random_testbed")
+    config.config.set('global', 'MissionName', f"2x3_random_testbed")
 
-    # config.config.set('global', 'MissionFile', f"{abs_path}/examples/2x3_random_testbed.csv")
+    config.config.set('global', 'MissionFile', f"{abs_path}/examples/2x3_random_testbed.csv")
     
-    # config.config.set('drone', 'BatteryCapacity', f"2700")
-    # config.config.set('drone', 'BodyMass', f"0.027")
-    # config.config.set('drone', 'BatteryMass', f"0.005")
-    # config.config.set('drone', 'PowerEfficiency', f"1.25")
+    config.config.set('drone', 'BatteryCapacity', f"2700")
+    config.config.set('drone', 'BodyMass', f"0.027")
+    config.config.set('drone', 'BatteryMass', f"0.005")
+    config.config.set('drone', 'PowerEfficiency', f"1.25")
     for _ in range(n_iterations):
         for n_drones in drones:
             config.config.set('global', 'NumberOfDrones', f"{n_drones}")
@@ -284,7 +284,7 @@ def experiment_testbed():
             mission_name = create_new_testbed_sensing_mission()
 
             data = experiment_iteration(n_drones, mission_name)
-            write_results_to_csv(data, config,experiment_name='testbed_less_repulsion', testbed=True)
+            write_results_to_csv(data, config,experiment_name='test_log_repulsion_200iterations', testbed=True)
                 
 def run_experiment_1and2(greedy):
      # a list of n m for each experiment grid
@@ -292,7 +292,7 @@ def run_experiment_1and2(greedy):
 
     config = Config('drone_sense.properties')
 
-    n_iterations = 40
+    n_iterations = 200
     drones = [5,6,8,10,12,16]
     # # drones = [5,6,7,8]
     # config.config.set('drone', 'BatteryCapacity', f"2700")
@@ -315,7 +315,7 @@ def run_experiment_1and2(greedy):
                 mission_name = create_new_random_sensing_mission(experiment_sizes[i][0], experiment_sizes[i][1])
 
                 data = experiment_iteration(n_drones, mission_name)
-                write_results_to_csv(data, config, experiment_name='test_accurate',greedy=greedy)
+                write_results_to_csv(data, config, experiment_name='test',greedy=greedy)
 
 def run_pneuma_experiment():
 
@@ -337,7 +337,7 @@ def run_pneuma_experiment():
         
         
         n_iterations = 1
-        drones = [4,10,32,64,128,256,512]
+        drones = [4]#,10,32,64,128,256,512]
 
 
         for _ in range(n_iterations):
@@ -356,8 +356,8 @@ def run_pneuma_experiment():
 
 if __name__ == '__main__':
     # add_base_stations_to_pneuma_sensing_mission(512, 'pneuma_points.csv')
-    
-    run_pneuma_experiment()
+    experiment_testbed()
+    # run_pneuma_experiment()
     # # run_pneuma_experiment()
     # # run_experiment_1and2(greedy=False)
     # # experiment_testbed()

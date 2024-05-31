@@ -312,7 +312,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
         drone_priority = len(self.drones) - drone.drone_id
-        maximum = drone.grid_distance((MINIMUM_DISTANCE * 1.5) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
+        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
         # maximum = drone.grid_distance((MINIMUM_DISTANCE * (math.sqrt(drone_priority)/4)+1))  # 3 times the minimum distance to give the drone change to move away
         
         # print(f"log {drone_priority}: ", math.log(drone_priority, 20))
@@ -490,7 +490,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             imagebox = OffsetImage(drone_image, zoom=0.07)
             # adjusted_pos = [drone.positions[i][0] -  drone.cell_size, drone.positions[i][0] - drone.cell_size]
             adjusted_pos = drone.positions[i]
-            print(adjusted_pos)
+            # print(adjusted_pos)
             ab = AnnotationBbox(imagebox, adjusted_pos, bboxprops=dict(alpha=0.0))
             ax.add_artist(ab)
 
@@ -608,8 +608,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
-            #elif magnitude of direction is < 0.01, stay in place
-            elif np.linalg.norm(direction) < 0.2:
+            #if magnitude of directio is small and drone is close to goal, this means there is likely another drone at the goal, so wait
+            elif np.linalg.norm(direction) < 0.2 and distance_to_goal <= drone.grid_distance((MINIMUM_DISTANCE * 2) + (math.log(len(self.drones), 20))):
                 drone.positions.append(drone.position.tolist())
 
 
