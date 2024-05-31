@@ -312,7 +312,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
         drone_priority = len(self.drones) - drone.drone_id
-        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2.5) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
+        maximum = drone.grid_distance((MINIMUM_DISTANCE * 1.5) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
         # maximum = drone.grid_distance((MINIMUM_DISTANCE * (math.sqrt(drone_priority)/4)+1))  # 3 times the minimum distance to give the drone change to move away
         
         # print(f"log {drone_priority}: ", math.log(drone_priority, 20))
@@ -595,6 +595,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if np.linalg.norm(direction) != 0:
                 new_direction = direction / np.linalg.norm(direction)  # normalised direction
                 drone.direction = new_direction
+         
             else:
                 drone.direction = direction  # if direction vector is 0, keep it as 0
 
@@ -608,7 +609,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
             #elif magnitude of direction is < 0.01, stay in place
-            elif np.linalg.norm(drone.direction) < 0.5:
+            elif np.linalg.norm(direction) < 0.2:
                 drone.positions.append(drone.position.tolist())
 
 
