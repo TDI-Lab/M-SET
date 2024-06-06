@@ -125,12 +125,14 @@ class Swarm_Control:
             if drone.flights[-1].finish_time < to_time:
                 positions_for_drone += [last_known_position] * (num_positions - len(positions_for_drone))
 
+            
+
             drone_positions.append(positions_for_drone)
     for drone in drone_positions:
         for pos in drone:
             if pos is None:
                 print("Error: None position detected. Flights not proerly discretised. Exiting...")
-                return
+                
     return drone_positions
 
   def visualise_swarm(self, title="", save=False, filepath=None):
