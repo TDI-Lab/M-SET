@@ -32,7 +32,7 @@ class PF_Drone(Drone):
         self.goals_reached = 0 # The first goal is reached by default
         self.current_wait_time = self.plan[0][1]
         self.current_PFG = []
-
+        self.time_steps_smaller_than_timestep = {} #A dict of time steps that are smaller than TIME_STEP, in the format [[at_time, for_time],...]
         if not self.original_drone.flights: # Some drones dont move
             self.finished = True
             self.at_last_goal = True
@@ -83,9 +83,13 @@ class PF_Drone(Drone):
             if pos == destination:
                 duplicate_positions += 1
                 continue
-                
+        
+            # If timestep is in dict of steps smaller than timestep, use that smaller timestep instead
+            timestep = TIME_STEP
+            timestep = self.time_steps_smaller_than_timestep.get(i, timestep)
+
        
-            new_plan.append( [pos, (duplicate_positions*TIME_STEP)])
+            new_plan.append( [pos, (duplicate_positions*timestep)])
             pos = destination
             duplicate_positions = 0
 
@@ -225,9 +229,15 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             count += 1
 
             for i, drone in enumerate(drones):
+                step = TIME_STEP
                 if not drone.finished:
                     if drone.current_wait_time > 0:
-                        drone.current_wait_time -= TIME_STEP
+                        if drone.current_wait_time < TIME_STEP:
+                            step = drone.current_wait_time
+                            drone.time_steps_smaller_than_timestep[self.time_step] = step
+                            drone.current_wait_time = 0
+                        else:
+                            drone.current_wait_time -= TIME_STEP
 
                     if drone.current_wait_time <= 0 and drone.at_last_goal:
                         drone.finished = True
@@ -240,7 +250,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                         # Add potential field to list for visualisation
                         pfs_per_drone[i].append(potential_field)
 
-                    self.adjust_drone_path(drones, drone, potential_field)
+                    self.adjust_drone_path(drones, drone, potential_field, step)
                     drone.current_PFG = self.calculate_repulsion_from_drone(drone)
 
             self.time_step += TIME_STEP
@@ -528,7 +538,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         plt.show()
     
     
-    def adjust_drone_path(self, drones, drone, potential_field):
+    def adjust_drone_path(self, drones, drone, potential_field, time_step):
         """
         Adjusts the drone's path based on the potential field.
 
@@ -546,7 +556,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             return
         
 
-       
+        distance_step = time_step * SPEED
        
        
        
@@ -571,7 +581,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # drone_goal_position = drone.goal.astype(int)
         # vector_at_goal = potential_field[:, drone_goal_position[1], drone_goal_position[0]]
         # np.array_equal(vector_at_goal, [0, 0]) and
-        if  distance_to_goal <= drone.grid_distance(DISTANCE_STEP):
+        if  distance_to_goal <= drone.grid_distance(distance_step):
             old_position = drone.position
 
             drone.positions.append(drone.goal.tolist())
@@ -581,13 +591,13 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
             if drone.goals_reached == len(drone.flights):
                 drone.at_last_goal = True
-                drone.current_wait_time = drone.plan[drone.goals_reached][1] + TIME_STEP
+                drone.current_wait_time = drone.plan[drone.goals_reached][1] + time_step
 
                 return
 
             # Set the goal to the next flight's starting position
             drone.goal = np.array(drone.goals[drone.goals_reached])
-            drone.current_wait_time = drone.plan[drone.goals_reached][1] + TIME_STEP
+            drone.current_wait_time = drone.plan[drone.goals_reached][1] + time_step
             drone.direction = np.subtract(drone.goal, drone.position)
 
         else:
@@ -600,7 +610,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 drone.direction = direction  # if direction vector is 0, keep it as 0
 
             # Move the drone a fixed distance in that direction if not out of bounds
-            potential_pos = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
+            potential_pos = drone.position + drone.direction * (distance_step * self.resolution_factor)
             # Round potential position to nearest grid position
             potential_pos = np.round(potential_pos, 2).astype(int)
             # Check if the drone is moving out of bounds, stay if so
@@ -608,13 +618,13 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if potential_pos[0] < 0 or potential_pos[0] > self.grid_size - 1 or potential_pos[1] < 0 or potential_pos[1] > self.grid_size - 1:
                 drone.positions.append(drone.position.tolist())
                 drone.direction = old_direction
-            #if magnitude of directio is small and drone is close to goal, this means there is likely another drone at the goal, so wait
+            #if magnitude of direction is small and drone is close to goal, this means there is likely another drone at the goal, so wait
             elif np.linalg.norm(direction) < 0.2 and distance_to_goal <= drone.grid_distance((MINIMUM_DISTANCE * 2) + (math.log(len(self.drones), 20))):
                 drone.positions.append(drone.position.tolist())
 
 
             else:
-                drone.position = drone.position + drone.direction * (DISTANCE_STEP * self.resolution_factor)
+                drone.position = drone.position + drone.direction * (distance_step * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
         
         # self.check_new_position(drone, drones)
