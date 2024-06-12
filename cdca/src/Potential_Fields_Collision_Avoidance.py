@@ -65,7 +65,7 @@ class PF_Drone(Drone):
     def grid_distance(self, drone_distance):
         # Scale the input grid distance according to the resolution factor
         return drone_distance * self.resolution_factor
-    def convert_to_flights(self):
+    def convert_to_flights(self, timesteps):
         # Convert the positions of the drones to flights
         new_plan = []
         drone = self
@@ -73,26 +73,32 @@ class PF_Drone(Drone):
         if len(flight_path) == 1:
             return
         duplicate_positions = 0
+        total_wait_time = 0
         pos = list(self.grid_to_drone(flight_path[0]))
         for i in range(len(flight_path) - 1):
+
+            timestep = timesteps[i]
             if i == 0:
                 duplicate_positions = 1
+                total_wait_time = timestep
 
             destination = list(self.grid_to_drone(flight_path[i + 1]))
             
+
             if pos == destination:
                 duplicate_positions += 1
+                total_wait_time += timestep
+                # print("Adding to wait time", total_wait_time, "at time", timestep, "i", i)
                 continue
         
-            # If timestep is in dict of steps smaller than timestep, use that smaller timestep instead
-            timestep = TIME_STEP
-            timestep = self.time_steps_smaller_than_timestep.get(i, timestep)
-
-       
-            new_plan.append( [pos, (duplicate_positions*timestep)])
+           
+            if timestep != TIME_STEP and i != 0:
+                # print("aposjd", timestep)
+                total_wait_time += timestep - TIME_STEP
+            new_plan.append( [pos, (total_wait_time)])
             pos = destination
             duplicate_positions = 0
-
+            total_wait_time = 0
 
         new_plan.append( [destination, drone.plan[-1][1]])
 
@@ -126,7 +132,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
     def __init__(self, visualise=False):
         self.resolution_factor = self.calculate_resolution_factor(MINIMUM_DISTANCE, DISTANCE_STEP)
-  
+        self.timesteps = []
     
       
         self.visualise = visualise
@@ -204,6 +210,26 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         print("Grid Size:", self.grid_size)
 
 
+    def calculate_variable_timestep(self):
+        # See if any drones have a current_wait_time that is less than the timestep
+        smallest_timestep = TIME_STEP
+        for drone in self.drones:
+            if 0 < drone.current_wait_time < smallest_timestep:
+                smallest_timestep = drone.current_wait_time
+        return smallest_timestep
+        if smallest_timestep == TIME_STEP:
+            return TIME_STEP
+        # does the smallest timestep divide into TIME_STEP
+        if TIME_STEP % smallest_timestep == 0:
+            return smallest_timestep
+        else:
+            print("Smallest Timestep:", smallest_timestep)
+            tenth_of_timestep = TIME_STEP / 10
+            # Find the multiple of tenth_of_timestep that is closest to smallest_timestep
+            closest_multiple = round(smallest_timestep / tenth_of_timestep) * tenth_of_timestep
+            print("Closest Multiple:", closest_multiple)
+            return closest_multiple
+
     def potential_fields(self, drones):
         """
         Calculates and adjusts the potential fields for drones.
@@ -228,16 +254,20 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         while drones_not_done > 0 and count < 600:
             count += 1
 
+            self.current_timestep = self.calculate_variable_timestep()
+            self.timesteps.append(self.current_timestep)
+            # print("Current Timestep:", self.current_timestep)
             for i, drone in enumerate(drones):
-                step = TIME_STEP
+                # step = self.current_timestep
                 if not drone.finished:
                     if drone.current_wait_time > 0:
-                        if drone.current_wait_time < TIME_STEP:
-                            step = drone.current_wait_time
-                            drone.time_steps_smaller_than_timestep[self.time_step] = step
+                        if drone.current_wait_time < self.current_timestep:
+                            # step = TIME_STEP - drone.current_wait_time
+                            # drone.time_steps_smaller_than_timestep[self.time_step] = step
                             drone.current_wait_time = 0
+                            # print("Drone/ ", i, "waiting for ", drone.current_wait_time, " seconds", "at time ", self.time_step)
                         else:
-                            drone.current_wait_time -= TIME_STEP
+                            drone.current_wait_time -= self.current_timestep
 
                     if drone.current_wait_time <= 0 and drone.at_last_goal:
                         drone.finished = True
@@ -250,16 +280,16 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                         # Add potential field to list for visualisation
                         pfs_per_drone[i].append(potential_field)
 
-                    self.adjust_drone_path(drones, drone, potential_field, step)
+                    self.adjust_drone_path(drones, drone, potential_field, self.current_timestep)
                     drone.current_PFG = self.calculate_repulsion_from_drone(drone)
 
-            self.time_step += TIME_STEP
+            self.time_step += self.current_timestep
             self.time_step = round(self.time_step, 2)
         for i, drone in enumerate(drones):
             if self.visualise:
                 self.animate_vector_fields(pfs_per_drone[i], drone, drones)
                 # self.visualise = False
-            drone.convert_to_flights()
+            drone.convert_to_flights(self.timesteps)
     
     def calculate_repulsion_fields(self, drones):
         """
@@ -627,44 +657,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 drone.position = drone.position + drone.direction * (distance_step * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
         
-        # self.check_new_position(drone, drones)
-
-    def check_new_position(self, drone, drones):
-        """
-        Checks if the new position is safe for the drone to move to.
-
-        Parameters:
-        - drone (PF_Drone): The drone to check the new position for.
-        - drones (list): A list of drones.
-
-        Returns:
-        - bool: True if the new position is safe, False otherwise.
-        """
-     
-        safety_distance = MINIMUM_DISTANCE * self.resolution_factor  # Adjust this value as needed
-        for other_drone in drones:
-            if drone != other_drone:
-                distance_to_other_drone = np.linalg.norm(drone.position - other_drone.position)
-                if distance_to_other_drone < safety_distance:
-                    # Move away from the other drone
-                    direction = drone.position - other_drone.position
-                    random_vector = np.random.normal(scale=0.1 , size=direction.shape)  # Add some noise to the direction to reduce local minima
-                    direction += random_vector
-                    potential_safe_pos = drone.position + direction * (DISTANCE_STEP * self.resolution_factor)
-                    safe = True
-                    for other_drone in drones:
-                        if drone != other_drone:
-                            distance_to_other_drone = np.linalg.norm(drone.position - other_drone.position)
-                            if distance_to_other_drone < safety_distance:
-                                safe = False
-                                break
-                    if safe:
-                        drone.position = potential_safe_pos
-                        drone.positions.pop()
-                        drone.positions.append(drone.position.tolist())
-                        break
-                    
-                    #No safe position found
+    
 
                     
        

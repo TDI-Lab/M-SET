@@ -128,10 +128,10 @@ class Swarm_Control:
             
 
             drone_positions.append(positions_for_drone)
-    for drone in drone_positions:
-        for pos in drone:
-            if pos is None:
-                print("Error: None position detected. Flights not proerly discretised. Exiting...")
+    # for drone in drone_positions:
+        # for pos in drone:
+            # if pos is None:
+            #     print("Error: None position detected. Flights not proerly discretised. Exiting...")
                 
     return drone_positions
 

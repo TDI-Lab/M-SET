@@ -4,6 +4,8 @@ import math
 import os
 import random
 import ast
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from cdca.src.Input_Parser import Input_Parser
@@ -16,14 +18,20 @@ from path_generation.PathGenerator import PathGenerator
 from experiments.pneuma.pnuema_setup import PneumaCell
 
 class PneumaExperiment:
-    def __init__(self, filename=None, synthesise=False):
+    def __init__(self, files_path=None, synthesise=False):
         if synthesise:
             self.synthesiste_data()
         else:
-            self.filename = filename
-            self.load_data(True)
+            #files is all .txt files in the directory
+            self.files_path = files_path
 
-    def load_data(self, is_random=False):
+
+
+
+
+
+
+    def load_data(self, is_random=False, is_testbed=True):
         with open(self.filename, 'r') as f:
             self.data = f.readlines()
 
@@ -32,6 +40,8 @@ class PneumaExperiment:
         for i, line in enumerate(self.data):
             if i == 0:
                 self.max_time = int(math.ceil(float(line.split(':')[-1].strip())))
+                if is_testbed:
+                    self.max_time = self.max_time // 12
                 continue
             if i == 1: continue
             line = line.strip().split(':')
@@ -39,38 +49,70 @@ class PneumaExperiment:
             data = line[1].split('[')[1].split(']')[0].split(',')
             data = [int(x) for x in data]
             if is_random:
-                self.cells.append( PneumaCell(cell[0], cell[1], cell[2], cell[3] ,self.max_time,[random.randint(0, 10) for _ in range(self.max_time)], i-2))
+                self.cells.append( PneumaCell(cell[0], cell[1], cell[2], cell[3] ,self.max_time,[random.randint(0, 10) for _ in range(int(self.max_time//self.interval))], i-2))
 
             else:
                 self.cells.append( PneumaCell(cell[0], cell[1], cell[2], cell[3] ,self.max_time,data, i-2))
 
+        
+        
 
-        print("asd")
+        # print("asd")
     def print_cell_distances(self):
         for cell in self.cells:
             for other_cell in self.cells:
                 print(f"Distance between {cell.id} and {other_cell.id}: {cell.get_distance_from_other_cell(other_cell)}")
-    # Generates random data but to ensure that the data is not too similar, the cells are given a priority
-    def synthesiste_data(self):
-        synth = {
-            ((2248579.713448535, 2730009.104624533, 2248799.281194936, 2730280.2185926433)),
-            ((2248579.713448535, 2730280.2185926433, 2248799.281194936, 2730551.332560753)),
-            ((2248579.713448535, 2730551.332560753, 2248799.281194936, 2730822.446528863)),
-            ((2248799.281194936, 2730009.104624533, 2249018.848941337, 2730280.2185926433)),
-            ((2248799.281194936, 2730280.2185926433, 2249018.848941337, 2730551.332560753)),
-            ((2248799.281194936, 2730551.332560753, 2249018.848941337, 2730822.446528863))
-        }
-        self.cells = {}
-        total_time = 30
-        for priority, cell in enumerate(synth, start=1):
-            min_x, max_x, min_y, max_y = self.put_grid_at_origin(cell[0], cell[2], cell[1], cell[3])
-            self.cells[priority] = PneumaCell(min_x, max_x, min_y, max_y,total_time,[random.randint(0, 10) * priority for _ in range(total_time)],priority)
-                
+   
+   
+    def convert_cells_to_testbed(self, cells):
+        sense_data = [
+            [-0.5533, -0.235, 1],
+            [0, -0.235, 1],
+            [0.5533, -0.235, 1],
+            [-0.5533, 0.235, 1],
+            [0, 0.235, 1],
+            [0.5533, 0.235, 1],
+        ]
 
-        print(self.cells)
+        # Calculate cell size
+        xs = sorted([data[0] for data in sense_data])
+        ys = sorted([data[1] for data in sense_data])
+        w = (max(xs) - min(xs)) / (len(xs) - 2) # = / 4
+        h = (max(ys) - min(ys)) /2
+        # print("as", (len(xs) - 2))
+        # Calculate cell coordinates
+        cell_coords = [(x - w , y - h , x + w , y + h ) for x, y, _ in sense_data]
 
+        for cell, coords in zip(cells, cell_coords):
+            cell.cell = (coords[0], coords[1], coords[2], coords[3])  # Update cell.cell
+            cell.centroid = (coords[0] + w / 2, coords[1] + h / 2)  # Update cell.centroid
 
+        # self.plot_cells(cells)
 
+        # Calculate and print the diagonal of the screen to verify that the cells are placed correctly
+        # total_w = 2 * w * 3
+        # total_h = 2 * h * 2
+        # diagonal = (total_w**2 + total_h**2)**0.5
+
+        # print("Diagonal of the screen: ", diagonal)
+    def plot_cells(self, cells):
+        fig, ax = plt.subplots()
+
+        # Plot centroids of cells
+        for cell in cells:
+            centroid = cell.get_centroid()
+            ax.plot(*centroid, 'bo')
+            # plt.pause(1)  # Wait for 1 second
+
+        # Plot rectangles for cells
+        for cell in cells:
+            x1, y1, x2, y2 = cell.cell
+            rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
+            # plt.pause(1)  # Wait for 1 second
+
+        # print("Plotting cells for testbed")
+        plt.show()
     def get_cell_priority(self):
 
         # generate average number of vehicles per cell and sort
@@ -98,7 +140,7 @@ class PneumaExperiment:
         return ratio_time
   
 
-    
+
     
     def get_corner_points(self):
         min_x = min([cell.cell[0] for cell in self.cells])
@@ -108,21 +150,24 @@ class PneumaExperiment:
 
         return min_x, max_x, min_y, max_y
     
-    def generate_sensing_mission(self):
+    def generate_sensing_mission(self, is_testbed=False):
         # get cell priority
         # /cell_priority = self.get_cell_priority()
 
         time_ratio = self.get_ratio_of_times(self.cells)
-
+        # if is_testbed:
+        #     scale = 0.025
+        # else:
+        #     scale = 1
         # generate sensing mission
         mission = ["type,id,x,y,z,value\n"]
         for i, cell in enumerate(self.cells):
             centroid_x, centroid_y = cell.get_centroid()
             print("centroid", centroid_x, " ", centroid_y)
-            mission.append(f"SENSE,{i},{centroid_x},{centroid_y},1,{time_ratio[i]}\n")
+            mission.append(f"SENSE,{i},{centroid_x},{centroid_y},1,{math.floor(time_ratio[i])}\n")
 
         min_x, max_x, min_y, max_y = self.get_corner_points()
-        self.print_cell_distances()
+        # self.print_cell_distances()
         mission.append(f"BASE,0,{min_x},{min_y},0,0\n")
         mission.append(f"BASE,1,{max_x},{min_y},0,0\n")
         mission.append(f"BASE,2,{min_x},{max_y},0,0\n")
@@ -188,7 +233,7 @@ class PneumaExperiment:
         observed_vehicles = [0] * total_time
         observed_vehciles_per_cell = [0] * len(self.cells)
         for minute in range(total_time):
-            discreet_positions = swarm_controller.discretise_flight_paths(swarm_controller.drones, from_time=(minute/TIME_STEP)*60, to_time=((minute+1)/TIME_STEP)*60)
+            discreet_positions = swarm_controller.discretise_flight_paths(swarm_controller.drones, from_time=(minute/TIME_STEP)*self.interval, to_time=((minute+1)/TIME_STEP)*self.interval)
             if discreet_positions is not None:
                 for drone_positions in discreet_positions:
                     if drone_positions is None:
@@ -206,17 +251,17 @@ class PneumaExperiment:
         pg = PathGenerator()
         plans = pg.generate_paths()
 
-        for plant, path in plans.items():
-            print(f"plan: {plant}, path: {path}")
+        # for plant, path in plans.items():
+        #     print(f"plan: {plant}, path: {path}")
 
 
         input_p = Input_Parser(plans)
         parsed_plans = input_p.parsed_input
         
-        print("")
-        for planx in parsed_plans:
-            print(planx)
-        print("")
+        # print("")
+        # for planx in parsed_plans:
+        #     print(planx)
+        # print("")
 
         sensing = MeasureSensing(f"examples/{mission_name}")
 
@@ -236,8 +281,8 @@ class PneumaExperiment:
         pf_plans = swarm_controller2.plans
         basic_plans = swarm_controller3.plans
 
-        total_mins = self.max_time // 60
-    
+        total_mins = int(self.max_time // self.interval)
+        print("TOTAL MINS", total_mins)
 
         return {
         'plans': {
@@ -263,8 +308,11 @@ class PneumaExperiment:
 
     }
 
-    def run_pneuma_experiment(self):
-
+    def run_pneuma_experiment(self, synthesise=False, greedy=False, oneminute=False):
+        if oneminute:
+            self.interval = 60
+        else:
+            self.interval = 15
         config = Config('drone_sense.properties')
         abs_path = os.path.abspath('.')
 
@@ -279,23 +327,81 @@ class PneumaExperiment:
         config.config.set('global', 'MissionName', mission)
 
         config.config.set('global', 'MissionFile', f"{abs_path}/examples/{mission}.csv")
-        
-        
-        n_iterations = 200
-        drones = [4]
-
-
-        for _ in range(n_iterations):
+        if synthesise == False:
+            if oneminute:
+                files = [f"{self.files_path}/{file}" for file in os.listdir(self.files_path) if file.endswith('.txt') and '_15seconds' not in file]
+            else:
+                files = [f"{self.files_path}/{file}" for file in os.listdir(self.files_path) if file.endswith('.txt') and '_15seconds' in file]
+        if synthesise == False:
+            n_iterations = len(files)
+        else:
+            n_iterations = 200
+        drones = [1,2,3,4]
+        if synthesise:
+            exp_name= 'pneuma_synthesised_data_'
+        else:
+            if oneminute:
+                exp_name = 'pneuma_real_data_1minute_greedy'
+            else:
+                exp_name = 'pneuma_real_data_15seconds_greedy'
+        for n in range(n_iterations):
+            if synthesise == False:
+                self.filename = files[n]
             for n_drones in drones:
                 config.config.set('global', 'NumberOfDrones', f"{n_drones}")
+                self.load_data(synthesise, is_testbed=False)
 
                 with open(config.config_file_path, 'w') as configfile:
                     config.config.write(configfile)
                 self.generate_sensing_mission()
                 data = self.experiment_iteration(n_drones, mission+".csv")
-                self.write_results_to_csv(data, config, experiment_name='pneuma')
+                self.write_results_to_csv(data, config, experiment_name=exp_name+str(n_drones)+'_drone')
             
+    def run_testbed_pneuma_experiment(self, synthesise=False, greedy=False):
+        self.interval = 5
+        config = Config('drone_sense.properties')
+        abs_path = os.path.abspath('.')
 
+        mission = 'new_pneuma_points'
+
+        #set drone properties
+        config.config.set('drone', 'BatteryCapacity', f"2700")
+        config.config.set('drone', 'BodyMass', f"0.027")
+        config.config.set('drone', 'BatteryMass', f"0.005")
+        config.config.set('drone', 'PowerEfficiency', f"1.25")
+        
+        config.config.set('global', 'MissionName', mission)
+
+        config.config.set('global', 'MissionFile', f"{abs_path}/examples/{mission}.csv")
+        # if synthesise == False:
+        files = [f"{self.files_path}/{file}" for file in os.listdir(self.files_path) if file.endswith('.txt') and '_15seconds' not in file]
+        
+        if synthesise == False:
+            n_iterations = len(files)
+        else:
+            n_iterations = 200
+        drones = [1,2,3,4]
+        if synthesise:
+            exp_name= 'TESTBED_TEST_5s_pneuma_synthesised_data_'
+        else:
+            exp_name = 'TESTBED_TEST_5s_pneuma_real_data_'
+        for n in range(n_iterations):
+            if synthesise == False:
+                self.filename = files[n]
+            else:
+                self.filename = files[0]
+            for n_drones in drones:
+                config.config.set('global', 'NumberOfDrones', f"{n_drones}")
+                self.load_data(synthesise, is_testbed=True)
+                self.convert_cells_to_testbed(self.cells)
+
+                with open(config.config_file_path, 'w') as configfile:
+                    config.config.write(configfile)
+                
+                self.generate_sensing_mission(is_testbed=True)
+                data = self.experiment_iteration(n_drones, mission+".csv")
+                self.write_results_to_csv(data, config, experiment_name=exp_name+str(n_drones)+'_drone')
+            
     def write_results_to_csv(self,data, config, experiment_name=None):
 
         # Now you can access the values in the config file like this:
@@ -339,10 +445,24 @@ class PneumaExperiment:
             
             # Add a blank line for readability
             writer.writerow([])
+def convert_cells_to_testbed(self, cells):
+    # Sort centroids by x and y coordinates
+    sorted_centroids = sorted((cell.get_centroid() for cell in cells), key=lambda c: (c[0], c[1]))
 
+    # Calculate cell size
+    (x1, y1), (x2, y2) = sorted_centroids[:2]
+    w = h = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    # Calculate cell coordinates
+    cell_coords = [(x - w / 2, y - h / 2, x + w / 2, y + h / 2) for x, y in sorted_centroids]
+
+    for cell, coords in zip(cells, cell_coords):
+        cell.cell = coords
 
 if __name__ == '__main__':
-    p = PneumaExperiment('output.txt', False)
-    print(p.cells)
-    p.run_pneuma_experiment()
-    
+    p = PneumaExperiment("C:/Users/Alex/Documents/Drones_Testbed/pneuma data/vehicle distributions", False)
+    # print(p.cells)
+    # p.run_pneuma_experiment(synthesise=True, greedy=True)
+    p.run_testbed_pneuma_experiment(synthesise=False, greedy=True)
+    # p.run_pneuma_experiment(synthesise=False, greedy=True, oneminute=False)
+
