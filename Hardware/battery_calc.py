@@ -107,7 +107,7 @@ def calc_energy_consumption(flight_time,method,voltage_poly_coeff,avg_current):
 
 if __name__ == '__main__':
     os.chdir(original_cwd)
-    hover_power = 1.3625747142758537#1.7583430197900498#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
+    hover_power = 1.7583430197900498##1.572219969739651#1.2577759757917208#1.3625747142758537#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
     # hover_power = 4.688914719440134
     # hover_power = 0.9377829438880265
     # hover_power = 1.125339532665632
@@ -165,15 +165,15 @@ if __name__ == '__main__':
     a, b = np.polyfit(X[:best_fit_x],model_E[:best_fit_x],1,w=weights)
     poly = [calc_poly(x, voltage_poly_coeff) for x in X]
     trapz = [-np.trapz(poly[:x])*avg_current for x in X]
-    plt.plot(X,epos_E,label='Predicted by EPOS energy consumption model')
-    plt.plot(X,model_E,label='Predicted by Hardware energy consumption model',color='green')
+    plt.plot(X,epos_E,label='Predicted by EPOS-based model', color='m')
+    plt.plot(X,model_E,label='Predicted by Hardware-based model',color='y')
     #plt.plot(X,trapz, label='trapz')
     #plt.plot(X,[a*x+b for x in X], label='line of best fit (weighted to pass through (0,0))', linestyle='dashdot') # Line of best fit for model_E. Issues as it doesn't intersect (0,0)
     #plt.plot(X,[battery_capacity for x in X], label="battery capacity (%sJ)" % battery_capacity, color='red', linestyle='dashed')
     #plt.axvline(expected_max_flight_duration, label='Expected max. flight duration (%ss)' % expected_max_flight_duration, color='red', linestyle='dotted')#388.5
-    plt.xlabel("Mission duration (s)")
-    plt.ylabel("Energy Expended (J)")
-    plt.title("Comparison of battery consumption models")
+    plt.xlabel("Flight Duration (s)")
+    plt.ylabel("Energy Consumption (J)")
+    plt.title("Predicted Values of Energy Consumption by Flight Duration")
     plt.xlim(0)
     plt.ylim(0)
     plt.legend()

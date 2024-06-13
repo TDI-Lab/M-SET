@@ -286,7 +286,10 @@ def batch_predicted_total_energy(ndrones, path_filenames, input_modes, speeds, a
     
     voltage_poly_coeff = []
     #voltage_poly_coeff=[-4.60990873e-10, 1.76874340e-07, -1.85072541e-05, -1.00546782e-03, -9.19204536e-03] # moving
-    voltage_poly_coeff = [-3.54280460e-11,  1.14158206e-08,  2.20841775e-06, -2.14997073e-03, -3.66082298e-02] # hovering
+    
+    #voltage_poly_coeff = [-3.54280460e-11,  1.14158206e-08,  2.20841775e-06, -2.14997073e-03, -3.66082298e-02] # hovering
+    voltage_poly_coeff = [-3.93539944e-11,  1.49469540e-08, 1.17748602e-06, -2.04974506e-03, -3.75124204e-02] # hovering (from after take-off), voltage loss
+    
     #voltage_poly_coeff = [-1.77768893e-08,  9.93408521e-06, -2.85530205e-03, -2.22369528e-02] # hovering, deg=3
     #voltage_poly_coeff = [-5.04951815e-13,  4.84672324e-10, -1.78941756e-07,  3.15654831e-05,-3.86950027e-03, -1.33939207e-02]
     #voltage_poly_coeff = [ -2.59269349e-12, -1.80094258e-08,  -8.52202375e-06, 2.23200514e-03,  -3.57061644e+00]# raw values, as opposed to loss
@@ -318,7 +321,7 @@ def batch_predicted_total_energy(ndrones, path_filenames, input_modes, speeds, a
     return epos_total_energy, model_total_energy
 
 def epos_calc_predicted_energy(path, input_mode):
-    hover_power = 1.7583430197900498#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
+    hover_power = 1.7583430197900498#1.572219969739651#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
     flight_power = hover_power # 1.128288294545468 # W
     
     #path = [[[[0.0, 0.0], 1], [[1.0, 1.0], 4], [[1.0, 2.0], 4], [[2.0, 1.0], 8], [[0.0, 0.0], 1]], [[[4.0, 0.0], 2]], [[[4.0, 3.0], 1], [[3.0, 2.0], 9], [[2.0, 2.0], 4], [[3.0, 1.0], 4], [[4.0, 3.0], 1]], [[[0.0, 3.0], 1], [[1.0, 2.0], 1], [[2.0, 2.0], 0], [[2.0, 1.0], 0], [[1.0, 1.0], 1], [[0.0, 3.0], 1]]]
@@ -346,31 +349,26 @@ def plot_all_results():
     plt.legend()
     plt.show()
 
-def plot_by_cdca_type():
+def plot_by_cdca_type(cdca_type):
     # Compare (recording, epos, model), for each cdca type
-
-    fig, axs = plt.subplots(1,2)
-
-    axs[0].plot(x,recorded_basic_energy_consumptions, label="Recorded: Basic cdca")
-    axs[0].plot(x,epos_predicted_basic_energy_consumptions, label="Predicted by EPOS: Basic cdca")
-    axs[0].plot(x,model_predicted_basic_energy_consumptions, label="Predicted by model: Basic cdca")
-
-    axs[1].plot(x,recorded_pf_energy_consumptions, label="Recorded: Potenial Fields cdca")
-    axs[1].plot(x,epos_predicted_pf_energy_consumptions, label="Predicted by EPOS: Potential Fields cdca")
-    axs[1].plot(x,model_predicted_pf_energy_consumptions, label="Predicted by model: Potential Fields cdca")
+    if cdca_type == "basic":
+        plt.plot(x,recorded_basic_energy_consumptions, label="Recorded from hardware", color='c', marker='o')
+        plt.plot(x,epos_predicted_basic_energy_consumptions, label="Predicted by EPOS-based model", color='m', marker='o')
+        plt.plot(x,model_predicted_basic_energy_consumptions, label="Predicted by Hardware-based model", color='y', marker='o')
+        plt.title("Recorded vs. Predicted Values of Energy Consumption With Scheduliing CA")
+    else:
+        plt.plot(x,recorded_pf_energy_consumptions, label="Recorded from hardware", color='c', marker='o')
+        plt.plot(x,epos_predicted_pf_energy_consumptions, label="Predicted by EPOS-based model", color='m', marker='o')
+        plt.plot(x,model_predicted_pf_energy_consumptions, label="Predicted by Hardware-based model", color='y', marker='o')
+        plt.title("Recorded vs. Predicted Values of Energy Consumption With Potential Fields CA")
 
     # axs[2].plot(x,epos_predicted_nocdca_energy_consumptions, label="Predicted by EPOS: No cdca")
     # axs[2].plot(x,model_predicted_nocdca_energy_consumptions, label="Predicted by model: No cdca")
-
-    titles = ["Basic cdca","Potential Fields cdca"]
-    for c, ax in enumerate(axs):
-        ax.set_xlabel("Number of drones in path")
-        ax.set_ylabel("Energy Consumption (J)")
-        ax.set_xticks([1,2,3,4])
-        ax.set_ylim(0,1000)
-        ax.legend()
-        ax.set_title(titles[c])
-    plt.suptitle("Recorded vs. predicted values for each cdca type")
+    plt.xlabel("Number of drones in path")
+    plt.ylabel("Energy Consumption (J)")
+    plt.xticks([1,2,3,4])
+    plt.ylim(0,1100)
+    plt.legend()
     plt.show()
 
 def plot_by_value_origin():
@@ -401,11 +399,12 @@ def plot_by_value_origin():
     plt.show()
 
 def plot_nocdca_epos_vs_model():
-    plt.plot(x,epos_predicted_nocdca_energy_consumptions, label="Predicted by EPOS: No cdca")
-    plt.plot(x,model_predicted_nocdca_energy_consumptions, label="Predicted by model: No cdca")
+    plt.plot(x,epos_predicted_nocdca_energy_consumptions, label="Predicted by EPOS-based model", color='m', marker='o')
+    plt.plot(x,model_predicted_nocdca_energy_consumptions, label="Predicted by Hardware-based model", color='y', marker='o')
     plt.xlabel("Number of drones in path")
     plt.ylabel("Energy Consumption (J)")
     plt.xticks([1,2,3,4])
+    plt.title("Predicted Values of Energy Consumption with No CDCA Algorithms Applied")
     plt.legend()
     plt.show()
 
@@ -476,7 +475,8 @@ if __name__=="__main__":
     #     times.append(total_time)
     # print(times)
         
-    plot_all_results()
-    plot_by_cdca_type()
-    plot_by_value_origin()
+    #plot_all_results()
+    plot_by_cdca_type("basic")
+    plot_by_cdca_type("pf")
+    #plot_by_value_origin()
     plot_nocdca_epos_vs_model()
