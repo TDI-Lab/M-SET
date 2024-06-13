@@ -10,7 +10,7 @@ class Collision:
     }
     self.collision_type = collision_type
     self.collision_time = collision_time
-
+  
   def set_drone_A(self, drone, flight_index):
     self.drones['drone_A']['drone'] = drone
     self.drones['drone_A']['flight_index'] = flight_index
@@ -19,11 +19,35 @@ class Collision:
     self.drones['drone_B']['drone'] = drone
     self.drones['drone_B']['flight_index'] = flight_index
 
-  def get_drone_to_augment(self):
-    if (self.drones['drone_A']['flight_start_time'] <= self.drones['drone_B']['flight_start_time']):
-        return self.drones['drone_A']
+  def get_drone_to_augment(self, priority_map):
+      if self.collision_type == DEST_OCCUPIED_COLLISION:
+        if (self.drones['drone_A']['flight_start_time'] <= self.drones['drone_B']['flight_start_time']):
+            return self.drones['drone_A'], self.drones['drone_B']
+        else:
+            return self.drones['drone_B'], self.drones['drone_A']
+      elif priority_map is None:
+        if (self.drones['drone_A']['flight_start_time'] <= self.drones['drone_B']['flight_start_time']):
+            return self.drones['drone_B'], self.drones['drone_A']
+        else:
+            return self.drones['drone_A'], self.drones['drone_B']
+      else:
+        drone_A_dest = self.drones['drone_A']['drone'].flights[self.drones['drone_A']['flight_index']].destination
+        drone_B_dest = self.drones['drone_B']['drone'].flights[self.drones['drone_B']['flight_index']].destination
+        priority_A = list(priority_map.keys())[list(priority_map.values()).index(drone_A_dest)]
+        priority_B = list(priority_map.keys())[list(priority_map.values()).index(drone_B_dest)]
+        
+        if (priority_A < priority_B):
+          return self.drones['drone_B'], self.drones['drone_A']
+        else:
+          return self.drones['drone_A'], self.drones['drone_B']
+
+
+  def set_collision_distance(self, collision_points = None):
+    if collision_points is not None:
+      self.collision_distance = collision_points * DISTANCE_STEP * 2
     else:
-        return self.drones['drone_B']
+      self.collision_distance = MINIMUM_DISTANCE
+  
 
   def print_collision(self):
     print(self.drones)
@@ -33,10 +57,11 @@ class Collision:
 
 class Basic_Collision_Avoidance(Collision_Strategy):
 # A basic collision avoidance strategy class.
-  def __init__(self, only_collision_detection = False):
+  def __init__(self, only_collision_detection = False, priority_map = None):
     # Initialise the Basic Collection Detction/Avoidance strategy.
     self.only_collision_detection = only_collision_detection
     self.collisions = []
+    self.priority_map = priority_map
 
   def detect_potential_collisions(self, drones):
     # Detect potential collisions by iterating through the drones and their flights.
@@ -72,9 +97,10 @@ class Basic_Collision_Avoidance(Collision_Strategy):
                 self.identify_collision_type(subject_flight, flight)
                 new_collision = Collision(subject_flight.flight_path[-1], flight.flight_path[0], subject_flight.start_time, flight.start_time, DEST_OCCUPIED_COLLISION, subject_flight.finish_time)
                 self.collisions.append(new_collision)
+                self.collisions[-1].set_collision_distance()
                 collision_flag = True
 
-            elif (self.same_air_time(subject_flight, flight)):
+            elif (self.same_air_time(subject_flight, flight) and drone_index > subject_drone_index):
                 collision_flag = self.compare_coordintes(subject_flight, flight)
 
             if collision_flag:
@@ -111,23 +137,35 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     # Check if two flights that are airborne at the same time get too close at any point of time.
     comparison_from = max(subject_flight.start_time, flight.start_time)
     comparison_until = min(subject_flight.finish_time, flight.finish_time)
-
-    num_timesteps = int(math.ceil((comparison_until - comparison_from) / TIME_STEP)) + 1
+    comparison_iterations = int((comparison_until - comparison_from) / TIME_STEP)
     
-    for i in range(num_timesteps):
-        subjet_flight_index = i# - subject_flight.start_time
-        flight_index = i# - flight.start_time
+    comparison_range = []
+    for i in range(comparison_iterations + 1):
+        comparison_range.append(comparison_from + (i * TIME_STEP))
+      
+    collision_flag = False
+    collision_points = 0
+    for i in comparison_range:
+        subjet_flight_index = int((i - subject_flight.start_time) / TIME_STEP)
+        flight_index = int((i - flight.start_time) / TIME_STEP)
 
         point_A = subject_flight.flight_path[subjet_flight_index]
         point_B = flight.flight_path[flight_index]
 
         distance_between_drones = math.dist(point_A, point_B)
         if (distance_between_drones <= MINIMUM_DISTANCE):
-            collision_type = self.identify_collision_type(subject_flight, flight)
-            new_collision = Collision(point_A, point_B, subject_flight.start_time, flight.start_time, collision_type, i)
-            self.collisions.append(new_collision)
-            return True
+            if not collision_flag:
+                collision_type = self.identify_collision_type(subject_flight, flight)
+                new_collision = Collision(point_A, point_B, subject_flight.start_time, flight.start_time, collision_type, i)
+                self.collisions.append(new_collision)
+                collision_points += 1
+                collision_flag = True
+            else:
+                collision_points += 1
 
+    if collision_flag:
+        self.collisions[-1].set_collision_distance(collision_points)
+        return True
     return False
 
 
@@ -148,16 +186,19 @@ class Basic_Collision_Avoidance(Collision_Strategy):
   def augment_plan(self):
     # Augment drone plans based on collision type.
     collision = self.collisions[-1]
-    drone_to_augment = collision.get_drone_to_augment()
+    drone_to_augment, other_drone = collision.get_drone_to_augment(self.priority_map)
     delay = 0
 
-    if (collision.collision_type == CROSS_COLLISION or collision.collision_type == DEST_OCCUPIED_COLLISION):
+    if (collision.collision_type == CROSS_COLLISION):
         delay = TIME_DELAY
 
     elif (collision.collision_type == PARALLEL_COLLISION):
         new_point = self.get_orthogonal_point(drone_to_augment['collision_point'], drone_to_augment['drone'].plan[drone_to_augment['flight_index']][0])
         drone_to_augment['drone'].plan.insert(drone_to_augment['flight_index'] + 1, [new_point, 0])
         delay = 0
+    
+    elif (collision.collision_type == DEST_OCCUPIED_COLLISION):
+        delay = + TIME_DELAY + other_drone['flight_start_time'] - drone_to_augment['drone'].flights[drone_to_augment['flight_index']].finish_time
 
     else:
         print("Augmentation for this type of collision has not bee implemented yet.")
@@ -171,12 +212,11 @@ class Basic_Collision_Avoidance(Collision_Strategy):
     # The perpendicular line passes through the collision point.
     y_difference = collision_point[1] - start_point[1]
     x_difference = start_point[0] - collision_point[0] 
-
-    multiplier = orthogonal_dist / math.sqrt((y_difference ** 2) + (x_difference ** 2))
+    multiplier = orthogonal_dist / (math.sqrt((y_difference ** 2) + (x_difference ** 2)) + 1e-10)
 
     orthogonal_line = [y_difference * multiplier, x_difference * multiplier]
 
-    orthogonal_point = [round(collision_point[0] - orthogonal_line[0], 0), round(collision_point[1] - orthogonal_line[1],0)]
+    orthogonal_point = [collision_point[0] - orthogonal_line[0], collision_point[1] - orthogonal_line[1]]
 
 
     return orthogonal_point

@@ -1,0 +1,37 @@
+# My Crazyflie definition
+"drone": {
+    "BatteryCapacity": 925, # J
+    "BodyMass": 0.027, # Left as is, crazyFlieTypes states total weight is 0.032g. So 0.027+0.05=0.032 (see BatteryMass below)
+    "BatteryMass": 0.005, # Left as is, crazyFlieTypes states total weight is 0.032g. So 0.027+0.05=0.032 (see BodyMass above)
+    "NumberOfRotors": 4, # Left as is, Visually confirmed
+    "RotorDiameter": 0.045, # Measured using ruler
+    "ProjectedBodyArea": 0.0599,
+    "ProjectedBatteryArea": 0.0037,
+    "PowerEfficiency": 0.8,
+    "GroundSpeed": 0.1, # That's the speed that I'm flying the drones at. Max groundspeed posCtlPid.xyVelMax=1m/s default
+    "AirSpeed": 0 # No wind speed in indoor test
+},
+
+# 3 choices for AirSpeed:
+# Airspeed: hover_power # reason
+0: 1.125339532665632# lower limit of influence
+0.1: 1.128405418267026 # same as GroundSpeed
+0.1225: 1.129941321339904 # same GroundSpeed:AirSpeed ratio
+1.22: 1.6110077015513258
+1.225: 1.6152318136132513 W # Assuming 6.94 is max groundspeed, then with the same GroundSpeed:AirSpeed ratio then this is 1.225
+
+# AirSpeed is the speed of the air, so 0m/s for indoor test
+
+# Default drone
+"drone": {
+    "BatteryCapacity": 2700,
+    "BodyMass": 0.027,
+    "BatteryMass": 0.005,
+    "NumberOfRotors": 4,
+    "RotorDiameter": 0.03,
+    "ProjectedBodyArea": 0.0599,
+    "ProjectedBatteryArea": 0.0037,
+    "PowerEfficiency": 0.8,
+    "GroundSpeed": 6.94,
+    "AirSpeed": 8.5
+},

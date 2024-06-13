@@ -7,7 +7,9 @@ class Flight:
   def __init__(self, start_time, origin, destination):
     # Initialise flight object with start time, origin and destination.
     self.start_time = start_time
-    self.calculate_flight_path(origin, destination)
+    self.origin = origin[0]
+    self.destination = destination[0]
+    self.calculate_flight_path(self.origin, self.destination)
     self.calculate_duration()
     self.finish_time = self.start_time + self.duration
 
@@ -19,19 +21,19 @@ class Flight:
 
   def calculate_flight_path(self, origin, destination):
     # Calculate flight coordinates.
-    self.distance = math.dist(origin[0], destination[0])
-    self.flight_path = [origin[0]]
+    self.distance = math.dist(origin, destination)
+    self.flight_path = [origin]
     
     distance_covered = 0
     epsilon = 0.001
     while ((distance_covered + DISTANCE_STEP) < self.distance):
-      next_coordinate = self.get_coordinates(origin[0], destination[0], distance_covered + DISTANCE_STEP)
-      if math.dist(next_coordinate, destination[0]) <= epsilon:
+      next_coordinate = self.get_coordinates(origin, destination, distance_covered + DISTANCE_STEP)
+      if math.dist(next_coordinate, destination) <= epsilon:
         break
       self.flight_path.append(next_coordinate)
       distance_covered += DISTANCE_STEP
 
-    self.flight_path.append(destination[0])
+    self.flight_path.append(destination)
 
 
   def get_coordinates(self, p, q, dist):
@@ -53,6 +55,7 @@ class Flight:
   def print_itinerary(self):
     print("Flight start time: ", self.start_time, " seconds")
     print("Flight finish time: ", self.finish_time, " seconds")
+    print("Flight distance: ", self.distance, " units")
     print("Flight duration: ", self.duration, " seconds")
     print("Flight path (list of coordinates): ", *self.flight_path,sep='\n')
 
