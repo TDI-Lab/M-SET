@@ -11,6 +11,7 @@ from cdca.src.Dependency_Collision_Avoidance import Dependency_Collision_Avoidan
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from experiments.MeasureSensing import MeasureSensing
 from experiments.VisualiseData import VisualiseData
+from Hardware.cdca_epos_executor import main as hardware_main
 
 from path_generation.PathGenerator import PathGenerator
 import csv

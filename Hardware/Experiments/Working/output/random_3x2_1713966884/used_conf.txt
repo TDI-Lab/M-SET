@@ -1,0 +1,29 @@
+CONFIGURATION:
+dataset = random_3x2
+output = /home/adam/Documents/Drones-Testbed/path_generation/EPOS/output/random_3x2_1713966884
+==============
+numSimulations = 1
+dataset = random_3x2
+numAgents = 4
+numPlans = 8
+planDim = 6
+numIterations = 32
+numChildren = 2
+--------------
+alpha = 0.0
+beta = 0.0
+global cost function = Sensing Mission Mismatch
+local cost function = index
+goal signal = 5.0,9.0,4.0,5.0,4.0,8.0
+--------------
+permutationID = 0
+reorganizationSeed = 0
+permutationSeed = 0
+permutationFile = null
+reorganizationPeriod = 3
+memorizationOffset = 5
+reorganizationStrategy = NEVER
+convergenceTolerance = 0.5
+--------------
+loggingLevel = SEVERE
+Selected Loggers: GlobalCostLogger, UnfairnessLogger, HardConstraintLogger, PositionLogger, GlobalComplexCostLogger, SelectedPlanLogger, PlanFrequencyLogger, WeightsLogger, LocalCostMultiObjectiveLogger, TerminationLogger, ReorganizationLogger, GlobalResponseVectorLogger

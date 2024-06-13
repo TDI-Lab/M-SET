@@ -8,11 +8,12 @@ from std_msgs.msg import String
 
 try:
     from Hardware_constants import *
+    from ROSListener import *
 except:
-    from Hardware.Hardware_constants import * 
+    from Hardware.Hardware_constants import *
+    from Hardware.ROSListener import * 
 
 #from aSync import aSync
-from ROSListener import *
 
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
@@ -162,7 +163,7 @@ class Drone():
         if IN_SIMULATION == False:
             # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
             #   Therefore, this can only be done when not in simulation
-            self.cf.land(0.05, 2.5)
+            self.cf.land(0.09, 2.5)
         else: 
             # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
             land_pos = get_coords(self.positions[self.move_count-1],USE_CELL_COORDS)
@@ -192,10 +193,11 @@ def parse_input(input_path, allcfs, speed, next_moves):
             for position in drone:
                 if INPUT_MODE == "cdca":
                     d.positions.append(position[0])
-                    d.times.append(int(position[1]))
+                    d.times.append(float(position[1]))
                 elif INPUT_MODE == "default":
                     d.positions.append(position)
                     d.times.append(0)
+            print(d.times)
             
             next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
 
@@ -225,7 +227,7 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
     for drone in all_drones:
-        drone.cf.land(0.05, 2.5)
+        drone.cf.land(0.09, 2.5)
         timeHelper.sleep(2.5)
 
 def set_initial_positions(timeHelper, all_drones, duration):
@@ -247,10 +249,17 @@ def return_uris(channels,numbers):
     return uris
 
 def init_logging():
-   try:
-      rospy.init_node('listener', anonymous=True)
-   except:
-      pass
+    if ENABLE_LOGGING == True:
+        global pub
+
+        try:
+            rospy.init_node('chatter', anonymous=True)
+        except:
+            pass
+
+        pub = rospy.Publisher('status_logger', String, queue_size=10)
+
+        input("Logging setup complete\nPress any key to continue")
 
 def log_all_status(all_drones,msg=""):
     for drone in all_drones:
@@ -330,7 +339,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
                 else:
 
                     # ASSIGN STATUS CHANGES
-                    if cf.status == "moving" or cf.status == "idle" or cf.status == "hovering":
+                    if cf.status == "moving" or cf.status == "idle" or cf.status=="hovering":
                         if (in_position == True) or (TRAVEL_TIME_MODE != 3):
                             if INPUT_MODE == "cdca":
                                 # if input_move is cdca, then waiting phase follows movement phase
@@ -423,6 +432,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     #drone_uris = return_uris([80,90],[2,3])
 
     print("INITIALISING LOGGING")
+    init_logging()
     log_all_status(all_drones, msg="Initialising logging")
     """
     ids = [1,2]
@@ -434,7 +444,8 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         try:
             take_off_all(2.5, timeHelper, all_drones, sequential=False)
 
-            set_initial_positions(timeHelper,all_drones,5)
+            if IN_SIMULATION == False:
+                set_initial_positions(timeHelper,all_drones,5)
 
             follow_plans(timeHelper, all_drones, next_moves)
 
@@ -476,7 +487,10 @@ if __name__ == '__main__':
         #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
         #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
         print("Executing default path")
-        main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        #main("epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
+        main("Hardware/epospaths/Testpaths/cell_occupied_collision.txt",input_mode="cdca",raw=False, run=True)
 
 # Debugging demos    
 #main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
