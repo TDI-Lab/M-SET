@@ -7,10 +7,14 @@ from matplotlib import pyplot as plt
 vehicle_entries = []
 
 
-output_file_name = "_"
+output_file_name = ""
+
+MAXIMUM_SENSING = 1000
 
 
 def load_entries(vehicles: Union[str, List[str]] = "all"):
+    global vehicle_entries
+    vehicle_entries = []
     files = listdir("/home/c41/Downloads/Plans_for_Drones/Plans_for_Drones/RealData_Store/20181024_0830_0900")
     files = list(filter(lambda x: x[-4:] == ".csv", files))
     if vehicles != "all":
@@ -157,6 +161,7 @@ def discrete_movement(t_start, t_end, p_start, p_end):
 #  id,timeBegin,timeEnd,lonBegin,latBegin,lonEnd,latEnd,area
 def discrete_vehicle_movements(pos_grid, long_lat_base):
     global vehicle_entries
+    num_points = 0
     distribution_grid = [[0 for _ in pos_grid[0]] for _ in pos_grid]
     for entry in vehicle_entries:
         start_time = round(entry[1])
@@ -180,6 +185,12 @@ def discrete_vehicle_movements(pos_grid, long_lat_base):
                     j_pos = j
                     break
             distribution_grid[j_pos][i_pos] += 1
+            num_points += 1
+    #  normalise distribution grid
+    for i, row in enumerate(distribution_grid):
+        for j, cell in enumerate(row):
+            normal = (float(cell)/num_points)*MAXIMUM_SENSING
+            distribution_grid[i][j] = round(normal, 3)
     return distribution_grid
 
 
@@ -190,6 +201,9 @@ def sensing_by_area():
             total_sensing[int(entry[7])] = 1
         else:
             total_sensing[int(entry[7])] += 1
+    #  normalise points
+    for area, sensing in total_sensing.items():
+        total_sensing[area] = (float(sensing)/len(vehicle_entries))*MAXIMUM_SENSING
     return total_sensing
 
 
@@ -262,9 +276,11 @@ def create_pneuma_point_map(vehicles: Union[str, List[str]] = "all"):
 
 if __name__ == '__main__':
     from visualise_maps import visualise_map_by_path, visualise_sensing
-    vehicle_types = ["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"]
-    for vehicle in vehicle_types:
-        output_file_name = f"_{vehicle}"
-        create_pneuma_point_map(vehicles=[vehicle])
+    create_pneuma_grid_map(vehicles=["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"])
+    create_pneuma_point_map(vehicles=["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"])
+    # vehicle_types = ["Bus", "Car", "HeavyVehicle", "MediumVehicle", "Motorcycle", "Taxi"]
+    # for vehicle in vehicle_types:
+    #     output_file_name = f"_{vehicle}"
+    #     create_pneuma_point_map(vehicles=[vehicle])
 
 

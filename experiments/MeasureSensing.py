@@ -8,7 +8,7 @@ class cell:
         self.position = pos
         self.x = pos[0]
         self.y = pos[1]
-        self.value = int(value)
+        self.value = float(value)
         self.measured_value = 0
     def __str__(self):
         return f"Cell {self.id}: x={self.x}, y={self.y}, z={self.position[2]}, value={self.value}"
@@ -40,24 +40,37 @@ class MeasureSensing:
     
     def add_sensed_value(self, pos, duration):
         for cell in self.cells:
-            if [float(pos[0]), float(pos[1])] == [float(cell.x), float(cell.y)]: # Convert coordinates to floats before comparing
+            if abs(float(pos[0]) - float(cell.x)) < 0.01 and abs(float(pos[1]) - float(cell.y)) < 0.01: # Check if positions are within a small distance
                 cell.measured_value += duration
 
     def reset_measured_values(self):
         for cell in self.cells:
             cell.measured_value = 0
 
-    def get_sensing_percentage(self):
+    def get_sensing_percentages(self):
         total_value = self.get_total_sensing_value()
         total_mismatch = 0
+        total_undersensing = 0
+        total_oversensing = 0
         for cell in self.cells:
             total_mismatch += abs(cell.measured_value - cell.value)
-        sensing_percentage = round(total_mismatch / total_value * 100, 2)
-
+            # if undersensed, add the difference
+            if cell.measured_value < cell.value:
+                total_undersensing += cell.value - cell.measured_value
+            if cell.measured_value > cell.value:
+                total_oversensing += cell.measured_value - cell.value
+        sensing_mismatch = round(total_mismatch / total_value * 100, 2)
+        undersensing_percentage = round(total_undersensing / total_value * 100, 2)
+        oversensing_percentage = round(total_oversensing / total_value * 100, 2)
         print(f"Total value: {total_value}")
         print(f"Total mismatch: {total_mismatch}")
-        print(f"Sensing mismatch percentage: {sensing_percentage}%")
-        return sensing_percentage
+        print(f"Sensing mismatch percentage: {sensing_mismatch}%")
+        print(f"Undersensing percentage: {undersensing_percentage}%")
+        print(f"Oversensing percentage: {oversensing_percentage}%")
+        return sensing_mismatch, undersensing_percentage,  oversensing_percentage
+    
+        
+
 
     def measure_sensing(self, paths):
         self.reset_measured_values()
@@ -67,7 +80,7 @@ class MeasureSensing:
                     self.add_sensed_value(p[0], p[1])
 
 
-        return self.get_sensing_percentage()
+        return self.get_sensing_percentages()
 
 
     
