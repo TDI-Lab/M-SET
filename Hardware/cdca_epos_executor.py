@@ -390,7 +390,11 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     # Change directory to the crazyswarm/scripts folder
     # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the crazyswarm/ros_ws/src/crazyswarm/scripts folder
-    os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
+    try:
+        os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
+    except FileNotFoundError:
+        print("\nERROR: the value of CRAZYSWARM_SCRIPTS_FILE_PATH in Hardware/Hardware_constants.py is not a valid file path. \nSee the comments in the Hardware/Hardware_constants.py or the documentation for how to resolve this.\n")
+        return
 
     print("INITIALISING CRAZYSWARM")
     swarm = Crazyswarm()

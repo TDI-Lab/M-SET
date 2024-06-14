@@ -20,7 +20,10 @@ print(os.getcwd())
 try:
    file = open("Hardware Results/%s" % output_file, "w")
 except:
-   print("WARNING: LOG OUTPUT FILE NOT FOUND")
+   if ENABLE_LOGGING == True:
+      print("\nWARNING: LOG OUTPUT FILE NOT FOUND")
+   else:
+      pass
 start = time.time()
 
 status = ["idle", "idle", "idle", "idle"]
