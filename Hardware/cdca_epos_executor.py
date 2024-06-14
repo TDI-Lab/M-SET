@@ -13,23 +13,18 @@ except:
     from Hardware.Hardware_constants import *
     from Hardware.ROSListener import * 
 
-#from aSync import aSync
-
 # append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
 from pycrazyswarm import Crazyswarm
 Z=HOVER_HEIGHT
 
 pub = rospy.Publisher('status_logger', String, queue_size=10)
-#rospy.init_node('status', anonymous=True)
-#rate = rospy.Rate(10) # 10hz
 
 def get_coords(position, use_cell_coords):
     if use_cell_coords == True:
-        #return default_epos_coords[str(position).replace(' ','')]
         x = convert_coords(position[0],"x")
         y = convert_coords(position[1],"y")
-        z = HOVER_HEIGHT # should be HOVER_HEIGHT, but hardcoding it for now to narrow down possible errors
+        z = HOVER_HEIGHT
         return([x,y,z])
     else:
         return [position[0],position[1],HOVER_HEIGHT]
@@ -41,22 +36,6 @@ def convert_coords(val, axis):
         return ((2*val)-3)*0.235
     else:
         return NameError
-
-"""
-# Translate the positions on the testbed to coordinates ((0,0) as the centre of the testbed)
-default_epos_coords = {
-    "(1.0,1.0,1.0)": [-0.5533,-0.235,HOVER_HEIGHT], # cell 0
-    "(2.0,1.0,1.0)": [0, -0.235,HOVER_HEIGHT], # cell 1
-    "(3.0,1.0,1.0)": [0.5533,-0.235,HOVER_HEIGHT], # cell 2
-    "(1.0,2.0,1.0)": [-0.5533, 0.235,HOVER_HEIGHT], # cell 3
-    "(2.0,2.0,1.0)": [0,0.235,HOVER_HEIGHT], # cell 4
-    "(3.0,2.0,1.0)": [0.5533,0.235,HOVER_HEIGHT], # cell 5
-    "(0.0,0.0,0.0)": [-0.8299,-0.47,0.5], # Base 0, bottom left corner
-    "(4.0,0.0,0.0)": [0.8299,-0.47,HOVER_HEIGHT], # Base 1, bottom right corner
-    "(4.0,3.0,0.0)": [0.8299, 0.47,HOVER_HEIGHT], # Base 2, top right corner
-    "(0.0,3.0,0.0)": [-0.8299, 0.47,HOVER_HEIGHT] # Base 3, top left corner
-}
-"""
 
 def read_cdca_output(filename):
     try:
@@ -117,7 +96,7 @@ class Drone():
         self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
         self.speed = speed
         self.cf = cf
-        self.id = self.cf.id # DEPRECATED
+        self.id = self.cf.id
         self.move_count = 0 # Count of moves completed by the drone
 
     def move_next_cell(self, use_cell_coords, i):
@@ -133,7 +112,6 @@ class Drone():
 
         self.cf.goTo(pos, 0, travel_time)
         self.move_count += 1
-        #self.positions.pop(0)
 
         # Alter the return value if needed
         if TRAVEL_TIME_MODE == 1:
@@ -165,13 +143,12 @@ class Drone():
             #   Therefore, this can only be done when not in simulation
             self.cf.land(0.09, 2.5)
         else: 
-            # This is a workaround to avoid calling land command. The code below performs same functionality as the land command in this instance (but does so in the simulation)
+            # This is a workaround to avoid calling land command in simulation. The code below performs same functionality as the land command in this instance but does not turn off the motors.
             land_pos = get_coords(self.positions[self.move_count-1],USE_CELL_COORDS)
             self.cf.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
     def log_status(self, msg=""):
-        #rospy.loginfo(self.status)
         if msg != "" and PRINT_LOG_MESSAGES==True:
             print(msg)
         
@@ -246,7 +223,10 @@ def set_initial_positions(timeHelper, all_drones, duration):
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
-        uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i])) # Note: the 0 only needs to be there for drone IDs < 10 - need to change this
+        if numbers[i] < 10:
+            uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+"0"+str(numbers[i]))
+        else:
+            uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+str(numbers[i]))
     return uris
 
 def init_logging():
@@ -270,11 +250,6 @@ def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
         if ENABLE_LOGGING == True:
             call_once(ids)
-            #listener(ids)
-    """
-            logger = aSync(drone_uris)
-            logger.runCallback()
-    """
     pass
         
 def adjust_moves(next_moves):
@@ -285,12 +260,11 @@ def adjust_moves(next_moves):
                 if (next_moves[j] < TIMESTEP_LENGTH and next_moves[j] > 0):
                     print("if",j)
                     # round up the travel_time of the subject drone
-                    next_moves[j] = roundup_nearest(next_moves[j],TIMESTEP_LENGTH) # remove this to preserve consistent speed? Or does it need to go slower to give other drones the chance to get out of the way?
+                    next_moves[j] = roundup_nearest(next_moves[j],TIMESTEP_LENGTH)
                 else:
                     print("else",j)
                     # add one to the action time of the other drones
-                    next_moves[j] = next_moves[j] + TIMESTEP_LENGTH # not sure if this is right or it should be the below instead
-                    #next_moves[j] = roundup_nearest(next_moves[i],TIMESTEP_LENGTH) # seems to break it
+                    next_moves[j] = next_moves[j] + TIMESTEP_LENGTH
 
     return next_moves
 
@@ -300,13 +274,10 @@ def follow_plans(timeHelper, all_drones, next_moves):
     # Cycle through the time slots
     # If a drone moves at that time slot, move it
     t=0 # timeslot counter
-    while np.any(next_moves > -1): # need to change this to >= 0 if allow timeslots of size >1 sec?
+    while np.any(next_moves > -1):
 
         if t % 1 == 0: # Only print integer values of t
             print("t=",t)
-
-        # Adjust next_moves to account for latency between timesteps
-        #next_moves = adjust_moves(next_moves, TIMESTEP_LENGTH, TRAVEL_TIME_MODE) # REMOVE THIS?
 
         in_position = all(drone.status == "idle" for drone in all_drones)
         for i in range(0,len(all_drones)):
@@ -314,11 +285,10 @@ def follow_plans(timeHelper, all_drones, next_moves):
             cf = all_drones[i]
 
             # if it's time for the drone to change status (i.e. it has finished its current task)
-            if round_nearest(next_moves[i], TIMESTEP_LENGTH) == 0: # IS THIS ROUNDING CORRECT?  
+            if round_nearest(next_moves[i], TIMESTEP_LENGTH) == 0:  
 
                 # LOG FINISHED ACTION
                 cf.log_status()
-                #log_all_drones([1],["battery"])
 
                 # CHECK IF DRONE REACHED END OF PATH
                 if cf.move_count >= len(cf.times): 
@@ -334,7 +304,6 @@ def follow_plans(timeHelper, all_drones, next_moves):
 
                     # LOG FINISHED ACTION
                     cf.log_status()
-                    #log_all_drones([1],["battery"])
 
                 # OTHERWISE, CONTINUE
                 else:
@@ -367,8 +336,6 @@ def follow_plans(timeHelper, all_drones, next_moves):
                     elif cf.status == "waiting" or cf.status == "sensing":
                         cf.status = "moving"
 
-                    #print(cf.status)
-
                     # PERFORM ACTIONS OF (new) CURRENT PHASE                
                     if cf.status == "sensing":
                         cf.log_status(msg="Drone %s sensing" % i)
@@ -388,7 +355,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
         next_moves = next_moves - np.full((1,len(all_drones)),TIMESTEP_LENGTH)[0]
 
         # increment timeslot
-        timeHelper.sleep(TIMESTEP_LENGTH) # Replace with timeHelper.sleepForTime(Hz)?
+        timeHelper.sleep(TIMESTEP_LENGTH)
         t = round_nearest(t + TIMESTEP_LENGTH, TIMESTEP_LENGTH)
 
     # Give some extra time so that the simulation doesn't shut down abruptly as soon as the drones stop moving
@@ -396,12 +363,6 @@ def follow_plans(timeHelper, all_drones, next_moves):
     timeHelper.sleep(3)
 
 
-"""
-Parameters:
-IN_SIMULATION - Is it being run in simulation - True or False
-INPUT_MODE - "default": epos with no cdca, "cdca": waiting cdca
-input_file_path - path to input file
-"""
 def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True, in_simulation=IN_SIMULATION, input_mode=INPUT_MODE):
     # Allows INPUT_MODE to be overwritten by supplying a new value (as opposed to using the one from the config file)
     global INPUT_MODE
@@ -420,7 +381,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     print("Path=",input_path)
 
     # Change directory to the crazyswarm/scripts folder
-    # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the scripts folder
+    # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the crazyswarm/ros_ws/src/crazyswarm/scripts folder
     os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
 
     print("INITIALISING CRAZYSWARM")
@@ -432,15 +393,9 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     all_drones, next_moves = parse_input(input_path, allcfs, SPEED, next_moves)
 
-    #drone_uris = return_uris([80,90],[2,3])
-
     print("INITIALISING LOGGING")
     init_logging()
     log_all_status(all_drones, msg="Initialising logging")
-    """
-    ids = [1,2]
-    log_all_drones(ids, ["battery"])
-    """
     
     if run == True:
         print("EXECUTING PATH")
@@ -456,10 +411,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
             print("Error:",error)
             land_all(0.05, timeHelper, all_drones)
 
-    #land_all(0.05, timeHelper, all_drones)
-
-    #log_all_drones(drone_uris, ["battery"])
-
 if __name__ == '__main__':
     # [--sim], [path], [input_mode]
     args = sys.argv
@@ -471,7 +422,6 @@ if __name__ == '__main__':
         IN_SIMULATION = True
         offset = 1
 
-    #if len(args) > 1+offset: # if any arguments given (excluding '--sim')
     for arg in args[1+offset:]:
         if arg in ["default", "cdca"]:
             input_mode = arg
@@ -483,29 +433,5 @@ if __name__ == '__main__':
     if filepath != None:
         main(filepath,input_mode=input_mode,raw=False)
 
-    else: # Here for debugging purposes
-        
-        #main("epospaths/Evangelos_cdca_demo4.txt",run=True)
-        #main("epospaths/April/debug_default_4_fake.txt", input_mode="default")
-        #main("epospaths/April/debug_cdca_4_fake.txt", input_mode="cdca")
-        #main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False)
-        print("Executing default path")
-        main("Hardware/epospaths/April/16cells.txt", input_mode="default", raw=False, run=True)
-
-# Debugging demos    
-#main(True, "default", "epospaths/debug_default_demo.txt", 2, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/debug_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
-
-# Demos
-#main(True, "default", "epospaths/Evangelos_default_demo.txt", 2, True, 1, 0.5, 0.1)
-#   main(True, "cdca", "epospaths/Evangelos_cdca_demo4.txt", 2, True, 0, 0.5, 0.1, 0.5)
-#main(True, "default", "epospaths/sanity_test.txt", 2, True, 1, 0.5, 0.1)
-
-# Collision demos
-#main(True, "default", "epospaths/head_on_demo.txt", 2, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
-#main(True, "default", "epospaths/cross_demo.txt", 2, True, 1, 0.5, 0.1)
-#main(True, "cdca", "epospaths/head_on_cdca_demo.txt", 2, True, 1, 0.5, 0.1)
-        
-#log_all_drones(return_uris([80],[1]), ["battery"])
-#log_all_drones(return_uris([80,90],[2,3]), ["battery"])
+    else:
+        print("ERROR: No path file given")

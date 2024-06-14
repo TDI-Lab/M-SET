@@ -8,9 +8,6 @@ def generate_epos_path():
     for plant, path in plans.items():
         print(f"plan: {plant}, path: {path}")
 
-    # if n_drones == 1:
-    #     plans = [plans]
-
     input_p = Input_Parser(plans)
     parsed_plans = input_p.parsed_input
     

@@ -23,14 +23,7 @@ except:
    print("WARNING: LOG OUTPUT FILE NOT FOUND")
 start = time.time()
 
-#current = os.getcwd()
-#os.chdir(CRAZYSWARM_SCRIPTS_FILE_PATH)
-
-#ndrones=len(Crazyswarm().allcfs.crazyflies)
-#status = np.full((1,ndrones),"idle")
 status = ["idle", "idle", "idle", "idle"]
-
-#os.chdir(current)
 
 count=0
 c=0
@@ -42,14 +35,8 @@ def callback(data,args):
    ndrones = args[1]
    id = args[2]
 
-   #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.values)
-   #print("topic=%s" % topic)
-
-   #print(topic)
-
    if topic=="status":
       rospy.loginfo(data.data)
-      #file.write(str(data.data))
       if id != None:
          msg = data.data.split(':')[min(1,len(data.data.split(':'))-1)] 
          status[int(id)-1] = msg
@@ -59,27 +46,10 @@ def callback(data,args):
    else:
       rospy.loginfo("%s: Drone %s: Data: %s" % (count, id, data.values))
       file.write("\n")
-      #file.write(str(count)+"/?/"+str(id)+"/?/"+str(data.values))
-      #file.write(str(time.time()-start)+"/?/"+str(count)+"/?/"+str(id)+"/?/"+str(data.values))
       file.write(str(",".join((str(time.time()-start),str(count),str(id),str(data.values),"\""+str(status[int(id)-1])+"\""))))
-      #file.write(str(data.values))
       c+=1
 
    count = c // ndrones
-   #print(data.values) # This also works to just print it out to the cmd, but idk if it does different things in the background
-
-#https://forum.bitcraze.io/viewtopic.php?t=5190
-#https://github.com/USC-ACTLab/crazyswarm/discussions/566
-#rostopics echo /cf1/log1
-   #http://wiki.ros.org/ROS/Tutorials/UnderstandingTopics
-#https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/userguides/logparam/
-   '''
-   rostopic bw     display bandwidth used by topic
-rostopic echo   print messages to screen
-rostopic hz     display publishing rate of topic    
-rostopic list   print information about active topics
-rostopic pub    publish data to topic
-rostopic type   print topic type'''
 
 def create_node():
    try:
@@ -101,12 +71,9 @@ def listener(ids=[1]):
    create_node()
 
    for id in ids:
-      rospy.Subscriber("/cf%s/log1" %id, GenericLogData, callback, ["log1", len(ids), id]) # # MAKE SURE RIGHT CHANNEL IS SET
+      rospy.Subscriber("/cf%s/log1" %id, GenericLogData, callback, ["log1", len(ids), id]) # MAKE SURE RIGHT CHANNEL IS SET
    
       rospy.Subscriber("status_logger", String, callback, ["status", len(ids), id])
-   #rospy.Subscriber("chatter", String, callback, ["status", len(ids), id])
-      
-   #rospy.spin() # simply keeps python from exiting until this node is stopped
    
    rospy.spin()
 
@@ -121,12 +88,4 @@ def call_once(ids):
 
 if __name__ == '__main__':
    ids = sys.argv[1:]
-   #call_once(ids)
    listener(ids)
-    
-    
-   #rosbag record -a /cf1/log1
-   #rostopic echo /cf1/log1 -b bagFileName.bag -p > fileName.csv
-   
-   
- #/home/adam/Documents/Packages/crazyswarm/ros_ws/src/crazyswarm/msg/GenericLogData.msg
