@@ -341,9 +341,9 @@ class PneumaExperiment:
             exp_name= 'pneuma_synthesised_data_'
         else:
             if oneminute:
-                exp_name = 'pneuma_real_data_1minute_greedy'
+                exp_name = 'PRIORITY_pneuma_real_data_1minute_greedy'
             else:
-                exp_name = 'pneuma_real_data_15seconds_greedy'
+                exp_name = 'PRIORITY_pneuma_real_data_15seconds_greedy'
         for n in range(n_iterations):
             if synthesise == False:
                 self.filename = files[n]
@@ -382,9 +382,9 @@ class PneumaExperiment:
             n_iterations = 200
         drones = [1,2,3,4]
         if synthesise:
-            exp_name= 'TESTBED_TEST_5s_pneuma_synthesised_data_'
+            exp_name= 'TESTBED_0.1EPOS_5s_pneuma_synthesised_data_'
         else:
-            exp_name = 'TESTBED_TEST_5s_pneuma_real_data_'
+            exp_name = 'TESTBED_NOPRIORITY_0.1EPOS_5s_pneuma_real_data_'
         for n in range(n_iterations):
             if synthesise == False:
                 self.filename = files[n]
@@ -400,7 +400,7 @@ class PneumaExperiment:
                 
                 self.generate_sensing_mission(is_testbed=True)
                 data = self.experiment_iteration(n_drones, mission+".csv")
-                self.write_results_to_csv(data, config, experiment_name=exp_name+str(n_drones)+'_drone')
+                # self.write_results_to_csv(data, config, experiment_name=exp_name+str(n_drones)+'_drone')
             
     def write_results_to_csv(self,data, config, experiment_name=None):
 
@@ -463,6 +463,6 @@ if __name__ == '__main__':
     p = PneumaExperiment("C:/Users/Alex/Documents/Drones_Testbed/pneuma data/vehicle distributions", False)
     # print(p.cells)
     # p.run_pneuma_experiment(synthesise=True, greedy=True)
-    p.run_testbed_pneuma_experiment(synthesise=False, greedy=True)
+    p.run_pneuma_experiment(synthesise=False, greedy=True)
     # p.run_pneuma_experiment(synthesise=False, greedy=True, oneminute=False)
 

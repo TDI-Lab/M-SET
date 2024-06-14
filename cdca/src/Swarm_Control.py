@@ -4,12 +4,13 @@ from .Drone import Drone
 from .Collision_Strategy import Collision_Strategy
 from .Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from .Offline_Collision_Stats import Offline_Collision_Stats
-from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, GRID_SIZE, MAX_GRID_OFFSET, MIN_GRID_OFFSET, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
+from .Swarm_Constants import COLLISION_AVOIDANCE_LIMIT, MAX_GRID_OFFSET, MIN_GRID_OFFSET, SPEED, TIME_STEP, INTERPOLATION_FACTOR, FRAMES_PER_TIMESTEP
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from random import randint
-
+import warnings
+warnings.filterwarnings("ignore")
 class Swarm_Control:
   # Class to control the swarm on the test bed.
 
@@ -135,36 +136,28 @@ class Swarm_Control:
                 
     return drone_positions
 
-  def visualise_swarm(self, title="", save=False, filepath=None):
+  def visualise_swarm(self, title=""):
       discreet_positions = self.discretise_flight_paths(self.drones)
 
       fig = plt.figure()
       ax = fig.add_subplot(111, projection='3d')
 
       scatters = []
-      lines = []  # Add lines for trailing path
       for i in range(len(discreet_positions)):
-          scatter = ax.scatter([], [], [], s=100)  # Increase the size of the scatter points
+          scatter = ax.scatter([], [], [], s=75)  # Increase the size of the scatter points
           scatters.append(scatter)
-          # line, = ax.plot([], [], [], color='red', alpha=0.5)  # Add trailing path line
-          # lines.append(line)
 
       ax.set_xlabel('X')
       ax.set_ylabel('Y')
       ax.set_zlabel('Z')
-      ax.legend()
 
       ax.set_xlim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
       ax.set_ylim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
-      ax.set_zlim([MIN_GRID_OFFSET, MAX_GRID_OFFSET])  
+      ax.set_zlim([1, 1])  
 
       ax.set_title(title)
 
-      # Create text box for time
-      # time_text = ax.text2D(0.02, 0.95, '', transform=ax.transAxes)
-
-      # Update function for the animation
-      def update(frame, scatters, lines, discreet_positions):
+      def update(frame, scatters, discreet_positions):
         t = frame / FRAMES_PER_TIMESTEP
         num = int(math.floor(t))
         t = t - num
@@ -174,22 +167,12 @@ class Swarm_Control:
             pos2 = drone_positions[num + 1]
             x = (1 - t) * pos1[0] + t * pos2[0]
             y = (1 - t) * pos1[1] + t * pos2[1]
-            z = 3  # Fixed z-coordinate for the scatter points
+            z = 1  # Fixed z-coordinate for the scatter points
             scatters[i]._offsets3d = ([[x], [y], [z]])
-            # Update trailing path line
-            if num > 0:
-              trail_x = [pos[0] for pos in drone_positions[:num]]
-              trail_y = [pos[1] for pos in drone_positions[:num]]
-              trail_z = [3] * num  # Fixed z-coordinate for the trailing path line
-              # lines[i].set_data(trail_x, trail_y)
-              # lines[i].set_3d_properties(trail_z)
-        # Update the time text
-        # time_text.set_text(f'Time: {frame * (FRAMES_PER_TIMESTEP/TIME_STEP)/100 :.2f} s')
 
-        
       total_frames = int(len(discreet_positions[0])  * FRAMES_PER_TIMESTEP )
 
-      ani = FuncAnimation(fig, update, fargs=(scatters, lines, discreet_positions), frames=total_frames, interval=(FRAMES_PER_TIMESTEP/TIME_STEP)/100, blit=False, repeat=False)
+      ani = FuncAnimation(fig, update, fargs=(scatters, discreet_positions), frames=total_frames, interval=(FRAMES_PER_TIMESTEP/TIME_STEP)/100, blit=False, repeat=False)
        
     
       plt.show()

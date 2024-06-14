@@ -8,7 +8,6 @@ from .Flight import Flight
 from .Collision_Strategy import Collision_Strategy
 import numpy as np
 from .Swarm_Constants import *
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from matplotlib.offsetbox import BboxImage, Bbox
@@ -23,7 +22,6 @@ class PF_Drone(Drone):
         self.max_grid_offset = max_grid_offset
         self.grid_width = self.max_grid_offset - self.min_grid_offset
         self.cell_size = 1 / self.resolution_factor
-        print("Cell Size:", self.cell_size)
         self.max_timesteps_per_flight = 50 // TIME_STEP
         self.current_timestep_for_flight = 0
         self.position = np.array(self.drone_to_grid(self.plan[0][0])) 
@@ -31,8 +29,7 @@ class PF_Drone(Drone):
         self.positions.append(self.position.tolist())
         self.goals_reached = 0 # The first goal is reached by default
         self.current_wait_time = self.plan[0][1]
-        self.current_PFG = []
-        self.time_steps_smaller_than_timestep = {} #A dict of time steps that are smaller than TIME_STEP, in the format [[at_time, for_time],...]
+        self.timesteps = []
         if not self.original_drone.flights: # Some drones dont move
             self.finished = True
             self.at_last_goal = True
@@ -58,15 +55,16 @@ class PF_Drone(Drone):
     # Map coordinates from grid space to drone space
     def grid_to_drone(self, grid_position):
         drone_position = [((coord) / self.resolution_factor) + self.min_grid_offset for coord in grid_position]
-        #roud positions 3dp
+        #round positions 3dp
         drone_position = [round(coord, 3) for coord in drone_position]
         return drone_position
     
     def grid_distance(self, drone_distance):
         # Scale the input grid distance according to the resolution factor
         return drone_distance * self.resolution_factor
-    def convert_to_flights(self, timesteps):
+    def convert_to_flights(self):
         # Convert the positions of the drones to flights
+        timesteps = self.timesteps
         new_plan = []
         drone = self
         flight_path = drone.positions
@@ -88,13 +86,10 @@ class PF_Drone(Drone):
             if pos == destination:
                 duplicate_positions += 1
                 total_wait_time += timestep
-                # print("Adding to wait time", total_wait_time, "at time", timestep, "i", i)
                 continue
         
            
-            if timestep != TIME_STEP and i != 0:
-                # print("aposjd", timestep)
-                total_wait_time += timestep - TIME_STEP
+         
             new_plan.append( [pos, (total_wait_time)])
             pos = destination
             duplicate_positions = 0
@@ -173,7 +168,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
          #round up to nearst 1
         resolution_factor = self.smart_round(resolution_factor)
-        print("Resolution Factor:", resolution_factor)
+
         return resolution_factor
     
     def calculate_grid_size(self, drones):
@@ -201,13 +196,11 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         self.min_grid_offset = min(min_x, min_y) - (1/ self.resolution_factor) 
         self.max_grid_offset = max(max_x, max_y) + (1/ self.resolution_factor) 
-        print("Min Grid Offset:", self.min_grid_offset)
-        print("Max Grid Offset:", self.max_grid_offset)
+        
 
         # grid size based on min and max grid offset
         self.grid_size = int((self.max_grid_offset - self.min_grid_offset) * self.resolution_factor)
         self.grid_size_original = self.grid_size
-        print("Grid Size:", self.grid_size)
 
 
     def calculate_variable_timestep(self):
@@ -217,18 +210,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
             if 0 < drone.current_wait_time < smallest_timestep:
                 smallest_timestep = drone.current_wait_time
         return smallest_timestep
-        if smallest_timestep == TIME_STEP:
-            return TIME_STEP
-        # does the smallest timestep divide into TIME_STEP
-        if TIME_STEP % smallest_timestep == 0:
-            return smallest_timestep
-        else:
-            print("Smallest Timestep:", smallest_timestep)
-            tenth_of_timestep = TIME_STEP / 10
-            # Find the multiple of tenth_of_timestep that is closest to smallest_timestep
-            closest_multiple = round(smallest_timestep / tenth_of_timestep) * tenth_of_timestep
-            print("Closest Multiple:", closest_multiple)
-            return closest_multiple
+       
 
     def potential_fields(self, drones):
         """
@@ -253,19 +235,16 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         while drones_not_done > 0 and count < 600:
             count += 1
-
-            self.current_timestep = self.calculate_variable_timestep()
-            self.timesteps.append(self.current_timestep)
-            # print("Current Timestep:", self.current_timestep)
+            if TIME_STEP < 1:
+                self.current_timestep = self.calculate_variable_timestep()
+            else:
+                self.current_timestep = TIME_STEP
             for i, drone in enumerate(drones):
-                # step = self.current_timestep
+
                 if not drone.finished:
                     if drone.current_wait_time > 0:
                         if drone.current_wait_time < self.current_timestep:
-                            # step = TIME_STEP - drone.current_wait_time
-                            # drone.time_steps_smaller_than_timestep[self.time_step] = step
                             drone.current_wait_time = 0
-                            # print("Drone/ ", i, "waiting for ", drone.current_wait_time, " seconds", "at time ", self.time_step)
                         else:
                             drone.current_wait_time -= self.current_timestep
 
@@ -281,6 +260,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                         pfs_per_drone[i].append(potential_field)
 
                     self.adjust_drone_path(drones, drone, potential_field, self.current_timestep)
+                    drone.timesteps.append(self.current_timestep)
                     drone.current_PFG = self.calculate_repulsion_from_drone(drone)
 
             self.time_step += self.current_timestep
@@ -288,8 +268,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         for i, drone in enumerate(drones):
             if self.visualise:
                 self.animate_vector_fields(pfs_per_drone[i], drone, drones)
-                # self.visualise = False
-            drone.convert_to_flights(self.timesteps)
+
+            drone.convert_to_flights()
     
     def calculate_repulsion_fields(self, drones):
         """
@@ -352,12 +332,8 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         # Create a mask for distances within the effect distance
         minimum = 0 + 1e-9
         drone_priority = len(self.drones) - drone.drone_id
-        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2) + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
-        # maximum = drone.grid_distance((MINIMUM_DISTANCE * (math.sqrt(drone_priority)/4)+1))  # 3 times the minimum distance to give the drone change to move away
-        
-        # print(f"log {drone_priority}: ", math.log(drone_priority, 20))
-        # print("max: ",maximum)
-        # print("grid dist:" , drone.grid_distance(DISTANCE_STEP) * 2.5, "\n")
+        maximum = drone.grid_distance((MINIMUM_DISTANCE * 2))# + (math.log(drone_priority, 20)))  # 3 times the minimum distance to give the drone change to move away
+       
         mask = (distances >= minimum) & (distances <= maximum)
 
         # Apply the mask to the vectors
@@ -369,16 +345,16 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         magnitudes[magnitudes == 0] = 1  # Avoid division by zero
         
         # # Scale the vectors to the desired magnitude
-        desired_repulsion = 2.5 + (math.log(drone_priority, 20))
+        desired_repulsion = 2.5 ##+ (math.log(drone_priority, 20))
 
-        # vectors[0] = vectors[0] * desired_repulsion / distances * desired_repulsion / magnitudes
-        # vectors[1] = vectors[1] * desired_repulsion / distances * desired_repulsion / magnitudes
         vectors[0] = vectors[0] * desired_repulsion * desired_repulsion /  distances  / magnitudes
         vectors[1] = vectors[1] * desired_repulsion  * desired_repulsion  / distances / magnitudes
-        #clip the vectors (this mainly clips vectors right at drone position)
+        
+        # Clip the vectors (this mainly clips vectors right at drone position)
         vectors[0] = np.clip(vectors[0], -desired_repulsion, desired_repulsion)
         vectors[1] = np.clip(vectors[1], -desired_repulsion, desired_repulsion)
         
+       
         return vectors
 
     def calculate_attraction_to_goal(self, drone):
@@ -402,21 +378,9 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distances = np.sqrt(vectors[0] ** 2 + vectors[1] ** 2)
         unit_vectors = [vectors[0] / distances, vectors[1] / distances]
 
-        # Set the vectors at positions a specified distance away from the goal to zero
-        distance_threshold =  drone.grid_distance(DISTANCE_STEP)# * self.resolution_factor
-        goal_position = drone.goal.astype(int)
-
-        for i in range(self.grid_size):
-            for j in range(self.grid_size):
-                grid_position = np.array([i, j])
-                distance_to_goal = np.linalg.norm(goal_position - grid_position)
-                if distance_to_goal <= distance_threshold:
-                    unit_vectors[0][j, i] = 0
-                    unit_vectors[1][j, i] = 0
-
-
 
         return unit_vectors
+    
     def visualize_vector_field(self, vector_field, title):
         """
         Visualizes a 2D vector field.
@@ -436,70 +400,11 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         # Show the plot
         plt.show()
-    # def animate_vector_fields(self, vector_fields, drone):
-    #     """
-    #     Animates the vector fields for visualization.
-
-    #     Parameters:
-    #     - vector_fields (list): A list of vector fields.
-    #     - drone (PF_Drone): The drone associated with the vector fields.
-    #     """
-    #     if len(drone.positions) == 1:
-    #         return
-    #     fig = plt.figure(figsize=(7, 7))
-    #     ax = fig.add_subplot(1, 1, 1)
-    #     grid_size = vector_fields[0][0].shape[0] // 2
-    #     y, x = np.mgrid[0:vector_fields[0][0].shape[0], 0:vector_fields[0][0].shape[1]]
-
-    #     quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])  
-    #     ax.scatter(*(drone.positions[0]), color='b')
-
-    #     def update(i):
-    #         ax.clear()
-    #         ax.quiver(x, y, vector_fields[i][0], vector_fields[i][1]) 
-    #         ax.scatter(*drone.positions[i], color='b')
-    #         ax.set_title('Vector Field for drone', pad=-40)  # Adjust the pad value to provide more space for the title
-    # def animate_vector_fields(self, vector_fields, drone, drones):
-    #     """
-    #     Animates the vector fields for visualization.
-
-    #     Parameters:
-    #     - vector_fields (list): A list of vector fields.
-    #     - drone (PF_Drone): The drone associated with the vector fields.
-    #     """
-    #     if len(drone.positions) == 1:
-    #         return
-    #     fig = plt.figure(figsize=(7, 7))
-    #     ax = fig.add_subplot(1, 1, 1)
-    #     grid_size = vector_fields[0][0].shape[0] // 2
-    #     y, x = np.mgrid[0:vector_fields[0][0].shape[0], 0:vector_fields[0][0].shape[1]]
-
-    #     quiver = ax.quiver(x, y, vector_fields[0][0], vector_fields[0][1])  
-
-    #     # Load the drone image
-    #     drone_image = mpimg.imread('drone.png')
-    #     t = 12
-    #     t -= 1
-    #     def update(i):
-    #         ax.clear()
-    #         ax.quiver(x, y, vector_fields[i][0], vector_fields[i][1]) 
-
-    #         # Create an OffsetImage
-    #         imagebox = OffsetImage(drone_image, zoom=0.08)  # Adjust zoom to change the size of the drone image
-    #         # imagebox.set_alpha(0.1)
-    #         # Create an AnnotationBbox
-    #         ab = AnnotationBbox(imagebox, drone.positions[i],bboxprops=dict(alpha=0.0))
-
-    #         # Add the AnnotationBbox to the ax
-    #         ax.add_artist(ab)
-
-    #         ax.set_title('Vector Field for drone', pad=-40)  # Adjust the pad value to provide more space for the title
-
-    #     ani = animation.FuncAnimation(fig, update, frames=len(vector_fields), repeat=False)
-
+    
     def animate_vector_fields(self, vector_fields, drone, drones):
         """
-        Animates the vector fields for visualization.
+        Animates the vector fields for visualization. Adds a drone image where the drone is
+        and a target image where the current goal is
 
         Parameters:
         - vector_fields (list): A list of vector fields.
@@ -528,40 +433,30 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
     
             # Create an OffsetImage for the main drone
             imagebox = OffsetImage(drone_image, zoom=0.07)
-            # adjusted_pos = [drone.positions[i][0] -  drone.cell_size, drone.positions[i][0] - drone.cell_size]
             adjusted_pos = drone.positions[i]
-            # print(adjusted_pos)
             ab = AnnotationBbox(imagebox, adjusted_pos, bboxprops=dict(alpha=0.0))
             ax.add_artist(ab)
 
             target_box = OffsetImage(target_image, zoom=0.14, alpha=0.48)
             target_ab = AnnotationBbox(target_box, drone.goals[goal_index], bboxprops=dict(alpha=0.0))
             ax.add_artist(target_ab)
-            # Plot a circle around the current goal
-            # circle = plt.Circle(drone.goals[goal_index[0]], 2, color='b', fill=False)  # Adjust the radius and color as needed
-            # ax.add_artist(circle)
+
             if np.array_equal(drone.positions[i], drone.goals[goal_index]) and goal_index < len(drone.goals) - 1:
                 goal_index += 1
         
             # Create an OffsetImage for each other drone
             for other_drone in drones:
                 if other_drone != drone:
-                    # other_adjusted_pos = [other_drone.positions[i][0] - other_drone.cell_size, other_drone.positions[i][0] - other_drone.cell_size]
                     if i >= len(other_drone.positions)-1:
                         other_adjusted_pos = other_drone.positions[-1]
                     else:
                         other_adjusted_pos = other_drone.positions[i]
 
-                    # other_imagebox = OffsetImage(other_drone_image, zoom=0.06)
-                    # other_ab = AnnotationBbox(other_imagebox,other_adjusted_pos, bboxprops=dict(alpha=0.0))
-                    # ax.add_artist(other_ab)
+                    
         
             ax.set_title('Vector Field for drone', pad=-40)
             
-            # Save the figure to a file
-            # fig.savefig(f'frame_{i}.png', dpi=300)
-            # To save as SVG, use the following line instead
-            # fig.savefig(f'frame_{i}.svg', format='svg')
+          
 
         ani = animation.FuncAnimation(fig, update, frames=len(vector_fields), repeat=False)
     
@@ -589,8 +484,6 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
         distance_step = time_step * SPEED
        
        
-       
-       
         grid_drone_position = (drone.position).astype(int)  # This can lose information, so we can increase resolution_factor if needed
         vector_at_drone = potential_field[:, grid_drone_position[1], grid_drone_position[0]]
 
@@ -608,9 +501,6 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
 
         distance_to_goal = np.linalg.norm(drone.position - drone.goal)
 
-        # drone_goal_position = drone.goal.astype(int)
-        # vector_at_goal = potential_field[:, drone_goal_position[1], drone_goal_position[0]]
-        # np.array_equal(vector_at_goal, [0, 0]) and
         if  distance_to_goal <= drone.grid_distance(distance_step):
             old_position = drone.position
 
@@ -657,10 +547,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                 drone.position = drone.position + drone.direction * (distance_step * self.resolution_factor)
                 drone.positions.append(drone.position.tolist())
         
-    
 
-                    
-       
     def discretise_flight_paths(self, drones, from_time=None, to_time=None):
         drone_positions = []
         if to_time is None:
@@ -720,7 +607,7 @@ class Potential_Fields_Collision_Avoidance(Collision_Strategy):
                     return
         return drone_positions
 
-   # Check for collisions with a drone
+    # Check for collisions with a drone
     # Returns values (in this order): Boolean for collision, index i of other drone in collision, indexes of where the collision occurs in drone_positions
     def does_drone_collide(self, drone_index, drone_positions):
 

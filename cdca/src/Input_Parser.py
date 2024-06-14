@@ -26,8 +26,12 @@ class Input_Parser:
                 drone_plan[-1][0].pop()
             else:
                 drone_plan[-1][1] += EPOS_TIMESTEP
+        for plan in drone_plan:
+           plan[1] = round(plan[1], 2)
         parsed_input.append(drone_plan)
-    print("parsed input: ", parsed_input)
+
+
+    # print("parsed input: ", parsed_input)
     return parsed_input
 
 
