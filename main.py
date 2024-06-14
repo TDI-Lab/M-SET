@@ -10,7 +10,7 @@ from cdca.src.Swarm_Control import Swarm_Control
 from cdca.src.Basic_Collision_Avoidance import Basic_Collision_Avoidance
 from experiments.MeasureSensing import MeasureSensing
 from experiments.VisualiseData import VisualiseData
-from Hardware.cdca_epos_executor import main as hardware_main
+# from Hardware.cdca_epos_executor import main as hardware_main
 
 from path_generation.PathGenerator import PathGenerator
 import csv
@@ -356,49 +356,6 @@ def run_pneuma_experiment():
 
 if __name__ == '__main__':
     # add_base_stations_to_pneuma_sensing_mission(512, 'pneuma_points.csv')
-    # experiment_testbed()
-    # run_pneuma_experiment()
-    # # run_pneuma_experiment()
-    # # run_experiment_1and2(greedy=False)
-    # # experiment_testbed()
-    # # experiment_testbed()
-    # # data_paths = ['experiments/results/random_2x3_results.csv','experiments/results/random_3x3_results.csv','experiments/results/random_4x4_results.csv','experiments/results/random_5x5_results.csv', 
-    # #               'experiments/results/random_6x6_results.csv',  'experiments/results/random_8x8_results.csv',
-    # #               'experiments/results/random_10x10_results.csv',  'experiments/results/random_12x12_results.csv']
-    
-    testbed_data_path = ['experiments/results/pnuema/TESTBED_0.1EPOS_5s_pneuma_real_data_4_drone/priority.csv']
-    testbed_data_path2 = ['experiments/results/pnuema/TESTBED_NOPRIORITY_0.1EPOS_5s_pneuma_real_data_4_drone/new_pneuma_points_results.csv']
-
-    # new_paths = []
-    # for path in testbed_data_path:
-    #     #append replace _results to _greedy_results
-    #     new_path = path.replace('/results/', '/results/test_log_repulsion_200iterations/')
-    #     new_paths.append(new_path)
-
-    # Visualise the data
-    # for path in new_paths:
-    #     print(path)
-    #     # extract the 5x5 from the path
-    #     map_name = path.split('/')[-1].split('_')[1] + "Testbed"
-    #     print(map_name)
-    #     vd = VisualiseData(path, 'experiments/results/')
-    #     vd.plotNumAgentsVsSensingAccuracy(map_name)
-    # data_path = [ 'experiments/results/random_2x3_results.csv']
-    map_name = "Priority Testbed"
-    vd = VisualiseData(testbed_data_path, 'experiments/results/')
-    vd.plotPowerEstimation(map_name)
-    vd.plottypesOfCollisions(map_name)
-    vd.plotNumAgentsVsRiskOfCollision(map_name)
-    vd.plotAgents_vs_TotalDuration(map_name)
-    vd.plotNumAgentsVsSensingAccuracy(map_name)
-    vd.plotNumAgentsVsCollisions(map_name)
-
-    map_name = "No Priority Testbed"
-    vd = VisualiseData(testbed_data_path2, 'experiments/results/')
-    vd.plotPowerEstimation(map_name)
-    vd.plottypesOfCollisions(map_name)
-    vd.plotNumAgentsVsRiskOfCollision(map_name)
-    vd.plotAgents_vs_TotalDuration(map_name)
-    vd.plotNumAgentsVsSensingAccuracy(map_name)
-    vd.plotNumAgentsVsCollisions(map_name)
+    experiment_testbed()
+   
    
