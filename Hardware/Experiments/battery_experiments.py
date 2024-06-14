@@ -1,4 +1,3 @@
-#from cdca_epos_executor import *
 import os
 import sys
 import rospy
@@ -76,11 +75,6 @@ def exp_Hover(dur, run=True):
     inp = None
     while inp != "":
         inp = input("Press any key to end the experiment")
-    #     log(1,msg="hovering")
-
-    # while True:
-    #     log(1,msg="hovering")
-    #     time.sleep(1)
 
     tearDown(dur, run=run)
 
@@ -113,7 +107,6 @@ def move_x(setup_dur, speed, run=True, factor=1):
     if factor > 1:
         for i in range(0,len(allcfs.crazyflies)):
             if run == True:
-                #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
                 allcfs.crazyflies[i].goTo((rel_pos1[0]/factor,rel_pos1[1],rel_pos1[2]),0,5, relative=True)
         log(msg="Moving to position 2")
         timeHelper.sleep(movement_duration)
@@ -128,7 +121,6 @@ def move_x(setup_dur, speed, run=True, factor=1):
             # All drones move one cell in the positive x direction
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
-                    #allcfs.crazyflies[i].goTo(pos2[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
                     allcfs.crazyflies[i].goTo(rel_pos2,0,movement_duration, relative=True)
             log(msg="Moving to position 2")
             timeHelper.sleep(movement_duration)
@@ -140,7 +132,6 @@ def move_x(setup_dur, speed, run=True, factor=1):
             # All drones move back to their original positions
             for i in range(0,len(allcfs.crazyflies)):
                 if run == True:
-                    #allcfs.crazyflies[i].goTo(pos1[:len(IDs)][i],0,movement_duration) # see if you can do this with allcfs (i.e. they all move at the same time)
                     allcfs.crazyflies[i].goTo(rel_pos1,0,movement_duration, relative=True)
             log(msg="Moving to position 1")
             timeHelper.sleep(movement_duration)
@@ -149,7 +140,7 @@ def move_x(setup_dur, speed, run=True, factor=1):
             log(msg="Position 1")
             timeHelper.sleep(1)
 
-    except:# rospy.service.ServiceException:
+    except:
         print("landing")
         tearDown(setup_dur, run=run)
 
@@ -181,12 +172,10 @@ def main(run, experiments):
         move_x(3,0.1,run=run,factor=1)
 
 if __name__ == '__main__':
-    # [--sim], experiment1, [experiment2] ...
     args = sys.argv
     offset=0
 
     if '--sim' in args:
-        #IN_SIMULATION = True
         offset = 1
 
     run = (args[1+offset] == "True")

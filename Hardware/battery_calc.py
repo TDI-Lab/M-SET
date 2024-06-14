@@ -107,35 +107,11 @@ def calc_energy_consumption(flight_time,method,voltage_poly_coeff,avg_current):
 
 if __name__ == '__main__':
     os.chdir(original_cwd)
-    hover_power = 1.7583430197900498##1.572219969739651#1.2577759757917208#1.3625747142758537#1.125339532665632#1.6152318136132513#1.5308683747745433# 1.1297552885300068 # W
-    # hover_power = 4.688914719440134
-    # hover_power = 0.9377829438880265
-    # hover_power = 1.125339532665632
-    # hover_power = 1.1722286798600334
-    # hover_power = 1.0820572429477229
-    # hover_power = 1.0737972639939235
-    #hover_power = 0.46889147194401326 # Used in energy.csv for Chuhao
-    flight_power = hover_power # 1.128288294545468 # W
-    #voltage_poly_coeff=[-4.60990873e-10, 1.76874340e-07, -1.85072541e-05, -1.00546782e-03, -9.19204536e-03] # moving
-    voltage_poly_coeff = [-3.54280460e-11,  1.14158206e-08,  2.20841775e-06, -2.14997073e-03, -3.66082298e-02] # hovering
-    #voltage_poly_coeff = [-1.77768893e-08,  9.93408521e-06, -2.85530205e-03, -2.22369528e-02] # hovering, deg=3
-    #voltage_poly_coeff = [-5.04951815e-13,  4.84672324e-10, -1.78941756e-07,  3.15654831e-05,-3.86950027e-03, -1.33939207e-02]
-    voltage_poly_coeff = [ -2.59269349e-12, -1.80094258e-08,  -8.52202375e-06, 2.23200514e-03,  -3.57061644e+00]# raw values, as opposed to loss
-    voltage_poly_coeff = [ -2.59269349e-12, 1.80094258e-08,  -8.52202375e-06, 2.23200514e-03, -3.57061644e+00]
-
-    #voltage_poly_coeff = [ 3.63462497e-11, -5.91513731e-08,  2.59456279e-05, -5.26286565e-03, -3.21289123e-01] # hovering (all records)
-    
-    # energy.csv I gave to Chuhao
+    hover_power = 1.7583430197900498
+    flight_power = hover_power
     voltage_poly_coeff = [-3.93539944e-11,  1.49469540e-08, 1.17748602e-06, -2.04974506e-03, -3.75124204e-02] # hovering (from after take-off), voltage loss
-    #voltage_poly_coeff = [-1.74807373e-08,  9.75927102e-06, -2.83323746e-03, -2.15485945e-02]
-    #voltage_poly_coeff = [-0.0014851  -0.05277076]
-
-    # Raw voltage
-    # voltage_poly_coeff = [-1.03636193e-10, 1.13458627e-07,  -3.95045392e-05, 6.12875506e-03, -3.72811145e+00] # full data
-    # voltage_poly_coeff = [-2.59269349e-12,  1.80094258e-08,  -8.52202375e-06, 2.23200514e-03, -3.57061644e+00] # only while in the air
 
     os.chdir(original_cwd)
-    #path = [[[[0.0, 0.0], 1], [[1.0, 1.0], 4], [[1.0, 2.0], 4], [[2.0, 1.0], 8], [[0.0, 0.0], 1]], [[[4.0, 0.0], 2]], [[[4.0, 3.0], 1], [[3.0, 2.0], 9], [[2.0, 2.0], 4], [[3.0, 1.0], 4], [[4.0, 3.0], 1]], [[[0.0, 3.0], 1], [[1.0, 2.0], 1], [[2.0, 2.0], 0], [[2.0, 1.0], 0], [[1.0, 1.0], 1], [[0.0, 3.0], 1]]]
     path = read_default_output("Hardware/epospaths/Final Demo/no cdca/4(3)cfnice.txt")
     input_mode = "default"
     speed = 0.1
@@ -144,16 +120,7 @@ if __name__ == '__main__':
     hover_time, flight_time, total_time = calc_total_times(path, input_mode, speed)
     hover_energy, flight_energy, total_energy = calc_total_energy(hover_power,flight_power,hover_time,flight_time)
 
-    """
-    print("")
-    print("Total air time is %s s" % total_time)
-    print("EPOS:  Total energy is %s J" % total_energy)
-    
-    model_energy = calc_energy_consumption(total_time,"polynomial",voltage_poly_coeff,avg_current)
-    print("Model: Total energy is %s J" % model_energy)
-    """
-
-    max_t = 420 # 550. This is just the max x of the graph
+    max_t = 420 # This is just the max x of the graph
     best_fit_x=120
     expected_max_flight_duration = 420 # 7 mins
     battery_capacity = 3330
@@ -167,10 +134,6 @@ if __name__ == '__main__':
     trapz = [-np.trapz(poly[:x])*avg_current for x in X]
     plt.plot(X,epos_E,label='Predicted by EPOS-based model', color='m')
     plt.plot(X,model_E,label='Predicted by Hardware-based model',color='y')
-    #plt.plot(X,trapz, label='trapz')
-    #plt.plot(X,[a*x+b for x in X], label='line of best fit (weighted to pass through (0,0))', linestyle='dashdot') # Line of best fit for model_E. Issues as it doesn't intersect (0,0)
-    #plt.plot(X,[battery_capacity for x in X], label="battery capacity (%sJ)" % battery_capacity, color='red', linestyle='dashed')
-    #plt.axvline(expected_max_flight_duration, label='Expected max. flight duration (%ss)' % expected_max_flight_duration, color='red', linestyle='dotted')#388.5
     plt.xlabel("Flight Duration (s)")
     plt.ylabel("Energy Consumption (J)")
     plt.title("Predicted Values of Energy Consumption by Flight Duration")
@@ -180,7 +143,6 @@ if __name__ == '__main__':
     plt.show()
 
     voltage_poly_roots = np.roots(voltage_poly_coeff)
-    #print(max_expected_air_time)
 
     print(os.getcwd())
     df = pd.DataFrame(model_E)
