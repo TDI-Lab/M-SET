@@ -15,10 +15,19 @@ This project can be used to execute drone sensing missions on a testbed which ai
 
 After cloning the repository, cd to its location. To create the self-documented config file, run:
 
+### Linux
 ```bash
   python -m venv M-SET
-  M-SET/Scripts/activate (Windows)
-  source M-SET/Scripts/activate (Linux)
+  source M-SET/bin/activate
+  cd ..
+  python3 setup.py
+  python3 -m pip install -r requirements.txt
+```
+### Windows
+```bash
+  python -m venv M-SET
+  M-SET/Scripts/activate
+  cd ..
   python3 setup.py
   python3 -m pip install -r requirements.txt
 ```
