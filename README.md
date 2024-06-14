@@ -1,6 +1,7 @@
 
+
 # M-SET: Multi-drone Sensing Experimentation Testbed
-This project can be used to execute drone sensing missions on a testbed which aims to provide a real-world simulation of drones on an experimentation testbed. It uses the [EPOS algorithm](https://github.com/epournaras/EPOS) to generate efficient paths, and then applies collision avoidance algorithms as EPOS does not account for collisions. There is also support to execute these paths on a swarm of [Crazyflies](https://www.bitcraze.io/products/crazyflie-2-1/).
+This project can be used to execute drone sensing missions on a testbed which aims to provide a real-world simulation of drones on an experimentation testbed. It uses the [EPOS](https://github.com/epournaras/EPOS) algorithm to generate efficient paths, and then applies collision avoidance algorithms as EPOS does not account for collisions. There is also support to execute these paths on a swarm of [Crazyflies](https://www.bitcraze.io/products/crazyflie-2-1/).
 
 
 
@@ -15,16 +16,21 @@ This project can be used to execute drone sensing missions on a testbed which ai
 After cloning the repository, cd to its location. To create the self-documented config file, run:
 
 ```bash
-  python setup.py
-```
-or 
-```bash
+  python -m venv M-SET
+  M-SET/Scripts/activate (Windows)
+  source M-SET/Scripts/activate (Linux)
   python3 setup.py
+  python3 -m pip install -r requirements.txt
 ```
 Now the config file ```drone_sense.properties``` should appear in the root of the project.
 
 ## Demo
-Take a look at the demo.py for a good example of how to use this project.
+Take a look at the demo.py for a good example of how to use this project, as so:
+```
+python3 demo.py
+```
+
+
 
 
 ## Sensing missions
@@ -54,7 +60,7 @@ Where BASE denotes base stations, where the drones will start/end their journeys
 
 ### Path generator
 
-To use the path generator, set up the drones_sense.properties config file, including setting the MissionName to the name you want the results to be stored in, set MissionFile to the absolute path of the sensing mission, and set the  number of drones you want to execute the sensing.
+To use the path generator, set up the drones_sense.properties config file, including setting the MissionName to the name you want the results to be stored in, set MissionFile to the absolute path of the sensing mission, and set the  number of drones you want to execute the sensing. The drone parameters should be set to values for the Crazyflie drones on creation. These drones have a small battery capacity, so change these parameters for larger scale
 
 To get the plans from the path generator, do:
 ```
@@ -100,11 +106,3 @@ The configuration file for collision avoidance can currently be found in cdca/sr
 | MINIMUM_DISTANCE   | The minimum distance between drones before it is considered a collision |
 
 Setting these values are important to scale with large sensing missions, especially with Potential Fields. The bigger the values, the less expensive it will be. An **important thing to note** is that the MINIMUM_DISTANCE should be **greater** than DISTANCE_STEP for accurate results.
-
-
-
-## Key Things to Note
-There is a difference between `MissionName` and `MissionFile`.  `MissionName` refers to the
-name of the directory generated during path generation and EPOS, it will store all generated paths and plans.
-`MissionFile` is the file that all the original sensing requirements come from, and it must be an absolute path.
-Hence, the sensing requirements file and the mission name don't need to be the same.
