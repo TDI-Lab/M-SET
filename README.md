@@ -24,8 +24,8 @@ After cloning the repository, cd to its location. To create the self-documented 
 ```
 ### Windows
 ```bash
-  python -m venv M-SET
-  M-SET/Scripts/activate
+  python3 -m venv M-SET
+  "M-SET/Scripts/activate"
   python3 setup.py
   python3 -m pip install -r requirements.txt
 ```
