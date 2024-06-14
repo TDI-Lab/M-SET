@@ -230,6 +230,7 @@ def return_uris(channels,numbers):
     return uris
 
 def init_logging():
+    print("INITIALISING LOGGING")
     if ENABLE_LOGGING == True:
         global pub
 
@@ -243,8 +244,9 @@ def init_logging():
         input("Logging setup complete\nPress any key to continue")
 
 def log_all_status(all_drones,msg=""):
-    for drone in all_drones:
-        drone.log_status(msg=msg)
+    if ENABLE_LOGGING == True:
+        for drone in all_drones:
+            drone.log_status(msg=msg)
 
 def log_all_drones(ids, vars):
     if IN_SIMULATION == False:
@@ -393,7 +395,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
 
     all_drones, next_moves = parse_input(input_path, allcfs, SPEED, next_moves)
 
-    print("INITIALISING LOGGING")
     init_logging()
     log_all_status(all_drones, msg="Initialising logging")
     
