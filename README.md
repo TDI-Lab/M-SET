@@ -17,9 +17,8 @@ After cloning the repository, cd to its location. To create the self-documented 
 
 ### Linux
 ```bash
-  python -m venv M-SET
+  python3 -m venv M-SET
   source M-SET/bin/activate
-  cd ..
   python3 setup.py
   python3 -m pip install -r requirements.txt
 ```
@@ -27,7 +26,6 @@ After cloning the repository, cd to its location. To create the self-documented 
 ```bash
   python -m venv M-SET
   M-SET/Scripts/activate
-  cd ..
   python3 setup.py
   python3 -m pip install -r requirements.txt
 ```
