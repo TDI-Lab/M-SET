@@ -397,7 +397,11 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
         return
 
     print("INITIALISING CRAZYSWARM")
-    swarm = Crazyswarm()
+    try:
+        swarm = Crazyswarm()
+    except FileNotFoundError:
+        print("\nERROR: Crazyswarm installation was not found by the path execution code. Check that the value of CRAZYSWARM_SCRIPTS_FILE_PATH in Hardware/Hardware_constants.py is set correctly. \nSee the comments in the Hardware/Hardware_constants.py or the documentation for how to resolve this.\n")
+        return
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
 
