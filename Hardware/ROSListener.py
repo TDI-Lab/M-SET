@@ -27,6 +27,8 @@ status = ["idle", "idle", "idle", "idle"]
 
 count=0
 c=0
+
+# Process data retrieved from the ROS subscribers
 def callback(data,args):
    global c
    global count
@@ -57,6 +59,7 @@ def create_node():
    except:
       pass
 
+# Set up the ROS subscribers for retrieving logging data
 def listener(ids=[1]):
    # In ROS, nodes are uniquely named. If two nodes with the same
    # name are launched, the previous one is kicked off. The

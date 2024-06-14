@@ -13,13 +13,14 @@ except:
     from Hardware.Hardware_constants import *
     from Hardware.ROSListener import * 
 
-# append a new directory to sys.path
+# Append a new directory to sys.path
 sys.path.append(CRAZYSWARM_SCRIPTS_FILE_PATH)
 from pycrazyswarm import Crazyswarm
 Z=HOVER_HEIGHT
 
 pub = rospy.Publisher('status_logger', String, queue_size=10)
 
+# Translate the positions given in the path into 3D coordinates in the relevant coordinate space
 def get_coords(position, use_cell_coords):
     if use_cell_coords == True:
         x = convert_coords(position[0],"x")
@@ -29,6 +30,7 @@ def get_coords(position, use_cell_coords):
     else:
         return [position[0],position[1],HOVER_HEIGHT]
 
+# Convert coordinates from the physical coordinate space into the coordinates given relative to the positions on the testbed grid
 def convert_coords(val, axis):
     if axis == "x":
         return (val-2)*0.553
@@ -37,6 +39,7 @@ def convert_coords(val, axis):
     else:
         return NameError
 
+# Read drone path (to which collision avoidance has been applied) from the given file
 def read_cdca_output(filename):
     try:
         f = open(filename,"r")
@@ -51,6 +54,7 @@ def read_cdca_output(filename):
 
     return input_path
 
+# Read drone path (to which no collision avoidance has been applied) from the given file
 def read_default_output(filename):
     try:
         f = open(filename,"r")
@@ -75,10 +79,12 @@ def read_default_output(filename):
 
     return input_path
 
-def round_nearest(number, base): # Round to the nearest 'base' e.g. nearest 5
+# Round to the nearest 'base' e.g. nearest 5
+def round_nearest(number, base):
     return base * round(number/base)
 
-def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest 5
+# Round UP to the nearest 'base' e.g. nearest 5
+def roundup_nearest(number, base):
     # if remainder of number/base is 0 (base divides number exactly), then don't round up further
     #   e.g. roundup_nearest(25,5) = 5, NOT 6
 
@@ -89,16 +95,18 @@ def roundup_nearest(number, base): # Round UP to the nearest 'base' e.g. nearest
     else:
         return max(base * (round(number/base) + 1), base)
 
+# Class containing the properties of each drone in use
 class Drone():
     def __init__(self, cf, speed):
-        self.positions = []
-        self.times = [] 
+        self.positions = [] # set of positions visited by the drone as part of the given path
+        self.times = [] # the times that the drone spends completing each action (moving, hovering/waiting)
         self.status = "idle" # idle -> hovering -> ([sensing or waiting] moving)
-        self.speed = speed
-        self.cf = cf
-        self.id = self.cf.id
+        self.speed = speed # horizontal speed of the drone
+        self.cf = cf # Crazyswarm crazyflie object which this drone represents
+        self.id = self.cf.id # id of the drone
         self.move_count = 0 # Count of moves completed by the drone
 
+    # Move the drone to the next position (/cell) in its path
     def move_next_cell(self, use_cell_coords, i):
         self.log_status(msg="%s moving to %s" % (i, self.positions[self.move_count]))
         pos = get_coords(self.positions[self.move_count],use_cell_coords)
@@ -123,6 +131,7 @@ class Drone():
 
         return (travel_time + TIMESTEP_LENGTH)
     
+    # Calculate the duration of the movement being made by the drone
     def calc_travel_time(self):
         x_dist = (get_coords(self.positions[self.move_count], USE_CELL_COORDS)[0]) - (get_coords(self.positions[self.move_count-1], USE_CELL_COORDS)[0])
         y_dist = (get_coords(self.positions[self.move_count], USE_CELL_COORDS)[1]) - (get_coords(self.positions[self.move_count-1], USE_CELL_COORDS)[1])
@@ -131,13 +140,11 @@ class Drone():
 
         time = dist / self.speed
 
-        print(x_dist, y_dist, dist, self.speed, time)
-
         return time
     
-    def land_drone(self, timeHelper):
-        # Land the drones
-        # NB: This action is performed differently in simulation vs. on real hardware 
+    # Land the drones
+    def land_drone(self, timeHelper): 
+        # NB: This action is performed differently in simulation vs. on real hardware
         if IN_SIMULATION == False:
             # Calling the land command, even on just one drone, makes all of them disappear from the simulation view
             #   Therefore, this can only be done when not in simulation
@@ -148,6 +155,7 @@ class Drone():
             self.cf.goTo((land_pos[0],land_pos[1],0.05),0,2.5)
         timeHelper.sleep(2.5)
 
+    # Log the status of the drone (whether it is idle, hovering, moving, etc. See the status attribute of the Drone class)
     def log_status(self, msg=""):
         if msg != "" and PRINT_LOG_MESSAGES==True:
             print(msg)
@@ -158,6 +166,7 @@ class Drone():
             except rospy.ROSException:
                 print("WARNING: Log failed with ROSException error. Check that ROS is running.")
 
+# Take the positions and timings given in the drone path, and store these in the relevant Drone objects
 def parse_input(input_path, allcfs, speed, next_moves):
     all_drones = []
 
@@ -167,7 +176,6 @@ def parse_input(input_path, allcfs, speed, next_moves):
         if c < len(allcfs.crazyflies):
             d = Drone(allcfs.crazyflies[c],speed)
             all_drones.append(d)
-            print(drone)
             for position in drone:
                 if INPUT_MODE == "cdca":
                     d.positions.append(position[0])
@@ -175,7 +183,6 @@ def parse_input(input_path, allcfs, speed, next_moves):
                 elif INPUT_MODE == "default":
                     d.positions.append(position)
                     d.times.append(0)
-            print(d.times)
             
             next_moves = np.append(next_moves, 0) # Queue 0 so that the drone immediately seeks its next action
 
@@ -183,6 +190,7 @@ def parse_input(input_path, allcfs, speed, next_moves):
 
     return all_drones, next_moves
 
+# Take off all drones
 def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
     if sequential == True:
         if all_cfs == None:
@@ -202,15 +210,15 @@ def take_off_all(dur, timeHelper, all_drones, all_cfs=None, sequential=False):
             drone.status = "hovering"
             drone.log_status(msg="Drone %s taken off" % drone.id)
 
+# Land all drones
 def land_all(d, timeHelper,all_drones):
 # Tell the drones to take off
     for drone in all_drones:
         drone.cf.land(0.09, 2.5)
         timeHelper.sleep(2.5)
 
+# Set the initial positions of the drones in the simulation
 def set_initial_positions(timeHelper, all_drones, duration):
-    # Set the initial positions of the drones in the simulation
-    # For some reason this only works if it's after the takeoff
     for drone in all_drones:
         pos = get_coords(drone.positions[drone.move_count], USE_CELL_COORDS)
         drone.status="moving"
@@ -220,6 +228,7 @@ def set_initial_positions(timeHelper, all_drones, duration):
         drone.status="hovering"
         drone.log_status("Drone %s reached initial position %s" % (drone.id, pos))
 
+# Return the uris of the drones, given their ids and the radio channels that they are running on
 def return_uris(channels,numbers):
     uris = []
     for i in range(0,len(channels)):
@@ -229,9 +238,10 @@ def return_uris(channels,numbers):
             uris.append("radio://0/"+str(channels[i])+"/2M/E7E7E7E7"+str(numbers[i]))
     return uris
 
+# Initialise logging
 def init_logging():
-    print("INITIALISING LOGGING")
     if ENABLE_LOGGING == True:
+        print("INITIALISING LOGGING")
         global pub
 
         try:
@@ -243,6 +253,7 @@ def init_logging():
 
         input("Logging setup complete\nPress any key to continue")
 
+# Log the status of all drones
 def log_all_status(all_drones,msg=""):
     if ENABLE_LOGGING == True:
         for drone in all_drones:
@@ -257,31 +268,28 @@ def log_all_drones(ids, vars):
 def adjust_moves(next_moves):
     if TRAVEL_TIME_MODE == 2:
         if np.any((next_moves < TIMESTEP_LENGTH) & (next_moves > 0)):
-            print("Adjusting moves")
             for j in range(0,len(next_moves)):
                 if (next_moves[j] < TIMESTEP_LENGTH and next_moves[j] > 0):
-                    print("if",j)
                     # round up the travel_time of the subject drone
                     next_moves[j] = roundup_nearest(next_moves[j],TIMESTEP_LENGTH)
                 else:
-                    print("else",j)
                     # add one to the action time of the other drones
                     next_moves[j] = next_moves[j] + TIMESTEP_LENGTH
 
     return next_moves
 
+# Execute the path on the drones
+# Increment through the time slots of length TIMESLOT_LENGTH
+# If a drone is scheduled to perform a new action (e.g. start moving, start hovering, etc.) at that time slot according to the path, execute this action
 def follow_plans(timeHelper, all_drones, next_moves):
     log_all_status(all_drones, msg="Starting to follow plans")
 
-    # Cycle through the time slots
-    # If a drone moves at that time slot, move it
     t=0 # timeslot counter
     while np.any(next_moves > -1):
 
-        if t % 1 == 0: # Only print integer values of t
-            print("t=",t)
-
         in_position = all(drone.status == "idle" for drone in all_drones)
+
+        # Cycle through each drone in use
         for i in range(0,len(all_drones)):
 
             cf = all_drones[i]
@@ -332,7 +340,6 @@ def follow_plans(timeHelper, all_drones, next_moves):
                         else:
                             # If not ready to move from idle phase, then remain idle
                             cf.status = "idle"
-                            print(i, "idle")
                             next_moves[i] = TIMESTEP_LENGTH
                     
                     elif cf.status == "waiting" or cf.status == "sensing":
@@ -380,7 +387,6 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
             input_path = read_cdca_output(plan)
         elif INPUT_MODE == "default":
             input_path = read_default_output(plan)
-    print("Path=",input_path)
 
     # Change directory to the crazyswarm/scripts folder
     # Required to access crazyswarm source files, since Crazyswarm assumes it is being run from a file in the crazyswarm/ros_ws/src/crazyswarm/scripts folder
@@ -391,7 +397,7 @@ def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
 
-    next_moves = np.array([]) # Number of timeslots to next action, for each drone
+    next_moves = np.array([]) # Number of seconds to next action change, for each drone
 
     all_drones, next_moves = parse_input(input_path, allcfs, SPEED, next_moves)
 
