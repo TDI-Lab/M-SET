@@ -62,11 +62,14 @@ class MeasureSensing:
         sensing_mismatch = round(total_mismatch / total_value * 100, 2)
         undersensing_percentage = round(total_undersensing / total_value * 100, 2)
         oversensing_percentage = round(total_oversensing / total_value * 100, 2)
-        print(f"Total value: {total_value}")
-        print(f"Total mismatch: {total_mismatch}")
-        print(f"Sensing mismatch percentage: {sensing_mismatch}%")
-        print(f"Undersensing percentage: {undersensing_percentage}%")
-        print(f"Oversensing percentage: {oversensing_percentage}%")
+        sensing_data = {
+            "Total Sensing mismatch percentage": sensing_mismatch,
+            "Undersensing percentage": undersensing_percentage,
+            "Oversensing percentage": oversensing_percentage
+        }
+        print("\nSensing Data: \n")
+        for key, value in sensing_data.items():
+            print(f"{key:50}= {value}%")
         return sensing_mismatch, undersensing_percentage,  oversensing_percentage
     
         
