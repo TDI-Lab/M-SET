@@ -435,7 +435,8 @@ if __name__ == '__main__':
 
     if '--sim' in args:
         IN_SIMULATION = True
-        offset = 1
+    else:
+        IN_SIMULATION = False
 
     for arg in args[1+offset:]:
         if arg in ["default", "cdca"]:
