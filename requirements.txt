@@ -4,3 +4,5 @@ pandas
 networkx
 matplotlib
 seaborn
+
+ffmpeg
