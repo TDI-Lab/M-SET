@@ -36,7 +36,11 @@ Take a look at the demo.py for a good example of how to use this project, as so:
 ```
 python3 demo.py
 ```
+This first shows a 3D simulation of 4 drones executing a path with collisions (with no collision avoidance algorithms applied).  
+This is followed by a series of 2D visualisations of the Potential Fields Collision Avoidance algorithm implemented in the project.  
+Finally, a 3D simulation is shown of 4 drones executing a path, this time with the Potential Fields Collision Avoidance algorithm implemented in this project applied, and the path now has no collisions.  
 
+**Note**: Each simulation opens in a separate window. At the end of each simulation, you will have to close the simulation window for the next simulation to start.
 
 
 
