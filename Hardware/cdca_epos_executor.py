@@ -375,9 +375,7 @@ def follow_plans(timeHelper, all_drones, next_moves):
 def main(plan, raw=False, travel_time_mode=2, use_cell_coords=True, sensing_time=0, timestep_length=1, global_travel_time=6, run=True, in_simulation=IN_SIMULATION, input_mode=INPUT_MODE):
     # Allows INPUT_MODE to be overwritten by supplying a new value (as opposed to using the one from the config file)
     global INPUT_MODE
-    global IN_SIMULATION
     INPUT_MODE = input_mode
-    IN_SIMULATION = in_simulation
 
     print("PARSING INPUT")
     if raw == True:
