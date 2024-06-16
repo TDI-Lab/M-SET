@@ -3,7 +3,7 @@
 # M-SET: Multi-drone Sensing Experimentation Testbed
 This project can be used to execute drone sensing missions on a testbed which aims to provide a real-world simulation of drones on an experimentation testbed. It uses the [EPOS](https://github.com/epournaras/EPOS) algorithm to generate efficient paths, and then applies collision avoidance algorithms as EPOS does not account for collisions. There is also support to execute these paths on a swarm of [Crazyflies](https://www.bitcraze.io/products/crazyflie-2-1/).
 
-
+See the [M-SET Documentation](https://github.com/TDI-Lab/M-SET-Documentation/tree/main) github for the full project documentation.
 
 
 
@@ -36,7 +36,11 @@ Take a look at the demo.py for a good example of how to use this project, as so:
 ```
 python3 demo.py
 ```
+This first shows a 3D simulation of 4 drones executing a path with collisions (with no collision avoidance algorithms applied).  
+This is followed by a series of 2D visualisations of the Potential Fields Collision Avoidance algorithm implemented in the project.  
+Finally, a 3D simulation is shown of 4 drones executing a path, this time with the Potential Fields Collision Avoidance algorithm implemented in this project applied, and the path now has no collisions.  
 
+**Note**: Each simulation opens in a separate window. At the end of each simulation, you will have to close the simulation window for the next simulation to start.
 
 
 
@@ -113,3 +117,14 @@ The configuration file for collision avoidance can currently be found in cdca/sr
 | MINIMUM_DISTANCE   | The minimum distance between drones before it is considered a collision |
 
 Setting these values are important to scale with large sensing missions, especially with Potential Fields. The bigger the values, the less expensive it will be. An **important thing to note** is that the MINIMUM_DISTANCE should be **greater** than DISTANCE_STEP for accurate results.
+
+### Executing Drone Paths
+The project contains code to execute generated drone paths in a simulated environment or on real-life hardware.  
+
+The primary method of executing drone paths is the Path Execution module, which makes use of the Crazyswarm python library. This module provides closely linked methods to execute the paths in a simulated environment and on real-life hardware, however it requires additional setup to install and configure the required libraries (compared to the rest of the program).  
+For more information please see the [Path Execution](https://github.com/TDI-Lab/M-SET-Documentation/blob/main/Path%20Execution.md) section of the full documentation for details on how to configure and use this module, as well as the [Path Execution Examples](https://github.com/TDI-Lab/M-SET-Documentation/blob/main/Path%20Execution%20Examples.md) section for example drone paths to use.
+
+There is also a second method of executing drone paths in simulation (but not on real-life hardware), provided as part of the Collision Avoidance module.  
+This method does not require any additional setup to run (only the steps described at the top of this page), however it has fewer configuration options, and is less closely linked with the code used to execute the drone paths on real-life hardware as it does not use the Crazyswarm python library.
+
+Please see the [Simulation](https://github.com/TDI-Lab/M-SET-Documentation/blob/main/Simulation.md) section of the full documentation for more information on the two methods of drone path execution in simulation.
